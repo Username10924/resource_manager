@@ -398,7 +398,7 @@ function ScheduleModal({
                       Month: {schedule.month || 'Current'}
                     </div>
                     <div className="mt-1 text-xs text-gray-600">
-                      Ops: {schedule.operations_hours}h | Dev: {schedule.development_hours}h | Other: {schedule.other_hours}h
+                      Reserved: {schedule.reserved_hours_per_day}h/day
                     </div>
                   </div>
                   <div className="text-sm font-semibold text-blue-600">
