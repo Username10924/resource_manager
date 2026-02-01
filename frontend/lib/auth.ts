@@ -1,4 +1,4 @@
-export type UserRole = 'line_manager' | 'solution_architect' | 'admin';
+export type UserRole = 'line_manager' | 'solution_architect' | 'dashboard_viewer' | 'admin';
 
 export interface User {
   id: number;
@@ -11,7 +11,7 @@ export interface User {
 export const authService = {
   login: async (username: string, role: UserRole): Promise<User> => {
     // Call the backend login endpoint
-    const response = await fetch('http://localhost:8000/login', {
+    const response = await fetch('https://resource-manager-kg4d.onrender.com/login', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -40,7 +40,7 @@ export const authService = {
 
   register: async (username: string, role: UserRole, fullName: string, department?: string): Promise<User> => {
     // Call the backend register endpoint
-    const response = await fetch('http://localhost:8000/register', {
+    const response = await fetch('https://resource-manager-kg4d.onrender.com/register', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

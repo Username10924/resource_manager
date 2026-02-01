@@ -3,7 +3,7 @@ import "./globals.css";
 import ClientLayout from "./ClientLayout";
 
 export const metadata: Metadata = {
-  title: "ResourceUtil - Resource Management System",
+  title: "Resource Management System",
   description: "Manage employee schedules and project resource bookings",
 };
 

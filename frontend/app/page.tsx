@@ -11,7 +11,7 @@ interface User {
   id: number;
   username: string;
   full_name: string;
-  role: string;
+  role: 'line_manager' | 'solution_architect' | 'dashboard_viewer' | 'admin';
   department: string | null;
 }
 
@@ -40,7 +40,7 @@ export default function Home() {
 
   const fetchUsersByRole = async (userRole: string) => {
     try {
-      const response = await fetch(`http://localhost:8000/api/users/by-role/${userRole}`);
+      const response = await fetch(`https://resource-manager-kg4d.onrender.com/api/users/by-role/${userRole}`);
       if (response.ok) {
         const data = await response.json();
         setUsers(data);
