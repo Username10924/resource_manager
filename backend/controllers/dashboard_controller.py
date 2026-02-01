@@ -1,0 +1,229 @@
+from typing import Dict, Any, List, Tuple, Optional
+from datetime import datetime
+from models.employee import Employee
+from models.project import Project
+from models.user import User
+from database import db
+
+class DashboardController:
+    @staticmethod
+    def get_resources_dashboard(manager_id: Optional[int] = None) -> Dict[str, Any]:
+        """Get resources dashboard data"""
+        
+        if manager_id:
+            # Get manager's team
+            employees = Employee.get_by_line_manager(manager_id)
+            manager = User.get_by_id(manager_id)
+            manager_name = manager.full_name if manager else "Unknown"
+        else:
+            # Get all employees
+            employees = Employee.get_all_active()
+            manager_name = "All Departments"
+        
+        # Get current year
+        current_year = datetime.now().year
+        current_month = datetime.now().month
+        
+        # Prepare dashboard data
+        dashboard_data = {
+            'manager': manager_name,
+            'total_employees': len(employees),
+            'departments': {},
+            'monthly_summary': {}
+        }
+        
+        # Initialize monthly summary
+        for month in range(1, 13):
+            dashboard_data['monthly_summary'][month] = {
+                'total_available': 0,
+                'total_booked': 0,
+                'total_capacity': 0,
+                'employee_count': 0,
+                'utilization_rate': 0
+            }
+        
+        # Process each employee
+        for emp in employees:
+            # Department grouping
+            dept = emp.department
+            if dept not in dashboard_data['departments']:
+                dashboard_data['departments'][dept] = {
+                    'count': 0,
+                    'total_available_hours': 0,
+                    'employees': []
+                }
+            
+            dashboard_data['departments'][dept]['count'] += 1
+            
+            # Get employee schedule
+            query = '''
+                SELECT es.*, 
+                       COALESCE(SUM(pb.booked_hours), 0) + (es.reserved_hours_per_day * 20) as booked_hours
+                FROM employee_schedules es
+                LEFT JOIN project_bookings pb ON es.employee_id = pb.employee_id 
+                    AND es.month = pb.month AND es.year = pb.year AND pb.status != 'cancelled'
+                WHERE es.employee_id = ? AND es.year = ?
+                GROUP BY es.month
+                ORDER BY es.month
+            '''
+            schedule_data = db.fetch_all(query, (emp.id, current_year))
+            
+            emp_data = emp.to_dict()
+            emp_data['schedule'] = schedule_data
+            
+            # Add to department
+            dashboard_data['departments'][dept]['employees'].append(emp_data)
+            
+            # Update monthly summary and department totals
+            for sched in schedule_data:
+                month = sched['month']
+                available = sched['available_hours_per_month']
+                booked = sched['booked_hours'] or 0
+                
+                dashboard_data['monthly_summary'][month]['total_available'] += available
+                dashboard_data['monthly_summary'][month]['total_booked'] += booked
+                dashboard_data['monthly_summary'][month]['total_capacity'] += 120  # 6 hrs/day * 20 days
+                dashboard_data['monthly_summary'][month]['employee_count'] += 1
+                
+                # Add to department's total available hours (only for current month)
+                if month == current_month:
+                    dashboard_data['departments'][dept]['total_available_hours'] += available
+        
+        # Calculate utilization rates based on total capacity
+        for month in range(1, 13):
+            summary = dashboard_data['monthly_summary'][month]
+            if summary['total_capacity'] > 0:
+                summary['utilization_rate'] = (summary['total_booked'] / summary['total_capacity']) * 100
+        
+        # Calculate total available hours across all departments
+        total_available_hours = sum(
+            dept_data['total_available_hours'] 
+            for dept_data in dashboard_data['departments'].values()
+        )
+        dashboard_data['total_available_hours'] = total_available_hours
+        
+        # Count unique managers
+        managers_set = set()
+        for emp in employees:
+            if emp.line_manager_id:
+                managers_set.add(emp.line_manager_id)
+        dashboard_data['managers'] = len(managers_set)
+        
+        return dashboard_data
+    
+    @staticmethod
+    def get_projects_dashboard(architect_id: Optional[int] = None) -> Dict[str, Any]:
+        """Get projects dashboard data"""
+        
+        if architect_id:
+            projects_data = Project.get_by_architect(architect_id)
+            architect = User.get_by_id(architect_id)
+            architect_name = architect.full_name if architect else "Unknown"
+        else:
+            projects_data = Project.get_all()
+            architect_name = "All Architects"
+        
+        # Process projects
+        projects = []
+        status_counts = {
+            'planned': 0,
+            'active': 0,
+            'on_hold': 0,
+            'completed': 0,
+            'cancelled': 0
+        }
+        
+        total_progress = 0
+        active_projects = 0
+        total_bookings = 0
+        
+        for proj in projects_data:
+            # Handle both Project objects and dict rows
+            if isinstance(proj, dict):
+                project_dict = dict(proj)
+            else:
+                project_dict = proj.to_dict()
+            
+            # Get booking statistics
+            bookings_query = '''
+                SELECT COUNT(*) as total_bookings, 
+                       SUM(booked_hours) as total_hours,
+                       COUNT(DISTINCT employee_id) as unique_employees
+                FROM project_bookings 
+                WHERE project_id = ? AND status != 'cancelled'
+            '''
+            stats = db.fetch_one(bookings_query, (project_dict['id'],))
+            
+            project_dict['booking_stats'] = {
+                'total_bookings': stats['total_bookings'] or 0,
+                'total_hours': stats['total_hours'] or 0,
+                'unique_employees': stats['unique_employees'] or 0
+            }
+            
+            # Add to total bookings count
+            total_bookings += stats['total_bookings'] or 0
+            
+            projects.append(project_dict)
+            
+            # Update status counts
+            status = project_dict['status']
+            if status in status_counts:
+                status_counts[status] += 1
+            
+            # Update progress stats
+            if status == 'active':
+                total_progress += project_dict['progress']
+                active_projects += 1
+        
+        # Calculate average progress
+        avg_progress = total_progress / active_projects if active_projects > 0 else 0
+        
+        return {
+            'architect': architect_name,
+            'total_projects': len(projects),
+            'active_projects': status_counts['active'],
+            'total_bookings': total_bookings,
+            'status_distribution': status_counts,
+            'avg_progress': round(avg_progress, 1),
+            'average_progress': avg_progress,
+            'projects': projects
+        }
+    
+    @staticmethod
+    def get_booking_overview(year: Optional[int] = None) -> Dict[str, Any]:
+        """Get booking overview for all projects"""
+        if year is None:
+            year = datetime.now().year
+        
+        query = '''
+            SELECT 
+                p.name as project_name,
+                p.status as project_status,
+                pb.month,
+                SUM(pb.booked_hours) as monthly_hours,
+                COUNT(DISTINCT pb.employee_id) as employees_count
+            FROM project_bookings pb
+            JOIN projects p ON pb.project_id = p.id
+            WHERE pb.year = ? AND pb.status != 'cancelled'
+            GROUP BY p.id, pb.month
+            ORDER BY p.name, pb.month
+        '''
+        
+        results = db.fetch_all(query, (year,))
+        
+        # Organize by project
+        overview = {}
+        for row in results:
+            project = row['project_name']
+            if project not in overview:
+                overview[project] = {
+                    'status': row['project_status'],
+                    'monthly_bookings': {}
+                }
+            
+            overview[project]['monthly_bookings'][row['month']] = {
+                'hours': row['monthly_hours'],
+                'employees': row['employees_count']
+            }
+        
+        return overview
