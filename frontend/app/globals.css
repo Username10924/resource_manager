@@ -1,12 +1,14 @@
 @import "tailwindcss";
 
 :root {
-  --background: #fafafa;
+  --background: #f5f6fa;
   --foreground: #0a0a0a;
-  --primary: #FF6B2B;
-  --primary-dark: #FF2D55;
+  --primary: #4F46E5;
+  --primary-dark: #4338CA;
   --accent-cyan: #4DDFFF;
-  --accent-purple: #7B6CFF;
+  --accent-purple: #6366F1;
+  --sidebar-gradient-start: #3730A3;
+  --sidebar-gradient-end: #4F46E5;
 }
 
 body {

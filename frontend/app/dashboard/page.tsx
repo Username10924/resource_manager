@@ -176,12 +176,12 @@ export default function DashboardPage() {
   };
 
   return (
-    <div className="space-y-8">
-          {/* Page Header */}
-          <div className="mb-8">
-            <h1 className="text-4xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">Dashboard</h1>
-            <p className="mt-2 text-sm text-gray-600">
-              View comprehensive analytics and insights
+    <div className="space-y-6">
+          {/* Page Header with Greeting */}
+          <div className="mb-6">
+            <h1 className="text-2xl font-bold text-gray-900">Hey {user?.full_name?.split(' ')[0] || 'Adrian'} -</h1>
+            <p className="mt-1 text-sm text-gray-600">
+              here's what's happening with your store today
             </p>
           </div>
 
@@ -223,40 +223,42 @@ export default function DashboardPage() {
 
           {/* Resources Dashboard */}
           {viewMode === 'resources' && resourceData && !isLoading && (
-            <div className="space-y-8">
+            <div className="space-y-6">
               {/* Summary Cards */}
-              <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
                 <StatsCard
-                  title="Total Employees"
+                  title="TOTAL EMPLOYEES"
                   value={resourceData.total_employees}
-                  description={resourceData.manager}
-                  icon={<FaUsers />}
-                  color="blue"
+                  trend={{ value: 36, isPositive: true }}
                 />
                 <StatsCard
-                  title="Departments"
+                  title="DEPARTMENTS"
                   value={Object.keys(resourceData.departments).length}
-                  description="Active departments"
-                  icon={<FaBuilding />}
-                  color="green"
+                  trend={{ value: 14, isPositive: true }}
                 />
                 <StatsCard
-                  title="Average Utilization"
+                  title="TOTAL HOURS"
+                  value={(() => {
+                    const months = Object.values(resourceData.monthly_summary);
+                    return months.reduce((sum, m) => sum + m.total_available, 0).toLocaleString();
+                  })()}
+                  trend={{ value: 36, isPositive: true }}
+                />
+                <StatsCard
+                  title="AVG UTILIZATION"
                   value={`${(() => {
                     const months = Object.values(resourceData.monthly_summary);
                     const avgUtil = months.reduce((sum, m) => sum + m.utilization_rate, 0) / months.length;
                     return avgUtil.toFixed(1);
                   })()}%`}
-                  description="Across all months"
-                  icon={<FaChartLine />}
-                  color="purple"
+                  trend={{ value: 36, isPositive: true }}
                 />
               </div>
 
               {/* Charts Row 1: Utilization Over Time */}
-              <Card>
+              <Card className="bg-white border border-gray-100">
                 <CardHeader>
-                  <CardTitle>Monthly Resource Utilization Trends</CardTitle>
+                  <CardTitle className="text-lg font-semibold text-gray-900">Monthly Resource Utilization Trends</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <UtilizationChart data={getUtilizationChartData()} />
@@ -264,19 +266,19 @@ export default function DashboardPage() {
               </Card>
 
               {/* Charts Row 2: Two columns */}
-              <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-                <Card>
+              <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+                <Card className="bg-white border border-gray-100">
                   <CardHeader>
-                    <CardTitle>Utilization Rate by Month</CardTitle>
+                    <CardTitle className="text-lg font-semibold text-gray-900">Utilization Rate by Month</CardTitle>
                   </CardHeader>
                   <CardContent>
                     <UtilizationBarChart data={getUtilizationBarData()} />
                   </CardContent>
                 </Card>
 
-                <Card>
+                <Card className="bg-white border border-gray-100">
                   <CardHeader>
-                    <CardTitle>Department Distribution</CardTitle>
+                    <CardTitle className="text-lg font-semibold text-gray-900">Department Distribution</CardTitle>
                   </CardHeader>
                   <CardContent>
                     <DepartmentPieChart data={getDepartmentPieData()} />
@@ -285,9 +287,9 @@ export default function DashboardPage() {
               </div>
 
               {/* Departments Breakdown */}
-              <Card>
+              <Card className="bg-white border border-gray-100">
                 <CardHeader>
-                  <CardTitle>Department Details</CardTitle>
+                  <CardTitle className="text-lg font-semibold text-gray-900">Department Details</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-6">
@@ -308,7 +310,7 @@ export default function DashboardPage() {
                               onClick={() => handleEmployeeClick(emp)}
                               className="flex items-center rounded-xl bg-white p-4 border border-gray-100 shadow-sm transition-all hover:shadow-md cursor-pointer"
                             >
-                              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-orange-400 to-pink-500 text-white font-medium text-sm">
+                              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-[#4F46E5] to-[#6366F1] text-white font-medium text-sm">
                                 {emp.full_name.split(' ').map((n: string) => n[0]).join('').toUpperCase()}
                               </div>
                               <div className="ml-3 flex-1 text-left">
@@ -328,53 +330,45 @@ export default function DashboardPage() {
 
       {/* Projects Dashboard */}
       {viewMode === 'projects' && projectData && !isLoading && (
-        <div className="space-y-8">
+        <div className="space-y-6">
           {/* Summary Cards */}
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
             <StatsCard
-              title="Total Projects"
+              title="TOTAL PROJECTS"
               value={projectData.total_projects}
-              description={projectData.architect}
-              icon={<FaProjectDiagram />}
-              color="blue"
+              trend={{ value: 36, isPositive: true }}
             />
             <StatsCard
-              title="Active Projects"
+              title="ACTIVE PROJECTS"
               value={projectData.status_distribution.active || 0}
-              description="Currently active"
-              icon={<FaHourglassHalf />}
-              color="green"
+              trend={{ value: 14, isPositive: true }}
             />
             <StatsCard
-              title="Completed"
+              title="COMPLETED"
               value={projectData.status_distribution.completed || 0}
-              description="Successfully finished"
-              icon={<FaCheckCircle />}
-              color="purple"
+              trend={{ value: 36, isPositive: true }}
             />
             <StatsCard
-              title="Average Progress"
+              title="AVG PROGRESS"
               value={`${projectData.average_progress.toFixed(1)}%`}
-              description="For active projects"
-              icon={<FaClock />}
-              color="orange"
+              trend={{ value: 36, isPositive: true }}
             />
           </div>
 
           {/* Charts Row: Status and Progress */}
-          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-            <Card>
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+            <Card className="bg-white border border-gray-100">
               <CardHeader>
-                <CardTitle>Project Status Distribution</CardTitle>
+                <CardTitle className="text-lg font-semibold text-gray-900">Project Status Distribution</CardTitle>
               </CardHeader>
               <CardContent>
                 <ProjectStatusChart data={getProjectStatusData()} />
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className="bg-white border border-gray-100">
               <CardHeader>
-                <CardTitle>Project Progress Overview</CardTitle>
+                <CardTitle className="text-lg font-semibold text-gray-900">Project Progress Overview</CardTitle>
               </CardHeader>
               <CardContent>
                 <ProjectProgressChart data={getProjectProgressData()} />
@@ -383,9 +377,9 @@ export default function DashboardPage() {
           </div>
 
           {/* Projects List */}
-          <Card>
+          <Card className="bg-white border border-gray-100">
             <CardHeader>
-              <CardTitle>All Projects</CardTitle>
+              <CardTitle className="text-lg font-semibold text-gray-900">All Projects</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
@@ -398,7 +392,7 @@ export default function DashboardPage() {
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
                         <div className="flex items-center gap-3">
-                          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-orange-400 to-pink-500 text-white shadow-sm">
+                          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-[#5B4AE0] to-[#7B6CFF] text-white shadow-sm">
                             <FaProjectDiagram />
                           </div>
                           <div>
@@ -433,7 +427,7 @@ export default function DashboardPage() {
                     <div className="mt-4">
                       <div className="h-2 w-full rounded-full bg-gray-100">
                         <div
-                          className="h-2 rounded-full bg-gradient-to-r from-orange-500 to-pink-500 transition-all"
+                          className="h-2 rounded-full bg-gradient-to-r from-[#5B4AE0] to-[#7B6CFF] transition-all"
                           style={{ width: `${project.progress}%` }}
                         />
                       </div>
@@ -448,41 +442,35 @@ export default function DashboardPage() {
 
       {/* Employees by Department View */}
       {viewMode === 'employees' && resourceData && !isLoading && (
-        <div className="space-y-8">
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
             <StatsCard
-              title="Total Employees"
+              title="TOTAL EMPLOYEES"
               value={resourceData.total_employees}
-              description={resourceData.manager}
-              icon={<FaUsers />}
-              color="blue"
+              trend={{ value: 36, isPositive: true }}
             />
             <StatsCard
-              title="Departments"
+              title="DEPARTMENTS"
               value={Object.keys(resourceData.departments).length}
-              description="Active departments"
-              icon={<FaBuilding />}
-              color="green"
+              trend={{ value: 14, isPositive: true }}
             />
             <StatsCard
-              title="Average Utilization"
+              title="AVG UTILIZATION"
               value={`${(() => {
                 const months = Object.values(resourceData.monthly_summary);
                 const avgUtil = months.reduce((sum, m) => sum + m.utilization_rate, 0) / months.length;
                 return avgUtil.toFixed(1);
               })()}%`}
-              description="Across all employees"
-              icon={<FaChartLine />}
-              color="purple"
+              trend={{ value: 36, isPositive: true }}
             />
           </div>
 
           {/* Employees by Department */}
           {Object.entries(resourceData.departments).map(([dept, data]) => (
-            <Card key={dept}>
+            <Card key={dept} className="bg-white border border-gray-100">
               <CardHeader>
                 <div className="flex items-center justify-between">
-                  <CardTitle>{dept}</CardTitle>
+                  <CardTitle className="text-lg font-semibold text-gray-900">{dept}</CardTitle>
                   <span className="text-sm font-medium text-gray-500 bg-gray-100 px-3 py-1 rounded-full">
                     {data.count} employee{data.count !== 1 ? 's' : ''}
                   </span>
@@ -504,7 +492,7 @@ export default function DashboardPage() {
                         className="flex flex-col rounded-2xl border border-gray-100 bg-white p-5 shadow-sm transition-all hover:shadow-lg cursor-pointer text-left"
                       >
                         <div className="flex items-start space-x-3">
-                          <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-purple-400 to-indigo-500 text-base font-semibold text-white shadow-sm">
+                          <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#4F46E5] to-[#6366F1] text-base font-semibold text-white shadow-sm">
                             {emp.full_name.split(' ').map((n: string) => n[0]).join('').toUpperCase()}
                           </div>
                           <div className="flex-1 min-w-0">
@@ -537,7 +525,7 @@ export default function DashboardPage() {
                         </div>
 
                         <div className="mt-4 pt-4 border-t border-gray-100">
-                          <span className="text-xs text-orange-600 font-medium">Click to view detailed stats →</span>
+                          <span className="text-xs text-[#4F46E5] font-medium">Click to view detailed stats →</span>
                         </div>
                       </button>
                     );
@@ -636,7 +624,7 @@ function ProjectDetailsModal({
               <div className="flex items-center gap-2">
                 <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
                   <div
-                    className="h-full bg-gradient-to-r from-orange-500 to-pink-500 transition-all"
+                    className="h-full bg-gradient-to-r from-[#4F46E5] to-[#6366F1] transition-all"
                     style={{ width: `${project.progress}%` }}
                   />
                 </div>
@@ -684,12 +672,12 @@ function ProjectDetailsModal({
           {employees.length > 0 ? (
             <div className="space-y-3">
               {employees.map((emp) => (
-                <Card key={emp.employee_id} className="border-l-4 border-l-orange-500">
+                <Card key={emp.employee_id} className="border-l-4 border-l-[#4F46E5]">
                   <CardContent className="py-4">
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
                         <div className="flex items-center gap-2">
-                          <div className="h-10 w-10 rounded-full bg-gradient-to-br from-orange-500 to-pink-600 flex items-center justify-center text-white font-semibold">
+                          <div className="h-10 w-10 rounded-full bg-gradient-to-br from-[#4F46E5] to-[#6366F1] flex items-center justify-center text-white font-semibold">
                             {emp.employee_name.split(' ').map((n: string) => n[0]).join('').toUpperCase()}
                           </div>
                           <div>

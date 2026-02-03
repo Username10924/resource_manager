@@ -9,20 +9,20 @@ interface CardProps {
 
 export function Card({ children, className }: CardProps) {
   return (
-    <div className={cn('rounded-2xl border border-gray-100 bg-white shadow-sm hover:shadow-md transition-shadow', className)}>
+    <div className={cn('rounded-xl bg-white shadow-sm transition-shadow', className)}>
       {children}
     </div>
   );
 }
 
 export function CardHeader({ children, className }: CardProps) {
-  return <div className={cn('px-8 py-6 border-b border-gray-50', className)}>{children}</div>;
+  return <div className={cn('px-6 py-5 border-b border-gray-100', className)}>{children}</div>;
 }
 
 export function CardTitle({ children, className }: CardProps) {
-  return <h3 className={cn('text-lg font-semibold text-gray-900', className)}>{children}</h3>;
+  return <h3 className={cn('text-base font-semibold text-gray-900', className)}>{children}</h3>;
 }
 
 export function CardContent({ children, className }: CardProps) {
-  return <div className={cn('px-8 py-6', className)}>{children}</div>;
+  return <div className={cn('px-6 py-5', className)}>{children}</div>;
 }

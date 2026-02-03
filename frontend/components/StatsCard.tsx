@@ -31,29 +31,22 @@ export default function StatsCard({
   color = 'blue' 
 }: StatsCardProps) {
   return (
-    <Card className="overflow-hidden hover:shadow-lg transition-all">
-      <CardContent className="pt-6">
-        <div className="flex items-start justify-between">
-          <div className="flex-1">
-            <p className="text-sm font-medium text-gray-500 uppercase tracking-wide">{title}</p>
-            <p className="mt-3 text-4xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">{value}</p>
-            {description && (
-              <p className="mt-2 text-sm text-gray-600">{description}</p>
-            )}
+    <Card className="overflow-hidden bg-white">
+      <CardContent className="pt-5 pb-5">
+        <div className="flex flex-col gap-2">
+          <div className="flex items-center justify-between">
+            <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">{title}</p>
             {trend && (
-              <div className="mt-3 inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium" 
-                style={{
-                  backgroundColor: trend.isPositive ? 'rgb(220 252 231)' : 'rgb(254 226 226)',
-                  color: trend.isPositive ? 'rgb(22 163 74)' : 'rgb(220 38 38)'
-                }}>
-                <span>{trend.isPositive ? '↑' : '↓'} {Math.abs(trend.value)}%</span>
-              </div>
+              <span className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-600">
+                ↑ {Math.abs(trend.value)}%
+              </span>
             )}
           </div>
-          {icon && (
-            <div className={`rounded-2xl p-4 ${colorClasses[color]} shadow-sm`}>
-              <div className="text-2xl">{icon}</div>
-            </div>
+          <div className="flex items-baseline gap-2">
+            <p className="text-2xl font-bold text-gray-900">{value}</p>
+          </div>
+          {description && (
+            <p className="text-sm text-gray-500">{description}</p>
           )}
         </div>
       </CardContent>

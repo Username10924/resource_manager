@@ -31,20 +31,20 @@ export default function Navigation() {
     if (!user) return [];
 
     const baseLinks = [
-      { href: '/dashboard', label: 'Dashboard', icon: FaChartLine }
+      { href: '/dashboard', label: 'Dashboard', icon: FaChartLine, section: 'ANALYTICS' }
     ];
 
     if (user.role === 'line_manager') {
-      baseLinks.push({ href: '/resources', label: 'Resources', icon: FaUsers });
+      baseLinks.push({ href: '/resources', label: 'Resources', icon: FaUsers, section: 'ANALYTICS' });
     } else if (user.role === 'solution_architect') {
-      baseLinks.push({ href: '/projects', label: 'Projects', icon: FaProjectDiagram });
+      baseLinks.push({ href: '/projects', label: 'Projects', icon: FaProjectDiagram, section: 'ANALYTICS' });
     }
 
     // Admins can see everything
     if (user.role === 'admin') {
       baseLinks.push(
-        { href: '/resources', label: 'Resources', icon: FaUsers },
-        { href: '/projects', label: 'Projects', icon: FaProjectDiagram }
+        { href: '/resources', label: 'Resources', icon: FaUsers, section: 'ANALYTICS' },
+        { href: '/projects', label: 'Projects', icon: FaProjectDiagram, section: 'ANALYTICS' }
       );
     }
 
@@ -164,8 +164,8 @@ export default function Navigation() {
                 </svg>
               </div>
               {!isCollapsed && (
-                <span className="font-bold text-lg bg-gradient-to-r from-orange-600 to-pink-600 bg-clip-text text-transparent">
-                  RMS
+                <span className="font-bold text-lg bg-gradient-to-r from-[#4F46E5] to-[#6366F1] bg-clip-text text-transparent">
+                  Ozons
                 </span>
               )}
             </Link>
@@ -181,6 +181,11 @@ export default function Navigation() {
 
           {/* Navigation Links */}
           <div className="flex-1 overflow-y-auto py-4">
+            {!isCollapsed && (
+              <div className="px-5 mb-3">
+                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">ANALYTICS</p>
+              </div>
+            )}
             <div className="space-y-1 px-3">
               {links.map((link) => {
                 const isActive = pathname === link.href;
@@ -192,14 +197,14 @@ export default function Navigation() {
                     className={cn(
                       'flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all group',
                       isActive
-                        ? 'bg-gradient-to-r from-orange-500 to-pink-500 text-white shadow-md'
+                        ? 'text-[#4F46E5]'
                         : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
                     )}
                     title={isCollapsed ? link.label : undefined}
                   >
                     <Icon className={cn(
                       "flex-shrink-0 text-lg",
-                      isActive ? "text-white" : "text-gray-500 group-hover:text-gray-700"
+                      isActive ? "text-[#4F46E5]" : "text-gray-500 group-hover:text-gray-700"
                     )} />
                     {!isCollapsed && <span>{link.label}</span>}
                   </Link>
@@ -210,10 +215,10 @@ export default function Navigation() {
 
           {/* User Info and Logout */}
           {user && (
-            <div className="border-t border-gray-200 p-4 space-y-3">
+            <div className="border-t border-gray-200 p-4 space-y-2">
               {!isCollapsed && (
-                <div className="flex items-center gap-3 px-2">
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-orange-400 to-pink-500 flex items-center justify-center text-white text-sm font-medium flex-shrink-0">
+                <div className="flex items-center gap-3 px-2 mb-3">
+                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#4F46E5] to-[#6366F1] flex items-center justify-center text-white text-sm font-medium flex-shrink-0">
                     {user.full_name.split(' ').map(n => n[0]).join('').toUpperCase()}
                   </div>
                   <div className="text-sm overflow-hidden">
@@ -230,10 +235,10 @@ export default function Navigation() {
                   "flex items-center gap-3 w-full px-4 py-3 rounded-lg text-sm font-medium transition-all text-gray-600 hover:text-red-600 hover:bg-red-50",
                   isCollapsed && "justify-center"
                 )}
-                title={isCollapsed ? "Sign Out" : undefined}
+                title={isCollapsed ? "Logout" : undefined}
               >
                 <FaSignOutAlt className="flex-shrink-0 text-lg" />
-                {!isCollapsed && <span>Sign Out</span>}
+                {!isCollapsed && <span>Logout</span>}
               </button>
             </div>
           )}
