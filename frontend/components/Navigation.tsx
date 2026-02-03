@@ -165,7 +165,7 @@ export default function Navigation() {
               </div>
               {!isCollapsed && (
                 <span className="font-bold text-lg bg-gradient-to-r from-[#4F46E5] to-[#6366F1] bg-clip-text text-transparent">
-                  Ozons
+                  RMS
                 </span>
               )}
             </Link>

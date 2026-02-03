@@ -7,6 +7,14 @@ export const metadata: Metadata = {
   description: "Manage employee schedules and project resource bookings",
 };
 
+import { Work_Sans } from 'next/font/google'
+
+const myfont = Work_Sans({
+  subsets: ['latin'],
+  variable: '--font-myfont',
+  weight: '400',
+})
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -14,7 +22,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className="antialiased">
+      <body className={`antialiased ${myfont.variable}`}>
         <ClientLayout>{children}</ClientLayout>
       </body>
     </html>
