@@ -327,7 +327,7 @@ export default function Home() {
                   }}
                   className="text-orange-600 hover:text-orange-700 font-medium transition-colors"
                 >
-                  {isLogin ? "Don't have an account? Register" : 'Already have an account? Sign In'}
+                  {isLogin ? "Add new user" : 'Already have an account? Sign In'}
                 </button>
               </div>
             </form>

@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Dashboard - ResourceUtil',
+  title: 'Dashboard - RMS',
   description: 'View resource and project analytics',
 };
 

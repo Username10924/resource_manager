@@ -306,7 +306,7 @@ export default function DashboardPage() {
                             <button
                               key={emp.id}
                               onClick={() => handleEmployeeClick(emp)}
-                              className="flex items-center rounded-xl bg-white p-4 border border-gray-100 shadow-sm transition-all hover:shadow-md hover:scale-[1.02] cursor-pointer"
+                              className="flex items-center rounded-xl bg-white p-4 border border-gray-100 shadow-sm transition-all hover:shadow-md cursor-pointer"
                             >
                               <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-orange-400 to-pink-500 text-white font-medium text-sm">
                                 {emp.full_name.split(' ').map((n: string) => n[0]).join('').toUpperCase()}
@@ -501,7 +501,7 @@ export default function DashboardPage() {
                       <button
                         key={emp.id}
                         onClick={() => handleEmployeeClick(emp)}
-                        className="flex flex-col rounded-2xl border border-gray-100 bg-white p-5 shadow-sm transition-all hover:shadow-lg hover:scale-[1.02] cursor-pointer text-left"
+                        className="flex flex-col rounded-2xl border border-gray-100 bg-white p-5 shadow-sm transition-all hover:shadow-lg cursor-pointer text-left"
                       >
                         <div className="flex items-start space-x-3">
                           <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-purple-400 to-indigo-500 text-base font-semibold text-white shadow-sm">
