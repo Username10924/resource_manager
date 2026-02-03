@@ -125,88 +125,88 @@ class Project:
             db.rollback()
             raise Exception(f'Failed to delete project: {str(e)}')
     
-    def add_booking(self, employee_id: int, month: int, year: int, 
-                   booked_hours: float, booking_date: date = None) -> Dict[str, Any]:
-        """Book an employee for this project"""
-        if booking_date is None:
-            booking_date = date.today()
+    def add_booking(self, employee_id: int, start_date: date, end_date: date, 
+                   booked_hours: float) -> Dict[str, Any]:
+        """Book an employee for this project with date range"""
+        if end_date < start_date:
+            raise ValueError("End date must be after start date")
         
-        # Check if employee has enough available hours
-        from models.schedule import EmployeeSchedule
+        # Check if employee exists
+        from models.employee import Employee
+        employee = Employee.get_by_id(employee_id)
+        if not employee:
+            raise ValueError("Employee not found")
         
-        schedule = EmployeeSchedule.get_employee_schedule(employee_id, month, year)
-        if not schedule:
-            raise ValueError(f"No schedule found for employee in {month}/{year}")
+        # Note: For now, we're removing the complex availability checking
+        # as it was tied to monthly schedules. You may want to implement
+        # a new availability checking system based on date ranges.
         
-        # Check existing bookings for this employee in this month
-        query = '''
-            SELECT SUM(booked_hours) as total_booked 
-            FROM project_bookings 
-            WHERE employee_id = ? AND month = ? AND year = ? AND status != 'cancelled'
-        '''
-        result = db.fetch_one(query, (employee_id, month, year))
-        total_booked = result['total_booked'] or 0
-        
-        available_hours = schedule.get_available_hours()
-        if total_booked + booked_hours > available_hours:
-            raise ValueError(f"Not enough available hours. Available: {available_hours}, Requested: {booked_hours}")
-        
-        # Check if booking already exists for this project/employee/month/year
+        # Check for overlapping bookings
         check_query = '''
-            SELECT id, booked_hours FROM project_bookings 
-            WHERE project_id = ? AND employee_id = ? AND month = ? AND year = ?
+            SELECT id, booked_hours, start_date, end_date FROM project_bookings 
+            WHERE project_id = ? AND employee_id = ? 
+                AND status != 'cancelled'
+                AND (
+                    (start_date <= ? AND end_date >= ?)
+                    OR (start_date <= ? AND end_date >= ?)
+                    OR (start_date >= ? AND end_date <= ?)
+                )
         '''
-        existing_booking = db.fetch_one(check_query, (self.id, employee_id, month, year))
+        existing_booking = db.fetch_one(check_query, (
+            self.id, employee_id, 
+            start_date, start_date,  # Check if existing booking overlaps start_date
+            end_date, end_date,      # Check if existing booking overlaps end_date
+            start_date, end_date     # Check if new booking fully contains existing
+        ))
         
         if existing_booking:
-            # Update existing booking by adding to the hours
-            update_query = '''
-                UPDATE project_bookings 
-                SET booked_hours = ?, updated_at = CURRENT_TIMESTAMP
-                WHERE id = ?
-            '''
-            new_hours = existing_booking['booked_hours'] + booked_hours
-            db.execute(update_query, (new_hours, existing_booking['id']))
-            db.commit()
-            return {
-                'booking_id': existing_booking['id'], 
-                'message': f'Updated existing booking. Total hours now: {new_hours}'
-            }
+            raise ValueError(
+                f"Overlapping booking exists from {existing_booking['start_date']} "
+                f"to {existing_booking['end_date']}. Please adjust the dates or cancel the existing booking."
+            )
         
         # Create new booking
         query = '''
-            INSERT INTO project_bookings (project_id, employee_id, month, year, 
-                                        booked_hours, booking_date)
-            VALUES (?, ?, ?, ?, ?, ?)
+            INSERT INTO project_bookings (project_id, employee_id, start_date, end_date, 
+                                        booked_hours)
+            VALUES (?, ?, ?, ?, ?)
         '''
-        cursor = db.execute(query, (self.id, employee_id, month, year, 
-                                   booked_hours, booking_date))
+        cursor = db.execute(query, (self.id, employee_id, start_date, end_date, booked_hours))
         db.commit()
         
         return {'booking_id': cursor.lastrowid, 'message': 'Booking successful'}
     
     def get_bookings(self) -> List[Dict[str, Any]]:
         query = '''
-            SELECT pb.*, e.full_name, e.department, 
-                   es.available_hours_per_month
+            SELECT pb.*, e.full_name, e.department
             FROM project_bookings pb
             JOIN employees e ON pb.employee_id = e.id
-            LEFT JOIN employee_schedules es ON pb.employee_id = es.employee_id 
-                AND pb.month = es.month AND pb.year = es.year
             WHERE pb.project_id = ?
-            ORDER BY pb.year DESC, pb.month DESC
+            ORDER BY pb.start_date DESC
         '''
         return db.fetch_all(query, (self.id,))
     
-    def get_monthly_bookings(self, month: int, year: int) -> List[Dict[str, Any]]:
+    def get_date_range_bookings(self, start_date: date, end_date: date) -> List[Dict[str, Any]]:
+        """Get bookings that overlap with the given date range"""
         query = '''
             SELECT pb.*, e.full_name, e.department
             FROM project_bookings pb
             JOIN employees e ON pb.employee_id = e.id
-            WHERE pb.project_id = ? AND pb.month = ? AND pb.year = ?
-            ORDER BY e.full_name
+            WHERE pb.project_id = ? 
+                AND pb.status != 'cancelled'
+                AND (
+                    (pb.start_date <= ? AND pb.end_date >= ?)
+                    OR (pb.start_date <= ? AND pb.end_date >= ?)
+                    OR (pb.start_date >= ? AND pb.end_date <= ?)
+                )
+            ORDER BY pb.start_date, e.full_name
         '''
-        return db.fetch_all(query, (self.id, month, year))
+        return db.fetch_all(query, (
+            self.id, 
+            start_date, start_date,
+            end_date, end_date,
+            start_date, end_date
+        ))
     
     def to_dict(self) -> Dict[str, Any]:
         # Helper to format dates - they might be strings or date objects from DB

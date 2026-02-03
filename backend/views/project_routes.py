@@ -29,15 +29,14 @@ class ProjectUpdate(BaseModel):
 
 class BookingRequest(BaseModel):
     employee_id: int
-    month: int
-    year: int
+    start_date: date
+    end_date: date
     booked_hours: float
-    booking_date: Optional[date] = None
     
-    @validator('month')
-    def validate_month(cls, v):
-        if v < 1 or v > 12:
-            raise ValueError('Month must be between 1 and 12')
+    @validator('end_date')
+    def validate_dates(cls, v, values):
+        if 'start_date' in values and v < values['start_date']:
+            raise ValueError('End date must be after or equal to start date')
         return v
     
     @validator('booked_hours')
@@ -119,12 +118,12 @@ async def get_project_bookings(project_id: int):
 
 @router.get("/available/employees", response_model=List[Dict[str, Any]])
 async def get_available_employees(
-    month: int = Query(..., description="Month (1-12)"),
-    year: int = Query(..., description="Year"),
+    start_date: date = Query(..., description="Start date for availability check"),
+    end_date: date = Query(..., description="End date for availability check"),
     department: Optional[str] = Query(None, description="Filter by department")
 ):
-    """Get employees with available hours for booking"""
-    return ProjectController.get_available_employees(month, year, department)
+    """Get employees with available hours for booking in a date range"""
+    return ProjectController.get_available_employees(start_date, end_date, department)
 
 @router.post("/{project_id}/attachments")
 async def upload_attachment(

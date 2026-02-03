@@ -91,20 +91,19 @@ class Database:
         
         # Project bookings (horizontal allocation)
         cursor.execute('''
-            CREATE TABLE IF NOT EXISTS project_bookings (
+            CREATE TABLE project_bookings (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 project_id INTEGER NOT NULL,
                 employee_id INTEGER NOT NULL,
-                month INTEGER NOT NULL CHECK(month BETWEEN 1 AND 12),
-                year INTEGER NOT NULL,
+                start_date DATE NOT NULL,
+                end_date DATE NOT NULL,
                 booked_hours REAL NOT NULL,
-                booking_date DATE NOT NULL,
                 status TEXT DEFAULT 'booked' CHECK(status IN ('booked', 'completed', 'cancelled')),
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                UNIQUE(project_id, employee_id, month, year),
                 FOREIGN KEY (project_id) REFERENCES projects (id),
-                FOREIGN KEY (employee_id) REFERENCES employees (id)
+                FOREIGN KEY (employee_id) REFERENCES employees (id),
+                CHECK(end_date >= start_date)
             )
         ''')
         

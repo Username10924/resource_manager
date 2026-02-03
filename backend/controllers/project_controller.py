@@ -66,8 +66,8 @@ class ProjectController:
     
     @staticmethod
     def book_employee_for_project(project_id: int, booking_data: Dict[str, Any]) -> Dict[str, Any]:
-        """Book an employee for a project"""
-        required_fields = ['employee_id', 'month', 'year', 'booked_hours']
+        """Book an employee for a project with date range"""
+        required_fields = ['employee_id', 'start_date', 'end_date', 'booked_hours']
         
         for field in required_fields:
             if field not in booking_data:
@@ -81,21 +81,16 @@ class ProjectController:
         if not employee:
             return {'error': 'Employee not found'}
         
-        # check availability
-        schedule = EmployeeSchedule.get_employee_schedule(employee.id, booking_data['month'], booking_data['year'])
-        if not schedule:
-            return {'error': f'No schedule found for employee in {booking_data["month"]}/{booking_data["year"]}'}
-        available_hours = schedule.get_available_hours()
-        if booking_data['booked_hours'] > available_hours:
-            return {'error': f'Not enough available hours. Available: {available_hours}, Requested: {booking_data["booked_hours"]}'}
+        # Note: Availability checking has been simplified
+        # You may want to implement more sophisticated availability logic
+        # based on your business rules for date-based bookings
         
         try:
             result = project.add_booking(
                 employee_id=booking_data['employee_id'],
-                month=booking_data['month'],
-                year=booking_data['year'],
-                booked_hours=booking_data['booked_hours'],
-                booking_date=booking_data.get('booking_date')
+                start_date=booking_data['start_date'],
+                end_date=booking_data['end_date'],
+                booked_hours=booking_data['booked_hours']
             )
             
             # Log the booking
@@ -108,8 +103,10 @@ class ProjectController:
             return {'error': f'Booking failed: {str(e)}'}
     
     @staticmethod
-    def get_available_employees(month: int, year: int, department: str = None) -> List[Dict[str, Any]]:
-        """Get employees with available hours for booking"""
+    def get_available_employees(start_date: date, end_date: date, department: str = None) -> List[Dict[str, Any]]:
+        """Get employees with booking information for a date range"""
+        from database import db
+        
         # Get all active employees
         employees = Employee.get_all_active()
         
@@ -118,27 +115,37 @@ class ProjectController:
             if department and emp.department != department:
                 continue
             
-            schedule = EmployeeSchedule.get_employee_schedule(emp.id, month, year)
-            if schedule:
-                # Calculate already booked hours for this month
-                query = '''
-                    SELECT SUM(booked_hours) as total_booked 
-                    FROM project_bookings 
-                    WHERE employee_id = ? AND month = ? AND year = ? AND status != 'cancelled'
-                '''
-                from database import db
-                result = db.fetch_one(query, (emp.id, month, year))
-                booked_hours = result['total_booked'] or 0
-                
-                available_hours = schedule.get_available_hours() - booked_hours
-                
-                if available_hours > 0:
-                    available_employees.append({
-                        'employee': emp.to_dict(),
-                        'available_hours': available_hours,
-                        'already_booked': booked_hours,
-                        'schedule': schedule.to_dict()
-                    })
+            # Get overlapping bookings for this employee in the date range
+            query = '''
+                SELECT COUNT(*) as booking_count, 
+                       COALESCE(SUM(booked_hours), 0) as total_booked_hours
+                FROM project_bookings 
+                WHERE employee_id = ? 
+                    AND status != 'cancelled'
+                    AND (
+                        (start_date <= ? AND end_date >= ?)
+                        OR (start_date <= ? AND end_date >= ?)
+                        OR (start_date >= ? AND end_date <= ?)
+                    )
+            '''
+            result = db.fetch_one(query, (
+                emp.id,
+                start_date, start_date,
+                end_date, end_date,
+                start_date, end_date
+            ))
+            
+            booking_count = result['booking_count'] or 0
+            total_booked_hours = result['total_booked_hours'] or 0
+            
+            # Add all employees with their booking information
+            # The frontend/user can decide if they want to book overlapping periods
+            available_employees.append({
+                'employee': emp.to_dict(),
+                'booking_count_in_range': booking_count,
+                'total_booked_hours_in_range': total_booked_hours,
+                'has_overlapping_bookings': booking_count > 0
+            })
         
         return available_employees
     

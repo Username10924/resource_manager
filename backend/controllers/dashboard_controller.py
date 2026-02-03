@@ -58,12 +58,18 @@ class DashboardController:
             # Get employee schedule
             query = '''
                 SELECT es.*, 
-                       COALESCE(SUM(pb.booked_hours), 0) + (es.reserved_hours_per_day * 20) as booked_hours
+                       COALESCE(
+                           (SELECT SUM(pb.booked_hours) 
+                            FROM project_bookings pb
+                            WHERE pb.employee_id = es.employee_id
+                              AND pb.status != 'cancelled'
+                              AND strftime('%Y', pb.start_date) = CAST(es.year AS TEXT)
+                              AND CAST(strftime('%m', pb.start_date) AS INTEGER) <= es.month
+                              AND CAST(strftime('%m', pb.end_date) AS INTEGER) >= es.month
+                           ), 0
+                       ) + (es.reserved_hours_per_day * 20) as booked_hours
                 FROM employee_schedules es
-                LEFT JOIN project_bookings pb ON es.employee_id = pb.employee_id 
-                    AND es.month = pb.month AND es.year = pb.year AND pb.status != 'cancelled'
                 WHERE es.employee_id = ? AND es.year = ?
-                GROUP BY es.month
                 ORDER BY es.month
             '''
             schedule_data = db.fetch_all(query, (emp.id, current_year))
@@ -200,39 +206,4 @@ class DashboardController:
     
     @staticmethod
     def get_booking_overview(year: Optional[int] = None) -> Dict[str, Any]:
-        """Get booking overview for all projects"""
-        if year is None:
-            year = datetime.now().year
-        
-        query = '''
-            SELECT 
-                p.name as project_name,
-                p.status as project_status,
-                pb.month,
-                SUM(pb.booked_hours) as monthly_hours,
-                COUNT(DISTINCT pb.employee_id) as employees_count
-            FROM project_bookings pb
-            JOIN projects p ON pb.project_id = p.id
-            WHERE pb.year = ? AND pb.status != 'cancelled'
-            GROUP BY p.id, pb.month
-            ORDER BY p.name, pb.month
-        '''
-        
-        results = db.fetch_all(query, (year,))
-        
-        # Organize by project
-        overview = {}
-        for row in results:
-            project = row['project_name']
-            if project not in overview:
-                overview[project] = {
-                    'status': row['project_status'],
-                    'monthly_bookings': {}
-                }
-            
-            overview[project]['monthly_bookings'][row['month']] = {
-                'hours': row['monthly_hours'],
-                'employees': row['employees_count']
-            }
-        
-        return overview
+        """Get booking overview for all projects\"\"\"\n        if year is None:\n            year = datetime.now().year\n        \n        query = '''\n            SELECT \n                p.name as project_name,\n                p.status as project_status,\n                CAST(strftime('%m', pb.start_date) AS INTEGER) as month,\n                SUM(pb.booked_hours) as monthly_hours,\n                COUNT(DISTINCT pb.employee_id) as employees_count\n            FROM project_bookings pb\n            JOIN projects p ON pb.project_id = p.id\n            WHERE strftime('%Y', pb.start_date) = CAST(? AS TEXT)\n                AND pb.status != 'cancelled'\n            GROUP BY p.id, CAST(strftime('%m', pb.start_date) AS INTEGER)\n            ORDER BY p.name, month\n        '''\n        \n        results = db.fetch_all(query, (year,))\n        \n        # Organize by project\n        overview = {}\n        for row in results:\n            project = row['project_name']\n            if project not in overview:\n                overview[project] = {\n                    'status': row['project_status'],\n                    'monthly_bookings': {}\n                }\n            \n            overview[project]['monthly_bookings'][row['month']] = {\n                'hours': row['monthly_hours'],\n                'employees': row['employees_count']\n            }\n        \n        return overview

@@ -148,12 +148,11 @@ export type Booking = {
   project_id: number;
   employee_id: number;
   booked_hours: number;
-  month: number;
-  year: number;
-  booking_date?: string;
+  start_date: string;
+  end_date: string;
+  status?: string;
   full_name?: string;
   department?: string;
-  available_hours_per_month?: number;
   created_at?: string;
   updated_at?: string;
 };

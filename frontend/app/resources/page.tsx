@@ -433,9 +433,13 @@ function AddEmployeeModal({
   const [isDepartmentOpen, setIsDepartmentOpen] = useState(false);
 
   const departments = [
-    'Digital Solutions Delivery',
-    'Digital Solutions Development and Integrations',
-    'Digital Solutions Operations',
+    'Project Manager',
+    'Business Analyst',
+    'Solution Architect',
+    'Development',
+    'Integration',
+    'Operations',
+    'Analytics',
   ];
 
   const handleSubmit = async (e: React.FormEvent) => {

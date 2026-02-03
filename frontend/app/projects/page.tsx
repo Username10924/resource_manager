@@ -737,28 +737,28 @@ function BookingModal({
 }) {
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
-  const [employeeSchedule, setEmployeeSchedule] = useState<any[]>([]);
-  const [employeeAvailability, setEmployeeAvailability] = useState<Map<string, any>>(new Map());
   const [bookingData, setBookingData] = useState({
     hours: 0,
-    month: '',
+    startDate: '',
+    endDate: '',
   });
   const [loading, setLoading] = useState(true);
-  const [isMonthOpen, setIsMonthOpen] = useState(false);
-
-  const months = getMonthsList();
 
   useEffect(() => {
     if (isOpen) {
       loadEmployees();
+      // Set default dates to today and one month from today
+      const today = new Date();
+      const oneMonthLater = new Date(today);
+      oneMonthLater.setMonth(oneMonthLater.getMonth() + 1);
+      
+      setBookingData({
+        hours: 0,
+        startDate: today.toISOString().split('T')[0],
+        endDate: oneMonthLater.toISOString().split('T')[0],
+      });
     }
   }, [isOpen]);
-
-  useEffect(() => {
-    if (selectedEmployee) {
-      loadEmployeeSchedule(selectedEmployee.id);
-    }
-  }, [selectedEmployee]);
 
   const loadEmployees = async () => {
     try {
@@ -771,91 +771,64 @@ function BookingModal({
     }
   };
 
-  const loadEmployeeSchedule = async (employeeId: number) => {
-    try {
-      const data = await employeeAPI.getSchedule(employeeId);
-      setEmployeeSchedule(data.schedule || []);
-      
-      // Load availability for each month in the schedule
-      const availabilityMap = new Map();
-      const availabilityPromises = (data.schedule || []).map(async (schedule: any) => {
-        try {
-          const availability = await employeeAPI.getAvailability(
-            employeeId, 
-            schedule.month, 
-            schedule.year
-          );
-          const key = `${schedule.year}-${String(schedule.month).padStart(2, '0')}`;
-          availabilityMap.set(key, availability.availability);
-        } catch (error) {
-          console.error(`Error loading availability for ${schedule.month}/${schedule.year}:`, error);
-        }
-      });
-      
-      await Promise.all(availabilityPromises);
-      setEmployeeAvailability(availabilityMap);
-    } catch (error) {
-      console.error('Error loading schedule:', error);
-      setEmployeeSchedule([]);
-      setEmployeeAvailability(new Map());
+  const calculateWorkingDays = (startDate: string, endDate: string) => {
+    if (!startDate || !endDate) return 0;
+    
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    
+    if (end < start) return 0;
+    
+    let workingDays = 0;
+    const current = new Date(start);
+    
+    while (current <= end) {
+      const dayOfWeek = current.getDay();
+      // Count weekdays (Monday = 1 to Friday = 5)
+      if (dayOfWeek !== 0 && dayOfWeek !== 6) {
+        workingDays++;
+      }
+      current.setDate(current.getDate() + 1);
     }
+    
+    return workingDays;
   };
 
+  const workingDays = calculateWorkingDays(bookingData.startDate, bookingData.endDate);
+  const maxHours = workingDays * 6; // 6 hours per working day
+
   const handleBooking = async () => {
-    if (!selectedEmployee || !bookingData.month || bookingData.hours <= 0) {
-      alert('Please select an employee, month, and enter valid hours');
+    if (!selectedEmployee || !bookingData.startDate || !bookingData.endDate || bookingData.hours <= 0) {
+      alert('Please select an employee, date range, and enter valid hours');
       return;
     }
 
-    // Check if schedule exists for this month
-    const availableHours = getAvailableHoursForMonth(bookingData.month);
-    if (availableHours === 0) {
-      alert(`${selectedEmployee.full_name} has no schedule set for ${formatMonth(bookingData.month)}. Please set up their schedule first in the Resources page.`);
+    if (new Date(bookingData.endDate) < new Date(bookingData.startDate)) {
+      alert('End date must be after or equal to start date');
       return;
     }
 
-    if (bookingData.hours > availableHours) {
-      alert(`Cannot book ${bookingData.hours} hours. Only ${availableHours} hours available for ${formatMonth(bookingData.month)}.`);
+    if (bookingData.hours > maxHours) {
+      alert(`Cannot book ${bookingData.hours} hours. Maximum ${maxHours} hours for ${workingDays} working days (6hrs/day).`);
       return;
     }
 
     try {
-      // Parse month string (YYYY-MM) into separate year and month integers
-      const [yearStr, monthStr] = bookingData.month.split('-');
-      const year = parseInt(yearStr);
-      const month = parseInt(monthStr);
-
       await projectAPI.createBooking(project.id, {
         employee_id: selectedEmployee.id,
-        month: month,
-        year: year,
+        start_date: bookingData.startDate,
+        end_date: bookingData.endDate,
         booked_hours: bookingData.hours,
       });
       onBook();
       onClose();
       setSelectedEmployee(null);
-      setBookingData({ hours: 0, month: '' });
+      setBookingData({ hours: 0, startDate: '', endDate: '' });
     } catch (error: any) {
       console.error('Error creating booking:', error);
-      // Display the specific error message from the backend
-      const errorMessage = error?.detail || error?.message || 'Failed to create booking. Please try again.';
+      const errorMessage = error?.message || 'Failed to create booking. Please try again.';
       alert(errorMessage);
     }
-  };
-
-  const getAvailableHoursForMonth = (month: string) => {
-    // Use availability data which includes booked hours subtraction
-    const availability = employeeAvailability.get(month);
-    if (availability) {
-      return availability.currently_available || 0;
-    }
-    
-    // Fallback to schedule data if availability not loaded
-    const [yearStr, monthStr] = month.split('-');
-    const year = parseInt(yearStr);
-    const monthNum = parseInt(monthStr);
-    const schedule = employeeSchedule.find((s) => s.month === monthNum && s.year === year);
-    return schedule ? schedule.available_hours_per_month : 0;
   };
 
   return (
@@ -918,67 +891,45 @@ function BookingModal({
                     Selected: {selectedEmployee.full_name}
                   </div>
                   <div className="mt-1 text-xs text-gray-600">
-                    Available Days/Year: {selectedEmployee.available_days_per_year}
+                    {selectedEmployee.position} • {selectedEmployee.department}
                   </div>
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Select Month
+                    Start Date
                   </label>
-                  <div className="relative">
-                    <button
-                      type="button"
-                      onClick={() => setIsMonthOpen(!isMonthOpen)}
-                      className="w-full px-3 py-2 text-left text-sm bg-white border border-gray-300 rounded-lg shadow-sm hover:border-blue-400 hover:shadow-md focus:outline-none focus:border-blue-500 transition-all duration-200 flex items-center justify-between group"
-                    >
-                      <span className={bookingData.month ? 'text-gray-900' : 'text-gray-500'}>
-                        {bookingData.month ? `${formatMonth(bookingData.month)} - ${getAvailableHoursForMonth(bookingData.month)} hrs available` : 'Choose a month...'}
-                      </span>
-                      <svg
-                        className={`w-5 h-5 text-gray-400 transition-transform duration-200 flex-shrink-0 ${isMonthOpen ? 'rotate-180' : ''}`}
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                      </svg>
-                    </button>
-                    
-                    {isMonthOpen && (
-                      <div className="absolute z-10 w-full mt-2 bg-white border border-gray-200 rounded-lg shadow-xl max-h-60 overflow-auto">
-                        {months.map((month) => {
-                          const availableHours = getAvailableHoursForMonth(month);
-                          const hasNoSchedule = availableHours === 0;
-                          return (
-                            <button
-                              key={month}
-                              type="button"
-                              onClick={() => {
-                                setBookingData({ ...bookingData, month: month });
-                                setIsMonthOpen(false);
-                              }}
-                              className={`w-full px-4 py-3 text-left text-sm transition-colors duration-150 first:rounded-t-lg last:rounded-b-lg ${
-                                bookingData.month === month
-                                  ? 'bg-blue-50 text-blue-700 font-medium'
-                                  : hasNoSchedule
-                                  ? 'text-gray-400 bg-gray-50 cursor-not-allowed'
-                                  : 'text-gray-700 hover:bg-blue-50'
-                              }`}
-                            >
-                              <div className="flex items-center justify-between">
-                                <span>{formatMonth(month)}</span>
-                                <span className={hasNoSchedule ? 'text-red-500 text-xs' : 'text-gray-600 text-xs'}>
-                                  {availableHours} hrs {hasNoSchedule ? '(No schedule)' : ''}
-                                </span>
-                              </div>
-                            </button>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </div>
+                  <input
+                    type="date"
+                    value={bookingData.startDate}
+                    onChange={(e) => setBookingData({ ...bookingData, startDate: e.target.value })}
+                    className="w-full px-3 py-2 text-sm bg-white border border-gray-300 rounded-lg shadow-sm hover:border-blue-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200"
+                  />
                 </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    End Date
+                  </label>
+                  <input
+                    type="date"
+                    value={bookingData.endDate}
+                    onChange={(e) => setBookingData({ ...bookingData, endDate: e.target.value })}
+                    min={bookingData.startDate}
+                    className="w-full px-3 py-2 text-sm bg-white border border-gray-300 rounded-lg shadow-sm hover:border-blue-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200"
+                  />
+                </div>
+
+                {workingDays > 0 && (
+                  <div className="rounded-lg border border-blue-200 bg-blue-50 p-3">
+                    <div className="text-sm text-blue-900">
+                      📅 {workingDays} working days ({new Date(bookingData.startDate).toLocaleDateString()} - {new Date(bookingData.endDate).toLocaleDateString()})
+                    </div>
+                    <div className="text-xs text-blue-700 mt-1">
+                      Maximum: {maxHours} hours (6 hrs/day)
+                    </div>
+                  </div>
+                )}
 
                 <Input
                   type="number"
@@ -986,16 +937,16 @@ function BookingModal({
                   value={bookingData.hours}
                   onChange={(e) => setBookingData({ ...bookingData, hours: parseInt(e.target.value) || 0 })}
                   min="0"
-                  max={bookingData.month ? getAvailableHoursForMonth(bookingData.month) : 999}
+                  max={maxHours}
                 />
 
-                {bookingData.month && (
-                  <div className="rounded-lg border border-blue-200 bg-blue-50 p-3">
-                    <div className="text-sm text-blue-900">
-                      Available: {getAvailableHoursForMonth(bookingData.month)} hrs
+                {bookingData.hours > 0 && workingDays > 0 && (
+                  <div className="rounded-lg border border-green-200 bg-green-50 p-3">
+                    <div className="text-sm text-green-900">
+                      Average: {(bookingData.hours / workingDays).toFixed(1)} hrs/day
                     </div>
-                    <div className="text-sm text-blue-900">
-                      After booking: {getAvailableHoursForMonth(bookingData.month) - bookingData.hours} hrs
+                    <div className="text-xs text-green-700 mt-1">
+                      Remaining capacity: {maxHours - bookingData.hours} hours
                     </div>
                   </div>
                 )}
@@ -1142,7 +1093,7 @@ function ProjectDetailsModal({
                           {emp.bookings.map((booking: any, idx: number) => (
                             <div key={idx} className="flex items-center justify-between text-sm bg-gray-50 rounded px-3 py-2">
                               <span className="text-gray-600">
-                                {formatMonth(`${booking.year}-${String(booking.month).padStart(2, '0')}`)}
+                                {new Date(booking.start_date).toLocaleDateString()} - {new Date(booking.end_date).toLocaleDateString()}
                               </span>
                               <span className="font-medium text-gray-900">{booking.booked_hours} hours</span>
                             </div>

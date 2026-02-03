@@ -270,7 +270,7 @@ export default function Home() {
                       </div>
                     </div>
                     <div className="flex-1">
-                      <div className="font-semibold text-gray-900">Solution Architect</div>
+                      <div className="font-semibold text-gray-900">Project Manager</div>
                       <div className="mt-1 text-sm text-gray-600">
                         Create projects and book team resources
                       </div>

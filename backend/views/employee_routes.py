@@ -159,14 +159,19 @@ async def get_employee_availability(employee_id: int, month: int, year: int):
     if not schedule:
         raise HTTPException(status_code=404, detail="Schedule not found for this period")
     
-    # Get already booked hours
+    # Get already booked hours - sum bookings that overlap with this month
     from database import db
     query = '''
         SELECT SUM(booked_hours) as booked_hours
         FROM project_bookings
-        WHERE employee_id = ? AND month = ? AND year = ? AND status != 'cancelled'
+        WHERE employee_id = ? 
+          AND status != 'cancelled'
+          AND strftime('%Y', start_date) <= CAST(? AS TEXT)
+          AND strftime('%Y', end_date) >= CAST(? AS TEXT)
+          AND CAST(strftime('%m', start_date) AS INTEGER) <= ?
+          AND CAST(strftime('%m', end_date) AS INTEGER) >= ?
     '''
-    result = db.fetch_one(query, (employee_id, month, year))
+    result = db.fetch_one(query, (employee_id, year, year, month, month))
     booked_hours = result['booked_hours'] or 0
     
     # Include reserved hours as part of the booked hours for utilization
@@ -196,17 +201,21 @@ async def get_employee_projects(employee_id: int, month: int, year: int):
     if not employee:
         raise HTTPException(status_code=404, detail="Employee not found")
     
-    # Get project bookings for the employee in this month
+    # Get project bookings for the employee that overlap with this month
     from database import db
     query = '''
         SELECT pb.*, p.name as project_name, p.project_code, p.status as project_status,
                p.attachments
         FROM project_bookings pb
         JOIN projects p ON pb.project_id = p.id
-        WHERE pb.employee_id = ? AND pb.month = ? AND pb.year = ?
-        ORDER BY pb.booked_hours DESC
+        WHERE pb.employee_id = ? 
+          AND strftime('%Y', pb.start_date) <= CAST(? AS TEXT)
+          AND strftime('%Y', pb.end_date) >= CAST(? AS TEXT)
+          AND CAST(strftime('%m', pb.start_date) AS INTEGER) <= ?
+          AND CAST(strftime('%m', pb.end_date) AS INTEGER) >= ?
+        ORDER BY pb.start_date DESC
     '''
-    bookings = db.fetch_all(query, (employee_id, month, year))
+    bookings = db.fetch_all(query, (employee_id, year, year, month, month))
     
     # Parse attachments JSON for each booking
     import json
