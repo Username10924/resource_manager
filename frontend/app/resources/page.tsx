@@ -66,8 +66,7 @@ export default function ResourcesPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-cyan-50/30">
-      <div className="mx-auto max-w-7xl px-6 py-8 lg:px-8">
+    <>
         <div className="mb-8">
           <div className="flex items-center justify-between">
             <div>
@@ -182,8 +181,7 @@ export default function ResourcesPage() {
           onClose={() => setIsAddEmployeeModalOpen(false)}
           onAdd={loadData}
         />
-      </div>
-    </div>
+    </>
   );
 }
 

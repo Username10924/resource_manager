@@ -73,7 +73,7 @@ export default function DashboardPage() {
     
     try {
       if (viewMode === 'resources') {
-        const response = await fetch('http://localhost:8000/api/dashboard/resources', {
+        const response = await fetch('https://resource-manager-kg4d.onrender.com/api/dashboard/resources', {
           headers: {
             'X-Username': user?.username || '',
           },
@@ -86,7 +86,7 @@ export default function DashboardPage() {
           setError('Failed to load resources dashboard');
         }
       } else {
-        const response = await fetch('http://localhost:8000/api/dashboard/projects', {
+        const response = await fetch('https://resource-manager-kg4d.onrender.com/api/dashboard/projects', {
           headers: {
             'X-Username': user?.username || '',
           },
@@ -176,9 +176,14 @@ export default function DashboardPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-orange-50/30">
-      <div className="mx-auto max-w-7xl px-6 py-8 lg:px-8">
-        <div className="space-y-8">
+    <div className="space-y-8">
+          {/* Page Header */}
+          <div className="mb-8">
+            <h1 className="text-4xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">Dashboard</h1>
+            <p className="mt-2 text-sm text-gray-600">
+              View comprehensive analytics and insights
+            </p>
+          </div>
 
           {/* View Toggle */}
           <div className="flex flex-wrap gap-3">
@@ -564,8 +569,6 @@ export default function DashboardPage() {
           bookings={projectBookings}
         />
       )}
-        </div>
-      </div>
     </div>
   );
 }
@@ -662,7 +665,7 @@ function ProjectDetailsModal({
                     </div>
                   </div>
                   <a
-                    href={`http://localhost:8000/${attachment.path}`}
+                    href={`https://resource-manager-kg4d.onrender.com/${attachment.path}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-blue-600 hover:text-blue-800 text-sm font-medium"

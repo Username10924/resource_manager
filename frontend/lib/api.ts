@@ -1,4 +1,4 @@
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://resource-manager-kg4d.onrender.com/api';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://resource-manager-kg4d.onrender.com/api';
 
 // Helper function for API calls
 async function fetchAPI(endpoint: string, options: RequestInit = {}) {

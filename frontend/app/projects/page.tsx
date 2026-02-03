@@ -103,8 +103,7 @@ export default function ProjectsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-purple-50/30">
-      <div className="mx-auto max-w-7xl px-6 py-8 lg:px-8">
+    <>
         <div className="mb-8">
           <div className="flex items-center justify-between">
             <div>
@@ -298,8 +297,7 @@ export default function ProjectsPage() {
             bookings={projectBookings}
           />
         )}
-      </div>
-    </div>
+    </>
   );
 }
 
@@ -387,7 +385,8 @@ function CreateProjectModal({
       setAttachments([]);
     } catch (error) {
       console.error('[CREATE] Error creating project:', error);
-      alert('Failed to create project. Please check all required fields.');
+      const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred';
+      alert(`Failed to create project: ${errorMessage}`);
     }
   };
 
@@ -655,7 +654,7 @@ function EditProjectModal({
                     <span className="text-sm text-gray-900">{attachment.filename}</span>
                   </div>
                   <a
-                    href={`http://localhost:8000/${attachment.path}`}
+                    href={`https://resource-manager-kg4d.onrender.com/${attachment.path}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-blue-600 hover:text-blue-800 text-xs font-medium"
@@ -1105,7 +1104,7 @@ function ProjectDetailsModal({
                     </div>
                   </div>
                   <a
-                    href={`http://localhost:8000/${attachment.path}`}
+                    href={`https://resource-manager-kg4d.onrender.com/${attachment.path}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-blue-600 hover:text-blue-800 text-sm font-medium"

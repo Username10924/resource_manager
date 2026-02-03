@@ -5,11 +5,21 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
 import Button from './Button';
+import { 
+  FaChartLine, 
+  FaUsers, 
+  FaProjectDiagram,
+  FaSignOutAlt,
+  FaBars,
+  FaTimes
+} from 'react-icons/fa';
+import { useState } from 'react';
 
 export default function Navigation() {
   const pathname = usePathname();
   const router = useRouter();
   const { user, logout } = useAuth();
+  const [isCollapsed, setIsCollapsed] = useState(false);
 
   const handleLogout = () => {
     logout();
@@ -21,20 +31,20 @@ export default function Navigation() {
     if (!user) return [];
 
     const baseLinks = [
-      { href: '/dashboard', label: 'Dashboard' }
+      { href: '/dashboard', label: 'Dashboard', icon: FaChartLine }
     ];
 
     if (user.role === 'line_manager') {
-      baseLinks.push({ href: '/resources', label: 'Resources' });
+      baseLinks.push({ href: '/resources', label: 'Resources', icon: FaUsers });
     } else if (user.role === 'solution_architect') {
-      baseLinks.push({ href: '/projects', label: 'Projects' });
+      baseLinks.push({ href: '/projects', label: 'Projects', icon: FaProjectDiagram });
     }
 
     // Admins can see everything
     if (user.role === 'admin') {
       baseLinks.push(
-        { href: '/resources', label: 'Resources' },
-        { href: '/projects', label: 'Projects' }
+        { href: '/resources', label: 'Resources', icon: FaUsers },
+        { href: '/projects', label: 'Projects', icon: FaProjectDiagram }
       );
     }
 
@@ -44,12 +54,15 @@ export default function Navigation() {
   const links = getLinks();
 
   return (
-    <nav className="backdrop-blur-sm bg-white/80 border-b border-gray-100">
-      <div className="mx-auto max-w-7xl px-6 lg:px-8">
-        <div className="flex h-20 items-center justify-between">
-          <div className="flex items-center gap-12">
-            {/* Logo */}
-            <Link href="/dashboard" className="flex items-center gap-3 group">
+    <nav className={cn(
+      "fixed left-0 top-0 h-screen bg-white border-r border-gray-200 transition-all duration-300 flex flex-col z-50",
+      isCollapsed ? "w-20" : "w-64"
+    )}>
+      <div className="flex flex-col h-full">
+        {/* Header with Logo and Toggle */}
+        <div className="flex items-center justify-between p-4 border-b border-gray-200">
+          {/* Logo */}
+          <Link href="/dashboard" className="flex items-center gap-3 group">
               <div className="w-10 h-10 transition-transform group-hover:scale-105">
                 <svg width="40" height="40" viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg">
                   <defs>
@@ -150,24 +163,45 @@ export default function Navigation() {
                   <circle cx="300" cy="310" r="2" fill="#7B6CFF" opacity="0.35"/>
                 </svg>
               </div>
+              {!isCollapsed && (
+                <span className="font-bold text-lg bg-gradient-to-r from-orange-600 to-pink-600 bg-clip-text text-transparent">
+                  RMS
+                </span>
+              )}
             </Link>
             
-            {/* Navigation Links */}
-            <div className="hidden md:flex items-center gap-1">
+            {/* Toggle Button */}
+            <button
+              onClick={() => setIsCollapsed(!isCollapsed)}
+              className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
+            >
+              {isCollapsed ? <FaBars className="text-gray-600" /> : <FaTimes className="text-gray-600" />}
+            </button>
+          </div>
+
+          {/* Navigation Links */}
+          <div className="flex-1 overflow-y-auto py-4">
+            <div className="space-y-1 px-3">
               {links.map((link) => {
                 const isActive = pathname === link.href;
+                const Icon = link.icon;
                 return (
                   <Link
                     key={link.href}
                     href={link.href}
                     className={cn(
-                      'px-4 py-2 rounded-lg text-sm font-medium transition-all',
+                      'flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all group',
                       isActive
-                        ? 'bg-gradient-to-r from-orange-500/10 to-pink-500/10 text-orange-600'
+                        ? 'bg-gradient-to-r from-orange-500 to-pink-500 text-white shadow-md'
                         : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
                     )}
+                    title={isCollapsed ? link.label : undefined}
                   >
-                    {link.label}
+                    <Icon className={cn(
+                      "flex-shrink-0 text-lg",
+                      isActive ? "text-white" : "text-gray-500 group-hover:text-gray-700"
+                    )} />
+                    {!isCollapsed && <span>{link.label}</span>}
                   </Link>
                 );
               })}
@@ -176,29 +210,33 @@ export default function Navigation() {
 
           {/* User Info and Logout */}
           {user && (
-            <div className="flex items-center gap-4">
-              <div className="hidden sm:flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-orange-400 to-pink-500 flex items-center justify-center text-white text-sm font-medium">
-                  {user.full_name.split(' ').map(n => n[0]).join('').toUpperCase()}
-                </div>
-                <div className="text-sm">
-                  <div className="font-medium text-gray-900">{user.full_name}</div>
-                  <div className="text-xs text-gray-500 capitalize">
-                    {user.role.replace('_', ' ')}
+            <div className="border-t border-gray-200 p-4 space-y-3">
+              {!isCollapsed && (
+                <div className="flex items-center gap-3 px-2">
+                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-orange-400 to-pink-500 flex items-center justify-center text-white text-sm font-medium flex-shrink-0">
+                    {user.full_name.split(' ').map(n => n[0]).join('').toUpperCase()}
+                  </div>
+                  <div className="text-sm overflow-hidden">
+                    <div className="font-medium text-gray-900 truncate">{user.full_name}</div>
+                    <div className="text-xs text-gray-500 capitalize truncate">
+                      {user.role.replace('_', ' ')}
+                    </div>
                   </div>
                 </div>
-              </div>
-              <Button 
-                variant="ghost" 
-                size="sm" 
+              )}
+              <button
                 onClick={handleLogout}
-                className="text-gray-600 hover:text-gray-900"
+                className={cn(
+                  "flex items-center gap-3 w-full px-4 py-3 rounded-lg text-sm font-medium transition-all text-gray-600 hover:text-red-600 hover:bg-red-50",
+                  isCollapsed && "justify-center"
+                )}
+                title={isCollapsed ? "Sign Out" : undefined}
               >
-                Sign Out
-              </Button>
+                <FaSignOutAlt className="flex-shrink-0 text-lg" />
+                {!isCollapsed && <span>Sign Out</span>}
+              </button>
             </div>
           )}
-        </div>
       </div>
     </nav>
   );
