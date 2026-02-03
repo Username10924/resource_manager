@@ -77,17 +77,26 @@ class DashboardController:
             # Update monthly summary and department totals
             for sched in schedule_data:
                 month = sched['month']
-                available = sched['available_hours_per_month']
+                # available_hours_per_month already accounts for reserved hours
+                # We need to subtract project bookings to get actual available hours
+                base_available = sched['available_hours_per_month']
                 booked = sched['booked_hours'] or 0
                 
-                dashboard_data['monthly_summary'][month]['total_available'] += available
+                # Calculate actual available hours (base available - booked hours)
+                # Note: booked includes both project bookings AND reserved hours
+                # So we need to get just the project bookings
+                reserved_hours = (sched['reserved_hours_per_day'] or 0) * 20
+                project_booked_hours = booked - reserved_hours
+                actual_available = base_available - project_booked_hours
+                
+                dashboard_data['monthly_summary'][month]['total_available'] += actual_available
                 dashboard_data['monthly_summary'][month]['total_booked'] += booked
                 dashboard_data['monthly_summary'][month]['total_capacity'] += 120  # 6 hrs/day * 20 days
                 dashboard_data['monthly_summary'][month]['employee_count'] += 1
                 
                 # Add to department's total available hours (only for current month)
                 if month == current_month:
-                    dashboard_data['departments'][dept]['total_available_hours'] += available
+                    dashboard_data['departments'][dept]['total_available_hours'] += actual_available
         
         # Calculate utilization rates based on total capacity
         for month in range(1, 13):
