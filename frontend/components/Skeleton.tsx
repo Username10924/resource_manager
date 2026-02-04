@@ -110,7 +110,7 @@ export function SkeletonChart() {
 
 export function SkeletonDashboard() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-cyan-50/30">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100/40">
       <div className="mx-auto max-w-7xl px-6 py-8 lg:px-8">
         {/* Header */}
         <div className="mb-8">
@@ -136,7 +136,7 @@ export function SkeletonDashboard() {
 
 export function SkeletonProjectsPage() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-purple-50/30">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100/40">
       <div className="mx-auto max-w-7xl px-6 py-8 lg:px-8">
         {/* Header */}
         <div className="mb-8 flex items-center justify-between">
@@ -177,7 +177,7 @@ export function SkeletonProjectsPage() {
 
 export function SkeletonResourcesPage() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-cyan-50/30">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100/40">
       <div className="mx-auto max-w-7xl px-6 py-8 lg:px-8">
         {/* Header */}
         <div className="mb-8 flex items-center justify-between">

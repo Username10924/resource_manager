@@ -310,7 +310,7 @@ export default function DashboardPage() {
                               onClick={() => handleEmployeeClick(emp)}
                               className="flex items-center rounded-xl bg-white p-4 border border-gray-100 shadow-sm transition-all hover:shadow-md cursor-pointer"
                             >
-                              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-[#4F46E5] to-[#6366F1] text-white font-medium text-sm">
+                              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-[#9CA3AF] to-[#D1D5DB] text-white font-medium text-sm">
                                 {emp.full_name.split(' ').map((n: string) => n[0]).join('').toUpperCase()}
                               </div>
                               <div className="ml-3 flex-1 text-left">
@@ -392,7 +392,7 @@ export default function DashboardPage() {
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
                         <div className="flex items-center gap-3">
-                          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-[#5B4AE0] to-[#7B6CFF] text-white shadow-sm">
+                          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-[#9CA3AF] to-[#D1D5DB] text-white shadow-sm">
                             <FaProjectDiagram />
                           </div>
                           <div>
@@ -403,7 +403,7 @@ export default function DashboardPage() {
                         <div className="mt-4 flex flex-wrap gap-2">
                           <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-medium ${
                             project.status === 'active' ? 'bg-emerald-100 text-emerald-700' :
-                            project.status === 'completed' ? 'bg-blue-100 text-blue-700' :
+                            project.status === 'completed' ? 'bg-gray-100 text-gray-700' :
                             project.status === 'planned' ? 'bg-yellow-100 text-yellow-700' :
                             project.status === 'on_hold' ? 'bg-orange-100 text-orange-700' :
                             'bg-red-100 text-red-700'
@@ -427,7 +427,7 @@ export default function DashboardPage() {
                     <div className="mt-4">
                       <div className="h-2 w-full rounded-full bg-gray-100">
                         <div
-                          className="h-2 rounded-full bg-gradient-to-r from-[#5B4AE0] to-[#7B6CFF] transition-all"
+                          className="h-2 rounded-full bg-gradient-to-r from-[#9CA3AF] to-[#D1D5DB] transition-all"
                           style={{ width: `${project.progress}%` }}
                         />
                       </div>
@@ -492,7 +492,7 @@ export default function DashboardPage() {
                         className="flex flex-col rounded-2xl border border-gray-100 bg-white p-5 shadow-sm transition-all hover:shadow-lg cursor-pointer text-left"
                       >
                         <div className="flex items-start space-x-3">
-                          <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#4F46E5] to-[#6366F1] text-base font-semibold text-white shadow-sm">
+                          <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#9CA3AF] to-[#D1D5DB] text-base font-semibold text-white shadow-sm">
                             {emp.full_name.split(' ').map((n: string) => n[0]).join('').toUpperCase()}
                           </div>
                           <div className="flex-1 min-w-0">
@@ -525,7 +525,7 @@ export default function DashboardPage() {
                         </div>
 
                         <div className="mt-4 pt-4 border-t border-gray-100">
-                          <span className="text-xs text-[#4F46E5] font-medium">Click to view detailed stats →</span>
+                          <span className="text-xs text-gray-600 font-medium">Click to view detailed stats →</span>
                         </div>
                       </button>
                     );
@@ -611,7 +611,7 @@ function ProjectDetailsModal({
               <h3 className="text-sm font-semibold text-gray-700 mb-1">Status</h3>
               <span className={`inline-block rounded-full px-3 py-1 text-xs font-medium ${
                 project.status === 'active' ? 'bg-emerald-100 text-emerald-700' :
-                project.status === 'completed' ? 'bg-blue-100 text-blue-700' :
+                project.status === 'completed' ? 'bg-gray-100 text-gray-700' :
                 project.status === 'planned' ? 'bg-yellow-100 text-yellow-700' :
                 project.status === 'on_hold' ? 'bg-orange-100 text-orange-700' :
                 'bg-red-100 text-red-700'
@@ -624,7 +624,7 @@ function ProjectDetailsModal({
               <div className="flex items-center gap-2">
                 <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
                   <div
-                    className="h-full bg-gradient-to-r from-[#4F46E5] to-[#6366F1] transition-all"
+                    className="h-full bg-gradient-to-r from-[#9CA3AF] to-[#D1D5DB] transition-all"
                     style={{ width: `${project.progress}%` }}
                   />
                 </div>
@@ -656,7 +656,7 @@ function ProjectDetailsModal({
                     href={`https://resource-manager-kg4d.onrender.com/${attachment.path}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                    className="text-gray-600 hover:text-gray-800 text-sm font-medium"
                   >
                     Download
                   </a>
@@ -672,12 +672,12 @@ function ProjectDetailsModal({
           {employees.length > 0 ? (
             <div className="space-y-3">
               {employees.map((emp) => (
-                <Card key={emp.employee_id} className="border-l-4 border-l-[#4F46E5]">
+                <Card key={emp.employee_id} className="border-l-4 border-l-gray-400">
                   <CardContent className="py-4">
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
                         <div className="flex items-center gap-2">
-                          <div className="h-10 w-10 rounded-full bg-gradient-to-br from-[#4F46E5] to-[#6366F1] flex items-center justify-center text-white font-semibold">
+                          <div className="h-10 w-10 rounded-full bg-gradient-to-br from-[#9CA3AF] to-[#D1D5DB] flex items-center justify-center text-white font-semibold">
                             {emp.employee_name.split(' ').map((n: string) => n[0]).join('').toUpperCase()}
                           </div>
                           <div>

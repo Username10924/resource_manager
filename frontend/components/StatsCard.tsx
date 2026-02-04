@@ -14,12 +14,12 @@ interface StatsCardProps {
 }
 
 const colorClasses = {
-  blue: 'bg-gradient-to-br from-blue-50 to-cyan-50 text-blue-600',
+  blue: 'bg-gradient-to-br from-gray-50 to-gray-100 text-gray-600',
   green: 'bg-gradient-to-br from-emerald-50 to-teal-50 text-emerald-600',
   purple: 'bg-gradient-to-br from-purple-50 to-indigo-50 text-purple-600',
   orange: 'bg-gradient-to-br from-orange-50 to-pink-50 text-orange-600',
   red: 'bg-gradient-to-br from-red-50 to-pink-50 text-red-600',
-  indigo: 'bg-gradient-to-br from-indigo-50 to-purple-50 text-indigo-600',
+  indigo: 'bg-gradient-to-br from-gray-50 to-gray-100 text-gray-600',
 };
 
 export default function StatsCard({ 

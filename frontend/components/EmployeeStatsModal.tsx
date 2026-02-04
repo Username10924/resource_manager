@@ -90,15 +90,15 @@ export default function EmployeeStatsModal({ isOpen, onClose, employee, size = '
     <Modal isOpen={isOpen} onClose={onClose} title="Employee Statistics" size={size}>
       <div className="space-y-6">
         {/* Employee Header */}
-        <div className="flex items-center space-x-4 rounded-lg bg-gradient-to-r from-blue-50 to-indigo-50 p-4">
-          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-blue-600 text-2xl font-bold text-white">
+        <div className="flex items-center space-x-4 rounded-lg bg-gradient-to-r from-gray-50 to-gray-100 p-4">
+          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gray-600 text-2xl font-bold text-white">
             {employee.full_name.charAt(0)}
           </div>
           <div className="flex-1">
             <h2 className="text-2xl font-bold text-gray-900">{employee.full_name}</h2>
             <div className="mt-1 flex flex-wrap gap-3 text-sm text-gray-600">
               <span className="flex items-center gap-1">
-                <FaBriefcase className="text-blue-600" />
+                <FaBriefcase className="text-gray-600" />
                 {employee.job_title}
               </span>
               <span className="flex items-center gap-1">
@@ -119,7 +119,7 @@ export default function EmployeeStatsModal({ isOpen, onClose, employee, size = '
             <CardContent className="pt-4">
               <div className="text-center">
                 <div className="text-sm font-medium text-gray-600">Total Available</div>
-                <div className="mt-1 text-2xl font-bold text-blue-600">{totalAvailable}h</div>
+                <div className="mt-1 text-2xl font-bold text-gray-600">{totalAvailable}h</div>
               </div>
             </CardContent>
           </Card>
@@ -167,7 +167,7 @@ export default function EmployeeStatsModal({ isOpen, onClose, employee, size = '
                   }}
                 />
                 <Legend />
-                <Bar dataKey="available" fill="#3b82f6" name="Available Hours" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="available" fill="#9ca3af" name="Available Hours" radius={[4, 4, 0, 0]} />
                 <Bar dataKey="booked" fill="#10b981" name="Booked Hours" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
@@ -264,11 +264,11 @@ export default function EmployeeStatsModal({ isOpen, onClose, employee, size = '
 
         {/* Project Details Modal */}
         {selectedMonth && (
-          <Card className="mt-4 border-2 border-blue-200 bg-blue-50">
-            <CardHeader className="bg-gradient-to-r from-blue-100 to-indigo-100">
+          <Card className="mt-4 border-2 border-gray-200 bg-gray-50">
+            <CardHeader className="bg-gradient-to-r from-gray-100 to-gray-200">
               <div className="flex items-center justify-between">
                 <CardTitle className="flex items-center gap-2">
-                  <FaProjectDiagram className="text-blue-600" />
+                  <FaProjectDiagram className="text-gray-600" />
                   Project Details - {selectedMonth.monthName} {selectedMonth.year}
                 </CardTitle>
                 <button
@@ -291,13 +291,13 @@ export default function EmployeeStatsModal({ isOpen, onClose, employee, size = '
                       <div className="flex items-start justify-between mb-3">
                         <div className="flex-1">
                           <div className="flex items-center gap-3 mb-2">
-                            <span className="font-semibold text-blue-600 text-lg">{booking.project_code}</span>
+                            <span className="font-semibold text-gray-700 text-lg">{booking.project_code}</span>
                             <span 
                               className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
                                 booking.project_status === 'active' 
                                   ? 'bg-green-100 text-green-800' 
                                   : booking.project_status === 'completed'
-                                  ? 'bg-blue-100 text-blue-800'
+                                  ? 'bg-gray-100 text-gray-800'
                                   : 'bg-gray-100 text-gray-800'
                               }`}
                             >
@@ -333,7 +333,7 @@ export default function EmployeeStatsModal({ isOpen, onClose, employee, size = '
                                 href={`https://resource-manager-kg4d.onrender.com/${attachment.path}`}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-md text-xs font-medium transition-colors border border-blue-200"
+                                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gray-50 hover:bg-gray-100 text-gray-700 rounded-md text-xs font-medium transition-colors border border-gray-200"
                               >
                                 <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -347,10 +347,10 @@ export default function EmployeeStatsModal({ isOpen, onClose, employee, size = '
                     </div>
                   ))}
                   
-                  <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-4 border-2 border-blue-200">
+                  <div className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-lg p-4 border-2 border-gray-200">
                     <div className="flex items-center justify-between">
                       <span className="text-gray-700 font-semibold text-lg">Total Hours for {selectedMonth?.monthName}</span>
-                      <span className="text-2xl font-bold text-blue-600">
+                      <span className="text-2xl font-bold text-gray-700">
                         {projectBookings.reduce((sum, b) => sum + b.booked_hours, 0)}h
                       </span>
                     </div>

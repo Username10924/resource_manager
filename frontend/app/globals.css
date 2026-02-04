@@ -3,12 +3,12 @@
 :root {
   --background: #f5f6fa;
   --foreground: #0a0a0a;
-  --primary: #4F46E5;
-  --primary-dark: #4338CA;
-  --accent-cyan: #4DDFFF;
-  --accent-purple: #6366F1;
-  --sidebar-gradient-start: #3730A3;
-  --sidebar-gradient-end: #4F46E5;
+  --primary: #9ca3af;
+  --primary-dark: #6b7280;
+  --accent-cyan: #e5e7eb;
+  --accent-purple: #d1d5db;
+  --sidebar-gradient-start: #6b7280;
+  --sidebar-gradient-end: #9ca3af;
 }
 
 body {

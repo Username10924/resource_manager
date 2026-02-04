@@ -28,7 +28,7 @@ export default function ProjectsLayout({
   if (!isAuthenticated || user?.role === 'line_manager') {
     return (
       <div className="flex h-screen items-center justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-gray-300 border-t-blue-600"></div>
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-gray-300 border-t-gray-600"></div>
       </div>
     );
   }

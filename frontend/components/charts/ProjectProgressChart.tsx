@@ -9,7 +9,7 @@ interface ProjectProgressChartProps {
 
 const getProgressColor = (progress: number) => {
   if (progress >= 75) return '#10b981'; // Green
-  if (progress >= 50) return '#3b82f6'; // Blue
+  if (progress >= 50) return '#9ca3af'; // Gray
   if (progress >= 25) return '#f59e0b'; // Orange
   return '#ef4444'; // Red
 };

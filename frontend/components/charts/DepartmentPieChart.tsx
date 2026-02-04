@@ -7,7 +7,7 @@ interface DepartmentPieChartProps {
   }[];
 }
 
-const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#06b6d4', '#6366f1', '#84cc16'];
+const COLORS = ['#9ca3af', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#cbd5e1', '#6b7280', '#84cc16'];
 
 export default function DepartmentPieChart({ data }: DepartmentPieChartProps) {
   return (

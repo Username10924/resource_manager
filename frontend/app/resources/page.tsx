@@ -87,7 +87,7 @@ export default function ResourcesPage() {
             <Card>
               <CardContent className="py-6">
                 <div className="text-xs font-medium text-gray-500 uppercase tracking-wide">Available Hours</div>
-                <div className="mt-3 text-4xl font-bold bg-gradient-to-r from-cyan-600 to-blue-600 bg-clip-text text-transparent">{stats.total_available_hours || 0}</div>
+                <div className="mt-3 text-4xl font-bold bg-gradient-to-r from-gray-600 to-gray-500 bg-clip-text text-transparent">{stats.total_available_hours || 0}</div>
               </CardContent>
             </Card>
           </div>
@@ -366,17 +366,17 @@ function ScheduleModal({
               />
             </div>
 
-            <div className="mt-4 rounded-lg bg-blue-50 p-4 space-y-2">
-              <div className="text-sm text-blue-900">
+            <div className="mt-4 rounded-lg bg-gray-50 p-4 space-y-2">
+              <div className="text-sm text-gray-900">
                 <span className="font-medium">Working Days:</span> <span className="font-bold">{workingDays}</span> days
               </div>
-              <div className="text-sm text-blue-900">
+              <div className="text-sm text-gray-900">
                 <span className="font-medium">Total Reserved Hours:</span> <span className="font-bold">{totalReservedHours.toFixed(1)}</span> hrs
               </div>
-              <div className="text-sm text-blue-900">
+              <div className="text-sm text-gray-900">
                 <span className="font-medium">Available Hours per Day:</span> <span className="font-bold">{availableHoursPerDay.toFixed(1)}</span> hrs
               </div>
-              <div className="text-xs text-blue-700 mt-1">
+              <div className="text-xs text-gray-700 mt-1">
                 (Weekends are excluded from working days calculation)
               </div>
             </div>
@@ -404,7 +404,7 @@ function ScheduleModal({
                   >
                     <div className="flex-1">
                       <div className="flex items-center gap-2">
-                        <svg className="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                         </svg>
                         <div className="text-sm font-medium text-gray-900">
@@ -500,7 +500,7 @@ function AddEmployeeModal({
             <button
               type="button"
               onClick={() => setIsDepartmentOpen(!isDepartmentOpen)}
-              className="w-full px-3 py-2 text-left text-sm bg-white border border-gray-300 rounded-lg shadow-sm hover:border-blue-400 hover:shadow-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 flex items-center justify-between group"
+              className="w-full px-3 py-2 text-left text-sm bg-white border border-gray-300 rounded-lg shadow-sm hover:border-gray-400 hover:shadow-md focus:outline-none focus:ring-1 focus:ring-gray-400 focus:border-gray-400 transition-all duration-200 flex items-center justify-between group"
             >
               <span className={formData.department ? 'text-gray-900' : 'text-gray-500'}>
                 {formData.department || 'Select a department'}
@@ -525,9 +525,9 @@ function AddEmployeeModal({
                       setFormData({ ...formData, department: dept });
                       setIsDepartmentOpen(false);
                     }}
-                    className={`w-full px-4 py-3 text-left text-sm hover:bg-blue-50 transition-colors duration-150 first:rounded-t-lg last:rounded-b-lg ${
+                    className={`w-full px-4 py-3 text-left text-sm hover:bg-gray-50 transition-colors duration-150 first:rounded-t-lg last:rounded-b-lg ${
                       formData.department === dept
-                        ? 'bg-blue-50 text-blue-700 font-medium'
+                        ? 'bg-gray-50 text-gray-700 font-medium'
                         : 'text-gray-700'
                     }`}
                   >

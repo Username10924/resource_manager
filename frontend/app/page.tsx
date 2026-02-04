@@ -130,7 +130,7 @@ export default function Home() {
                   <button
                     type="button"
                     onClick={() => setIsUserDropdownOpen(!isUserDropdownOpen)}
-                    className="w-full px-4 py-2.5 text-left bg-white border border-gray-300 rounded-lg shadow-sm hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 flex items-center justify-between"
+                    className="w-full px-4 py-2.5 text-left bg-white border border-gray-300 rounded-lg shadow-sm hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:border-transparent transition-all duration-200 flex items-center justify-between"
                   >
                     <span className={selectedUserId ? 'text-gray-900' : 'text-gray-500'}>
                       {selectedUserId 
@@ -163,9 +163,9 @@ export default function Home() {
                               setSelectedUserId(user.id);
                               setIsUserDropdownOpen(false);
                             }}
-                            className={`w-full px-4 py-3 text-left text-sm hover:bg-blue-50 transition-colors duration-150 first:rounded-t-lg last:rounded-b-lg ${
+                            className={`w-full px-4 py-3 text-left text-sm hover:bg-gray-50 transition-colors duration-150 first:rounded-t-lg last:rounded-b-lg ${
                               selectedUserId === user.id
-                                ? 'bg-blue-50 text-blue-700 font-medium'
+                                ? 'bg-gray-50 text-gray-700 font-medium'
                                 : 'text-gray-700'
                             }`}
                           >
@@ -282,16 +282,16 @@ export default function Home() {
                     onClick={() => setRole('dashboard_viewer')}
                     className={`flex items-start gap-3 rounded-xl border-2 p-4 text-left transition-all ${
                       role === 'dashboard_viewer'
-                        ? 'border-cyan-500 bg-gradient-to-r from-cyan-50 to-blue-50 shadow-sm'
+                        ? 'border-gray-400 bg-gradient-to-r from-gray-50 to-gray-100 shadow-sm'
                         : 'border-gray-200 hover:border-gray-300 bg-white'
                     }`}
                   >
                     <div className="flex-shrink-0">
                       <div className={`mt-0.5 h-5 w-5 rounded-full border-2 flex items-center justify-center ${
-                        role === 'dashboard_viewer' ? 'border-cyan-500' : 'border-gray-300'
+                        role === 'dashboard_viewer' ? 'border-gray-400' : 'border-gray-300'
                       }`}>
                         {role === 'dashboard_viewer' && (
-                          <div className="h-3 w-3 rounded-full bg-gradient-to-r from-cyan-500 to-blue-500"></div>
+                          <div className="h-3 w-3 rounded-full bg-gradient-to-r from-gray-400 to-gray-500"></div>
                         )}
                       </div>
                     </div>

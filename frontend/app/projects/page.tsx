@@ -145,7 +145,7 @@ export default function ProjectsPage() {
       case 'active':
         return 'bg-gradient-to-r from-emerald-100 to-teal-100 text-emerald-700 border border-emerald-200';
       case 'planning':
-        return 'bg-gradient-to-r from-blue-100 to-cyan-100 text-blue-700 border border-blue-200';
+        return 'bg-gradient-to-r from-gray-100 to-gray-200 text-gray-700 border border-gray-200';
       case 'completed':
         return 'bg-gradient-to-r from-gray-100 to-slate-100 text-gray-700 border border-gray-200';
       case 'on-hold':
@@ -193,7 +193,7 @@ export default function ProjectsPage() {
             <Card>
               <CardContent className="py-6">
                 <div className="text-sm font-medium text-gray-600">Total Bookings</div>
-                <div className="mt-2 text-3xl font-bold text-blue-600">{stats.total_bookings || 0}</div>
+                <div className="mt-2 text-3xl font-bold text-gray-600">{stats.total_bookings || 0}</div>
               </CardContent>
             </Card>
             <Card>
@@ -212,7 +212,7 @@ export default function ProjectsPage() {
               onClick={() => setActiveTab('projects')}
               className={`whitespace-nowrap border-b-2 py-4 px-1 text-sm font-medium transition-colors ${
                 activeTab === 'projects'
-                  ? 'border-blue-500 text-blue-600'
+                  ? 'border-gray-400 text-gray-700'
                   : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
               }`}
             >
@@ -227,7 +227,7 @@ export default function ProjectsPage() {
               onClick={() => setActiveTab('bookings')}
               className={`whitespace-nowrap border-b-2 py-4 px-1 text-sm font-medium transition-colors ${
                 activeTab === 'bookings'
-                  ? 'border-blue-500 text-blue-600'
+                  ? 'border-gray-400 text-gray-700'
                   : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
               }`}
             >
@@ -270,7 +270,7 @@ export default function ProjectsPage() {
                     </div>
                     <div className="h-2 w-full overflow-hidden rounded-full bg-gray-200">
                       <div
-                        className="h-full rounded-full bg-blue-600 transition-all"
+                        className="h-full rounded-full bg-gray-600 transition-all"
                         style={{ width: `${project.progress}%` }}
                       />
                     </div>
@@ -603,7 +603,7 @@ function CreateProjectModal({
             Description
           </label>
           <textarea
-            className="block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none"
+            className="block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-gray-400 focus:outline-none"
             rows={4}
             value={formData.description}
             onChange={(e) => setFormData({ ...formData, description: e.target.value })}
@@ -619,7 +619,7 @@ function CreateProjectModal({
             <button
               type="button"
               onClick={() => setIsArchitectOpen(!isArchitectOpen)}
-              className="w-full px-3 py-2 text-left text-sm bg-white border border-gray-300 rounded-lg shadow-sm hover:border-blue-400 hover:shadow-md focus:outline-none focus:border-blue-500 transition-all duration-200 flex items-center justify-between group"
+              className="w-full px-3 py-2 text-left text-sm bg-white border border-gray-300 rounded-lg shadow-sm hover:border-gray-400 hover:shadow-md focus:outline-none focus:border-gray-400 transition-all duration-200 flex items-center justify-between group"
             >
               <span className="text-gray-900">
                 {architects.find(a => a.id === formData.solution_architect_id)?.full_name || 'Select an architect'}
@@ -644,9 +644,9 @@ function CreateProjectModal({
                       setFormData({ ...formData, solution_architect_id: architect.id });
                       setIsArchitectOpen(false);
                     }}
-                    className={`w-full px-4 py-3 text-left text-sm hover:bg-blue-50 transition-colors duration-150 first:rounded-t-lg last:rounded-b-lg ${
+                    className={`w-full px-4 py-3 text-left text-sm hover:bg-gray-50 transition-colors duration-150 first:rounded-t-lg last:rounded-b-lg ${
                       formData.solution_architect_id === architect.id
-                        ? 'bg-blue-50 text-blue-700 font-medium'
+                        ? 'bg-gray-50 text-gray-700 font-medium'
                         : 'text-gray-700'
                     }`}
                   >
@@ -691,7 +691,7 @@ function CreateProjectModal({
           <div
             className={`relative border-2 border-dashed rounded-lg p-6 transition-colors ${
               isDragging
-                ? 'border-blue-500 bg-blue-50'
+                ? 'border-gray-400 bg-gray-50'
                 : 'border-gray-300 hover:border-gray-400'
             }`}
             onDragOver={(e) => {
@@ -732,7 +732,7 @@ function CreateProjectModal({
                 />
               </svg>
               <p className="mt-2 text-sm text-gray-600">
-                <span className="font-semibold text-blue-600">Click to upload</span> or drag and drop
+                <span className="font-semibold text-gray-600">Click to upload</span> or drag and drop
               </p>
               <p className="mt-1 text-xs text-gray-500">Any file type supported</p>
             </div>
@@ -847,7 +847,7 @@ function EditProjectModal({
                     href={`https://resource-manager-kg4d.onrender.com/${attachment.path}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-blue-600 hover:text-blue-800 text-xs font-medium"
+                    className="text-gray-600 hover:text-gray-800 text-xs font-medium"
                   >
                     Download
                   </a>
@@ -869,7 +869,7 @@ function EditProjectModal({
             Description
           </label>
           <textarea
-            className="block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none"
+            className="block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-gray-400 focus:outline-none"
             rows={4}
             value={formData.description}
             onChange={(e) => setFormData({ ...formData, description: e.target.value })}
@@ -882,7 +882,7 @@ function EditProjectModal({
             Status
           </label>
           <select
-            className="block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none"
+            className="block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-gray-400 focus:outline-none"
             value={formData.status}
             onChange={(e) => setFormData({ ...formData, status: e.target.value })}
           >
@@ -1112,7 +1112,7 @@ function BookingModal({
                   onClick={() => setSelectedEmployee(employee)}
                   className={`w-full rounded-lg border p-3 text-left transition-colors ${
                     selectedEmployee?.id === employee.id
-                      ? 'border-blue-500 bg-blue-50'
+                      ? 'border-gray-400 bg-gray-50'
                       : 'border-gray-200 hover:border-gray-300'
                   }`}
                 >
@@ -1148,7 +1148,7 @@ function BookingModal({
                     type="date"
                     value={bookingData.startDate}
                     onChange={(e) => setBookingData({ ...bookingData, startDate: e.target.value })}
-                    className="w-full px-3 py-2 text-sm bg-white border border-gray-300 rounded-lg shadow-sm hover:border-blue-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200"
+                    className="w-full px-3 py-2 text-sm bg-white border border-gray-300 rounded-lg shadow-sm hover:border-gray-400 focus:outline-none focus:border-gray-400 focus:ring-2 focus:ring-gray-200 transition-all duration-200"
                   />
                 </div>
 
@@ -1161,7 +1161,7 @@ function BookingModal({
                     value={bookingData.endDate}
                     onChange={(e) => setBookingData({ ...bookingData, endDate: e.target.value })}
                     min={bookingData.startDate}
-                    className="w-full px-3 py-2 text-sm bg-white border border-gray-300 rounded-lg shadow-sm hover:border-blue-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200"
+                    className="w-full px-3 py-2 text-sm bg-white border border-gray-300 rounded-lg shadow-sm hover:border-gray-400 focus:outline-none focus:border-gray-400 focus:ring-2 focus:ring-gray-200 transition-all duration-200"
                   />
                 </div>
 
@@ -1242,11 +1242,11 @@ function BookingModal({
                 )}
 
                 {workingDays > 0 && (
-                  <div className="rounded-lg border border-blue-200 bg-blue-50 p-3">
-                    <div className="text-sm text-blue-900">
+                  <div className="rounded-lg border border-gray-200 bg-gray-50 p-3">
+                    <div className="text-sm text-gray-900">
                       📅 {workingDays} working days ({new Date(bookingData.startDate).toLocaleDateString()} - {new Date(bookingData.endDate).toLocaleDateString()})
                     </div>
-                    <div className="text-xs text-blue-700 mt-1">
+                    <div className="text-xs text-gray-700 mt-1">
                       Maximum: {maxHours} hours (6 hrs/day)
                     </div>
                   </div>
@@ -1338,7 +1338,7 @@ function ProjectDetailsModal({
           <div className="grid grid-cols-2 gap-4">
             <div>
               <h3 className="text-sm font-semibold text-gray-700 mb-1">Status</h3>
-              <span className="inline-block rounded-full px-3 py-1 text-xs font-medium bg-blue-100 text-blue-800">
+              <span className="inline-block rounded-full px-3 py-1 text-xs font-medium bg-gray-100 text-gray-800">
                 {project.status}
               </span>
             </div>
@@ -1347,7 +1347,7 @@ function ProjectDetailsModal({
               <div className="flex items-center gap-2">
                 <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
                   <div
-                    className="h-full bg-blue-600 transition-all"
+                    className="h-full bg-gray-600 transition-all"
                     style={{ width: `${project.progress}%` }}
                   />
                 </div>
@@ -1379,7 +1379,7 @@ function ProjectDetailsModal({
                     href={`https://resource-manager-kg4d.onrender.com/${attachment.path}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                    className="text-gray-600 hover:text-gray-800 text-sm font-medium"
                   >
                     Download
                   </a>
@@ -1395,12 +1395,12 @@ function ProjectDetailsModal({
           {employees.length > 0 ? (
             <div className="space-y-3">
               {employees.map((emp) => (
-                <Card key={emp.employee_id} className="border-l-4 border-l-blue-500">
+                <Card key={emp.employee_id} className="border-l-4 border-l-gray-400">
                   <CardContent className="py-4">
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
                         <div className="flex items-center gap-2">
-                          <div className="h-10 w-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-semibold">
+                          <div className="h-10 w-10 rounded-full bg-gradient-to-br from-gray-500 to-gray-700 flex items-center justify-center text-white font-semibold">
                             {emp.employee_name.split(' ').map((n: string) => n[0]).join('').toUpperCase()}
                           </div>
                           <div>
@@ -1424,7 +1424,7 @@ function ProjectDetailsModal({
                       
                       <div className="ml-4 text-right">
                         <div className="text-xs text-gray-500">Total Hours</div>
-                        <div className="text-2xl font-bold text-blue-600">{emp.total_hours}</div>
+                        <div className="text-2xl font-bold text-gray-600">{emp.total_hours}</div>
                       </div>
                     </div>
                   </CardContent>

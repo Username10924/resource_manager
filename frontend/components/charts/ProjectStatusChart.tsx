@@ -9,7 +9,7 @@ interface ProjectStatusChartProps {
 
 const STATUS_COLORS: Record<string, string> = {
   'Active': '#10b981',
-  'Completed': '#3b82f6',
+  'Completed': '#9ca3af',
   'Planned': '#f59e0b',
   'On Hold': '#f97316',
   'Cancelled': '#ef4444',

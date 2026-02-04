@@ -67,8 +67,8 @@ export default function Navigation() {
                 <svg width="40" height="40" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" className="block">
                   <defs>
                     <linearGradient id="aiGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                      <stop offset="0%" stopColor="#00d2ff" stopOpacity="1" />
-                      <stop offset="100%" stopColor="#10a37f" stopOpacity="1" />
+                      <stop offset="0%" stopColor="#d1d5db" stopOpacity="1" />
+                      <stop offset="100%" stopColor="#9ca3af" stopOpacity="1" />
                     </linearGradient>
                   </defs>
                   <g fill="none" stroke="url(#aiGradient)" strokeWidth="26" strokeLinecap="round">
@@ -83,7 +83,7 @@ export default function Navigation() {
                 </svg>
               </div>
               {!isCollapsed && (
-                <span className="font-bold text-lg bg-gradient-to-r from-[#4F46E5] to-[#6366F1] bg-clip-text text-transparent">
+                <span className="font-bold text-lg bg-gradient-to-r from-[#9CA3AF] to-[#D1D5DB] bg-clip-text text-transparent">
                   RMS
                 </span>
               )}
@@ -116,14 +116,14 @@ export default function Navigation() {
                     className={cn(
                       'flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all group',
                       isActive
-                        ? 'text-[#4F46E5]'
+                        ? 'text-gray-700'
                         : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
                     )}
                     title={isCollapsed ? link.label : undefined}
                   >
                     <Icon className={cn(
                       "flex-shrink-0 text-lg",
-                      isActive ? "text-[#4F46E5]" : "text-gray-500 group-hover:text-gray-700"
+                      isActive ? "text-gray-700" : "text-gray-500 group-hover:text-gray-700"
                     )} />
                     {!isCollapsed && <span>{link.label}</span>}
                   </Link>
@@ -137,7 +137,7 @@ export default function Navigation() {
             <div className="border-t border-gray-200 p-4 space-y-2">
               {!isCollapsed && (
                 <div className="flex items-center gap-3 px-2 mb-3">
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#4F46E5] to-[#6366F1] flex items-center justify-center text-white text-sm font-medium flex-shrink-0">
+                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#9CA3AF] to-[#D1D5DB] flex items-center justify-center text-white text-sm font-medium flex-shrink-0">
                     {user.full_name.split(' ').map(n => n[0]).join('').toUpperCase()}
                   </div>
                   <div className="text-sm overflow-hidden">
