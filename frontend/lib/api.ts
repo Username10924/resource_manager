@@ -91,6 +91,8 @@ export const employeeAPI = {
     fetchAPI(`/employees/${employeeId}/reservations/${reservationId}/cancel/`, {
       method: 'POST',
     }),
+  getAvailabilityForDateRange: (employeeId: number, startDate: string, endDate: string) =>
+    fetchAPI(`/employees/${employeeId}/availability-range/?start_date=${startDate}&end_date=${endDate}`),
 };
 
 // Project API
@@ -109,6 +111,10 @@ export const projectAPI = {
     method: 'DELETE',
   }),
   getBookings: (id: number) => fetchAPI(`/projects/${id}/bookings`),
+  getAllBookings: () => fetchAPI('/projects/all-bookings'),
+  deleteBooking: (bookingId: number) => fetchAPI(`/projects/bookings/${bookingId}`, {
+    method: 'DELETE',
+  }),
   createBooking: (projectId: number, data: any) => fetchAPI(`/projects/${projectId}/bookings/`, {
     method: 'POST',
     body: JSON.stringify(data),

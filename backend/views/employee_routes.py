@@ -230,6 +230,68 @@ async def get_employee_projects(employee_id: int, month: int, year: int):
     
     return bookings
 
+@router.get("/{employee_id}/availability-range/", response_model=Dict[str, Any])
+async def get_employee_availability_for_date_range(
+    employee_id: int,
+    start_date: str = Query(..., description="Start date in YYYY-MM-DD format"),
+    end_date: str = Query(..., description="End date in YYYY-MM-DD format")
+):
+    """Get employee's bookings and reservations for a specific date range"""
+    from models.employee import Employee
+    from models.reservation import EmployeeReservation
+    from database import db
+    from datetime import datetime
+    
+    employee = Employee.get_by_id(employee_id)
+    if not employee:
+        raise HTTPException(status_code=404, detail="Employee not found")
+    
+    # Validate dates
+    try:
+        start = datetime.strptime(start_date, '%Y-%m-%d').date()
+        end = datetime.strptime(end_date, '%Y-%m-%d').date()
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid date format. Use YYYY-MM-DD")
+    
+    if end < start:
+        raise HTTPException(status_code=400, detail="End date must be after start date")
+    
+    # Get existing bookings that overlap with this date range
+    bookings_query = '''
+        SELECT pb.*, p.name as project_name, p.project_code
+        FROM project_bookings pb
+        JOIN projects p ON pb.project_id = p.id
+        WHERE pb.employee_id = ? 
+          AND pb.status != 'cancelled'
+          AND (
+              (pb.start_date <= ? AND pb.end_date >= ?)
+              OR (pb.start_date <= ? AND pb.end_date >= ?)
+              OR (pb.start_date >= ? AND pb.end_date <= ?)
+          )
+        ORDER BY pb.start_date
+    '''
+    bookings = db.fetch_all(bookings_query, (
+        employee_id,
+        start, start,
+        end, end,
+        start, end
+    ))
+    
+    # Get reservations that overlap with this date range
+    reservations = EmployeeReservation.get_active_reservations_for_date_range(
+        employee_id, start, end
+    )
+    
+    return {
+        'employee': employee.to_dict(),
+        'date_range': {
+            'start_date': start_date,
+            'end_date': end_date
+        },
+        'bookings': [dict(b) for b in bookings],
+        'reservations': [r.to_dict() for r in reservations]
+    }
+
 @router.delete("/{employee_id}", response_model=Dict[str, Any])
 async def delete_employee(employee_id: int):
     """Delete an employee"""

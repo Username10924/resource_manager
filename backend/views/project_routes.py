@@ -107,6 +107,75 @@ async def book_employee(project_id: int, booking: BookingRequest):
         raise HTTPException(status_code=400, detail=result['error'])
     return result
 
+@router.get("/all-bookings")
+async def get_all_bookings():
+    """Get all bookings across all projects"""
+    from database import db
+    
+    query = '''
+        SELECT 
+            pb.id,
+            pb.project_id,
+            pb.employee_id,
+            pb.start_date,
+            pb.end_date,
+            pb.booked_hours,
+            pb.status,
+            pb.created_at,
+            pb.updated_at,
+            p.name as project_name,
+            p.project_code,
+            e.full_name,
+            e.department,
+            e.position
+        FROM project_bookings pb
+        JOIN projects p ON pb.project_id = p.id
+        JOIN employees e ON pb.employee_id = e.id
+        ORDER BY pb.start_date DESC
+    '''
+    bookings = db.fetch_all(query)
+    
+    # Explicitly map fields to ensure proper types
+    result = []
+    for booking in bookings:
+        result.append({
+            'id': int(booking['id']),
+            'project_id': int(booking['project_id']),
+            'employee_id': int(booking['employee_id']),
+            'start_date': str(booking['start_date']),
+            'end_date': str(booking['end_date']),
+            'booked_hours': float(booking['booked_hours']),
+            'status': str(booking['status']) if booking['status'] else 'booked',
+            'created_at': str(booking['created_at']) if booking['created_at'] else None,
+            'updated_at': str(booking['updated_at']) if booking['updated_at'] else None,
+            'project_name': str(booking['project_name']),
+            'project_code': str(booking['project_code']),
+            'full_name': str(booking['full_name']),
+            'department': str(booking['department']),
+            'position': str(booking['position'])
+        })
+    
+    return result
+
+@router.delete("/bookings/{booking_id}", response_model=Dict[str, Any])
+async def delete_booking(booking_id: int):
+    """Delete a booking"""
+    from database import db
+    
+    # Check if booking exists
+    query = 'SELECT * FROM project_bookings WHERE id = ?'
+    booking = db.fetch_one(query, (booking_id,))
+    
+    if not booking:
+        raise HTTPException(status_code=404, detail="Booking not found")
+    
+    # Delete the booking
+    delete_query = 'DELETE FROM project_bookings WHERE id = ?'
+    db.execute(delete_query, (booking_id,))
+    db.commit()
+    
+    return {'success': True, 'message': 'Booking deleted successfully'}
+
 @router.get("/{project_id}/bookings", response_model=List[Dict[str, Any]])
 async def get_project_bookings(project_id: int):
     """Get all bookings for a project"""
@@ -115,6 +184,25 @@ async def get_project_bookings(project_id: int):
         raise HTTPException(status_code=404, detail="Project not found")
     
     return project.get_bookings()
+
+@router.get("/available/employees", response_model=List[Dict[str, Any]])
+async def delete_booking(booking_id: int):
+    """Delete a booking"""
+    from database import db
+    
+    # Check if booking exists
+    query = 'SELECT * FROM project_bookings WHERE id = ?'
+    booking = db.fetch_one(query, (booking_id,))
+    
+    if not booking:
+        raise HTTPException(status_code=404, detail="Booking not found")
+    
+    # Delete the booking
+    delete_query = 'DELETE FROM project_bookings WHERE id = ?'
+    db.execute(delete_query, (booking_id,))
+    db.commit()
+    
+    return {'success': True, 'message': 'Booking deleted successfully'}
 
 @router.get("/available/employees", response_model=List[Dict[str, Any]])
 async def get_available_employees(

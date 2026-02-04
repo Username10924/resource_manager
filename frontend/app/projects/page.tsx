@@ -20,10 +20,19 @@ export default function ProjectsPage() {
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   const [projectBookings, setProjectBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<'projects' | 'bookings'>('projects');
+  const [allBookings, setAllBookings] = useState<any[]>([]);
+  const [loadingBookings, setLoadingBookings] = useState(false);
 
   useEffect(() => {
     loadData();
   }, []);
+
+  useEffect(() => {
+    if (activeTab === 'bookings') {
+      loadAllBookings();
+    }
+  }, [activeTab]);
 
   const loadData = async () => {
     try {
@@ -39,6 +48,32 @@ export default function ProjectsPage() {
       console.error('Error loading data:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadAllBookings = async () => {
+    setLoadingBookings(true);
+    try {
+      const bookings = await projectAPI.getAllBookings();
+      setAllBookings(bookings);
+    } catch (error) {
+      console.error('Error loading bookings:', error);
+    } finally {
+      setLoadingBookings(false);
+    }
+  };
+
+  const handleDeleteBooking = async (bookingId: number) => {
+    const confirmed = window.confirm('Are you sure you want to delete this booking?');
+    if (!confirmed) return;
+
+    try {
+      await projectAPI.deleteBooking(bookingId);
+      loadAllBookings();
+      loadData(); // Refresh stats
+    } catch (error) {
+      console.error('Error deleting booking:', error);
+      alert('Failed to delete booking: ' + (error as Error).message);
     }
   };
 
@@ -148,7 +183,44 @@ export default function ProjectsPage() {
           </div>
         )}
 
-        {/* Projects Grid */}
+        {/* Tabs */}
+        <div className="mb-6 border-b border-gray-200">
+          <nav className="-mb-px flex space-x-8">
+            <button
+              onClick={() => setActiveTab('projects')}
+              className={`whitespace-nowrap border-b-2 py-4 px-1 text-sm font-medium transition-colors ${
+                activeTab === 'projects'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                </svg>
+                Projects
+              </div>
+            </button>
+            <button
+              onClick={() => setActiveTab('bookings')}
+              className={`whitespace-nowrap border-b-2 py-4 px-1 text-sm font-medium transition-colors ${
+                activeTab === 'bookings'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                </svg>
+                Manage Bookings
+              </div>
+            </button>
+          </nav>
+        </div>
+
+        {/* Tab Content */}
+        {activeTab === 'projects' && (
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
           {projects.map((project) => (
             <div key={project.id} className="cursor-pointer" onClick={() => openProjectDetails(project)}>
@@ -214,6 +286,98 @@ export default function ProjectsPage() {
             </div>
           ))}
         </div>
+        )}
+
+        {activeTab === 'bookings' && (
+          <Card>
+            <CardHeader>
+              <CardTitle>All Bookings</CardTitle>
+            </CardHeader>
+            <CardContent className="p-0">
+              {loadingBookings ? (
+                <div className="p-8 text-center">
+                  <div className="text-sm text-gray-600">Loading bookings...</div>
+                </div>
+              ) : allBookings.length === 0 ? (
+                <div className="p-8 text-center">
+                  <div className="text-sm text-gray-600">No bookings found</div>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead className="border-b border-gray-200 bg-gray-50">
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-600">
+                          Project
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-600">
+                          Employee
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-600">
+                          Department
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-600">
+                          Date Range
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-600">
+                          Hours
+                        </th>
+                        <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-600">
+                          Actions
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-200 bg-white">
+                      {allBookings.map((booking) => (
+                        <tr key={booking.id} className="hover:bg-gray-50">
+                          <td className="whitespace-nowrap px-6 py-4">
+                            <div className="text-sm font-medium text-gray-900">
+                              {booking.project_name}
+                            </div>
+                            <div className="text-xs text-gray-500">
+                              {booking.project_code}
+                            </div>
+                          </td>
+                          <td className="whitespace-nowrap px-6 py-4">
+                            <div className="text-sm text-gray-900">{booking.full_name}</div>
+                            <div className="text-xs text-gray-500">{booking.position}</div>
+                          </td>
+                          <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-600">
+                            {booking.department}
+                          </td>
+                          <td className="whitespace-nowrap px-6 py-4">
+                            <div className="text-sm text-gray-900">
+                              {new Date(booking.start_date + 'T00:00:00').toLocaleDateString()}
+                            </div>
+                            <div className="text-xs text-gray-500">
+                              to {new Date(booking.end_date + 'T00:00:00').toLocaleDateString()}
+                            </div>
+                          </td>
+                          <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-900">
+                            {booking.booked_hours}h
+                          </td>
+                          <td className="whitespace-nowrap px-6 py-4 text-right text-sm">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleDeleteBooking(booking.id)}
+                              className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                            >
+                              Delete
+                            </Button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Projects Grid */}
+        <div className="hidden">{/* Placeholder for removed duplicate */}</div>
 
         {/* Create Project Modal */}
         <CreateProjectModal
@@ -737,6 +901,8 @@ function BookingModal({
 }) {
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
+  const [employeeAvailability, setEmployeeAvailability] = useState<any>(null);
+  const [loadingAvailability, setLoadingAvailability] = useState(false);
   
   // Initialize with default dates
   const getDefaultDates = () => {
@@ -763,8 +929,17 @@ function BookingModal({
         hours: 0,
         ...getDefaultDates(),
       });
+      setSelectedEmployee(null);
+      setEmployeeAvailability(null);
     }
   }, [isOpen]);
+
+  // Load employee availability when employee or dates change
+  useEffect(() => {
+    if (selectedEmployee && bookingData.startDate && bookingData.endDate) {
+      loadEmployeeAvailability();
+    }
+  }, [selectedEmployee, bookingData.startDate, bookingData.endDate]);
 
   const loadEmployees = async () => {
     try {
@@ -774,6 +949,25 @@ function BookingModal({
       console.error('Error loading employees:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadEmployeeAvailability = async () => {
+    if (!selectedEmployee) return;
+    
+    setLoadingAvailability(true);
+    try {
+      const data = await employeeAPI.getAvailabilityForDateRange(
+        selectedEmployee.id,
+        bookingData.startDate,
+        bookingData.endDate
+      );
+      setEmployeeAvailability(data);
+    } catch (error) {
+      console.error('Error loading employee availability:', error);
+      setEmployeeAvailability(null);
+    } finally {
+      setLoadingAvailability(false);
     }
   };
 
@@ -944,6 +1138,82 @@ function BookingModal({
                     className="w-full px-3 py-2 text-sm bg-white border border-gray-300 rounded-lg shadow-sm hover:border-blue-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200"
                   />
                 </div>
+
+                {/* Employee Availability Section */}
+                {loadingAvailability ? (
+                  <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
+                    <div className="text-sm text-gray-600">Loading availability...</div>
+                  </div>
+                ) : employeeAvailability && (
+                  <div className="space-y-3">
+                    {/* Existing Bookings */}
+                    {employeeAvailability.bookings && employeeAvailability.bookings.length > 0 && (
+                      <div className="rounded-lg border border-orange-200 bg-orange-50 p-3">
+                        <div className="flex items-center gap-2 mb-2">
+                          <svg className="w-4 h-4 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                          <span className="text-sm font-semibold text-orange-900">
+                            Existing Bookings ({employeeAvailability.bookings.length})
+                          </span>
+                        </div>
+                        <div className="space-y-2">
+                          {employeeAvailability.bookings.map((booking: any) => (
+                            <div key={booking.id} className="text-xs text-orange-800 bg-white rounded p-2">
+                              <div className="font-medium">{booking.project_name}</div>
+                              <div className="mt-1">
+                                {new Date(booking.start_date + 'T00:00:00').toLocaleDateString()} - {new Date(booking.end_date + 'T00:00:00').toLocaleDateString()}
+                              </div>
+                              <div className="mt-1">{booking.booked_hours} hours</div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Reservations */}
+                    {employeeAvailability.reservations && employeeAvailability.reservations.length > 0 && (
+                      <div className="rounded-lg border border-purple-200 bg-purple-50 p-3">
+                        <div className="flex items-center gap-2 mb-2">
+                          <svg className="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                          </svg>
+                          <span className="text-sm font-semibold text-purple-900">
+                            Reserved Time ({employeeAvailability.reservations.length})
+                          </span>
+                        </div>
+                        <div className="space-y-2">
+                          {employeeAvailability.reservations.map((reservation: any) => (
+                            <div key={reservation.id} className="text-xs text-purple-800 bg-white rounded p-2">
+                              <div className="font-medium">
+                                {reservation.reason || 'Reserved'}
+                              </div>
+                              <div className="mt-1">
+                                {new Date(reservation.start_date + 'T00:00:00').toLocaleDateString()} - {new Date(reservation.end_date + 'T00:00:00').toLocaleDateString()}
+                              </div>
+                              <div className="mt-1">{reservation.reserved_hours_per_day} hrs/day reserved</div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* No conflicts */}
+                    {(!employeeAvailability.bookings || employeeAvailability.bookings.length === 0) &&
+                     (!employeeAvailability.reservations || employeeAvailability.reservations.length === 0) && (
+                      <div className="rounded-lg border border-green-200 bg-green-50 p-3">
+                        <div className="flex items-center gap-2">
+                          <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                          <span className="text-sm font-medium text-green-900">
+                            No conflicts - Employee is available
+                          </span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 {workingDays > 0 && (
                   <div className="rounded-lg border border-blue-200 bg-blue-50 p-3">
