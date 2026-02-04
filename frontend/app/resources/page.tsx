@@ -455,7 +455,7 @@ function AddEmployeeModal({
     department: '',
     position: '',
     line_manager_id: user?.id || 1,
-    available_days_per_year: 240,
+    available_days_per_year: 180,
   });
   const [isDepartmentOpen, setIsDepartmentOpen] = useState(false);
 
@@ -476,7 +476,7 @@ function AddEmployeeModal({
       toast.success(`${formData.full_name} has been added successfully`);
       onAdd();
       onClose();
-      setFormData({ full_name: '', department: '', position: '', line_manager_id: user?.id || 1, available_days_per_year: 240 });
+      setFormData({ full_name: '', department: '', position: '', line_manager_id: user?.id || 1, available_days_per_year: 180 });
     } catch (error) {
       console.error('Error creating employee:', error);
       toast.error('Failed to add employee. Please try again.');
