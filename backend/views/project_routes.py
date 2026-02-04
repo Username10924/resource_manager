@@ -162,6 +162,13 @@ async def book_employee(project_id: int, booking: BookingRequest):
     return result
 
 @router.get("/{project_id}/bookings", response_model=List[Dict[str, Any]])
+async def get_project_bookings(project_id: int):
+    """Get all bookings for a project"""
+    project = Project.get_by_id(project_id)
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    
+    return project.get_bookings()
 
 @router.delete("/bookings/{booking_id}", response_model=Dict[str, Any])
 async def delete_booking(booking_id: int):
@@ -181,15 +188,6 @@ async def delete_booking(booking_id: int):
     db.commit()
     
     return {'success': True, 'message': 'Booking deleted successfully'}
-
-@router.get("/{project_id}/bookings", response_model=List[Dict[str, Any]])
-async def get_project_bookings(project_id: int):
-    """Get all bookings for a project"""
-    project = Project.get_by_id(project_id)
-    if not project:
-        raise HTTPException(status_code=404, detail="Project not found")
-    
-    return project.get_bookings()
 
 @router.get("/available/employees", response_model=List[Dict[str, Any]])
 async def get_available_employees(

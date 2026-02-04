@@ -29,10 +29,10 @@ export default function ProjectsPage() {
   }, []);
 
   useEffect(() => {
-    if (activeTab === 'bookings') {
+    if (activeTab === 'bookings' && projects.length > 0) {
       loadAllBookings();
     }
-  }, [activeTab]);
+  }, [activeTab, projects]);
 
   const loadData = async () => {
     try {
@@ -54,16 +54,31 @@ export default function ProjectsPage() {
   const loadAllBookings = async () => {
     setLoadingBookings(true);
     try {
-      console.log('Loading all bookings...');
-      const bookings = await projectAPI.getAllBookings();
-      console.log('Bookings received:', bookings);
-      console.log('Bookings type:', typeof bookings);
-      console.log('Is array:', Array.isArray(bookings));
-      console.log('Bookings length:', bookings?.length);
-      setAllBookings(Array.isArray(bookings) ? bookings : []);
+      console.log('Loading all bookings by fetching from each project...');
+      
+      // Fetch bookings from each project individually
+      const bookingsPromises = projects.map(async (project) => {
+        try {
+          const bookings = await projectAPI.getBookings(project.id);
+          // Add project info to each booking
+          return bookings.map((b: any) => ({
+            ...b,
+            project_name: project.name,
+            project_code: (project as any).project_code || `P${project.id}`,
+          }));
+        } catch (err) {
+          console.error(`Error fetching bookings for project ${project.id}:`, err);
+          return [];
+        }
+      });
+      
+      const allBookingsArrays = await Promise.all(bookingsPromises);
+      const combinedBookings = allBookingsArrays.flat();
+      
+      console.log('Combined bookings:', combinedBookings);
+      setAllBookings(combinedBookings);
     } catch (error) {
       console.error('Error loading bookings:', error);
-      console.error('Error details:', error);
       setAllBookings([]);
     } finally {
       setLoadingBookings(false);
@@ -352,7 +367,6 @@ export default function ProjectsPage() {
                           </td>
                           <td className="whitespace-nowrap px-6 py-4">
                             <div className="text-sm text-gray-900">{booking.full_name}</div>
-                            <div className="text-xs text-gray-500">{booking.position}</div>
                           </td>
                           <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-600">
                             {booking.department}
