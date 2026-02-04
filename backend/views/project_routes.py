@@ -99,14 +99,7 @@ async def delete_project(project_id: int):
         raise HTTPException(status_code=404, detail=result['error'])
     return result
 
-@router.post("/{project_id}/bookings", response_model=Dict[str, Any])
-async def book_employee(project_id: int, booking: BookingRequest):
-    """Book an employee for a project"""
-    result = ProjectController.book_employee_for_project(project_id, booking.dict())
-    if 'error' in result:
-        raise HTTPException(status_code=400, detail=result['error'])
-    return result
-
+# ALL BOOKINGS - Must come BEFORE /{project_id}/bookings to avoid route conflict
 @router.get("/all-bookings")
 async def get_all_bookings():
     """Get all bookings across all projects"""
@@ -160,6 +153,16 @@ async def get_all_bookings():
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
 
+@router.post("/{project_id}/bookings", response_model=Dict[str, Any])
+async def book_employee(project_id: int, booking: BookingRequest):
+    """Book an employee for a project"""
+    result = ProjectController.book_employee_for_project(project_id, booking.dict())
+    if 'error' in result:
+        raise HTTPException(status_code=400, detail=result['error'])
+    return result
+
+@router.get("/{project_id}/bookings", response_model=List[Dict[str, Any]])
+
 @router.delete("/bookings/{booking_id}", response_model=Dict[str, Any])
 async def delete_booking(booking_id: int):
     """Delete a booking"""
@@ -187,25 +190,6 @@ async def get_project_bookings(project_id: int):
         raise HTTPException(status_code=404, detail="Project not found")
     
     return project.get_bookings()
-
-@router.get("/available/employees", response_model=List[Dict[str, Any]])
-async def delete_booking(booking_id: int):
-    """Delete a booking"""
-    from database import db
-    
-    # Check if booking exists
-    query = 'SELECT * FROM project_bookings WHERE id = ?'
-    booking = db.fetch_one(query, (booking_id,))
-    
-    if not booking:
-        raise HTTPException(status_code=404, detail="Booking not found")
-    
-    # Delete the booking
-    delete_query = 'DELETE FROM project_bookings WHERE id = ?'
-    db.execute(delete_query, (booking_id,))
-    db.commit()
-    
-    return {'success': True, 'message': 'Booking deleted successfully'}
 
 @router.get("/available/employees", response_model=List[Dict[str, Any]])
 async def get_available_employees(
