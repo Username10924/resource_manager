@@ -1,11 +1,58 @@
 from typing import Dict, Any, List, Tuple, Optional
-from datetime import datetime
+from datetime import datetime, date, timedelta
+from calendar import monthrange
 from models.employee import Employee
 from models.project import Project
 from models.user import User
 from database import db
 
 class DashboardController:
+    @staticmethod
+    def _to_date(value: Any) -> Optional[date]:
+        if isinstance(value, date):
+            return value
+        if isinstance(value, datetime):
+            return value.date()
+        if isinstance(value, str):
+            try:
+                return datetime.fromisoformat(value).date()
+            except ValueError:
+                try:
+                    return datetime.strptime(value, "%Y-%m-%d").date()
+                except ValueError:
+                    return None
+        return None
+
+    @staticmethod
+    def _count_weekdays(start: date, end: date) -> int:
+        count = 0
+        current = start
+        while current <= end:
+            if current.weekday() < 5:
+                count += 1
+            current += timedelta(days=1)
+        return count
+
+    @staticmethod
+    def _calculate_monthly_reservation_hours(reservations: List[Dict[str, Any]], year: int, month: int) -> float:
+        if not reservations:
+            return 0
+        month_start = date(year, month, 1)
+        month_end = date(year, month, monthrange(year, month)[1])
+        total = 0.0
+        for res in reservations:
+            start = DashboardController._to_date(res.get('start_date'))
+            end = DashboardController._to_date(res.get('end_date'))
+            if not start or not end:
+                continue
+            if start > month_end or end < month_start:
+                continue
+            overlap_start = max(start, month_start)
+            overlap_end = min(end, month_end)
+            workdays = DashboardController._count_weekdays(overlap_start, overlap_end)
+            total += workdays * (res.get('reserved_hours_per_day') or 0)
+        return total
+
     @staticmethod
     def get_resources_dashboard(manager_id: Optional[int] = None) -> Dict[str, Any]:
         """Get resources dashboard data"""
@@ -72,7 +119,17 @@ class DashboardController:
                 WHERE es.employee_id = ? AND es.year = ?
                 ORDER BY es.month
             '''
-            schedule_data = db.fetch_all(query, (emp.id, current_year))
+                        schedule_data = db.fetch_all(query, (emp.id, current_year))
+
+                        reservations_query = '''
+                                SELECT start_date, end_date, reserved_hours_per_day
+                                FROM employee_reservations
+                                WHERE employee_id = ?
+                                    AND status = 'active'
+                                    AND strftime('%Y', start_date) <= CAST(? AS TEXT)
+                                    AND strftime('%Y', end_date) >= CAST(? AS TEXT)
+                        '''
+                        reservations = db.fetch_all(reservations_query, (emp.id, current_year, current_year))
             
             emp_data = emp.to_dict()
             emp_data['schedule'] = schedule_data
@@ -83,20 +140,24 @@ class DashboardController:
             # Update monthly summary and department totals
             for sched in schedule_data:
                 month = sched['month']
-                # available_hours_per_month already accounts for reserved hours
-                # We need to subtract project bookings to get actual available hours
+                # available_hours_per_month already accounts for scheduled reserved hours
+                # We need to subtract project bookings AND reservation hours to get actual available hours
                 base_available = sched['available_hours_per_month']
                 booked = sched['booked_hours'] or 0
                 
                 # Calculate actual available hours (base available - booked hours)
-                # Note: booked includes both project bookings AND reserved hours
+                # Note: booked includes both project bookings AND scheduled reserved hours
                 # So we need to get just the project bookings
                 reserved_hours = (sched['reserved_hours_per_day'] or 0) * 20
                 project_booked_hours = booked - reserved_hours
-                actual_available = base_available - project_booked_hours
+                reservation_hours = DashboardController._calculate_monthly_reservation_hours(
+                    reservations, current_year, month
+                )
+                total_utilized = project_booked_hours + reserved_hours + reservation_hours
+                actual_available = base_available - project_booked_hours - reservation_hours
                 
                 dashboard_data['monthly_summary'][month]['total_available'] += actual_available
-                dashboard_data['monthly_summary'][month]['total_booked'] += booked
+                dashboard_data['monthly_summary'][month]['total_booked'] += total_utilized
                 dashboard_data['monthly_summary'][month]['total_capacity'] += 120  # 6 hrs/day * 20 days
                 dashboard_data['monthly_summary'][month]['employee_count'] += 1
                 
