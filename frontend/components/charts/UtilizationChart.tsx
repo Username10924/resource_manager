@@ -4,7 +4,7 @@ interface UtilizationChartProps {
   data: {
     month: string;
     available: number;
-    booked: number;
+    utilized: number;
     utilization: number;
   }[];
 }
@@ -14,9 +14,9 @@ export default function UtilizationChart({ data }: UtilizationChartProps) {
     <ResponsiveContainer width="100%" height={300}>
       <AreaChart data={data} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
         <defs>
-          <linearGradient id="colorBooked" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="5%" stopColor="#9ca3af" stopOpacity={0.8}/>
-            <stop offset="95%" stopColor="#9ca3af" stopOpacity={0}/>
+          <linearGradient id="colorUtilized" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.8}/>
+            <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
           </linearGradient>
           <linearGradient id="colorAvailable" x1="0" y1="0" x2="0" y2="1">
             <stop offset="5%" stopColor="#10b981" stopOpacity={0.8}/>
@@ -44,11 +44,11 @@ export default function UtilizationChart({ data }: UtilizationChartProps) {
         <Legend />
         <Area 
           type="monotone" 
-          dataKey="booked" 
-          stroke="#9ca3af" 
+          dataKey="utilized" 
+          stroke="#3b82f6" 
           fillOpacity={1} 
-          fill="url(#colorBooked)"
-          name="Booked Hours"
+          fill="url(#colorUtilized)"
+          name="Utilized Hours (Booked + Reserved)"
         />
         <Area 
           type="monotone" 

@@ -38,6 +38,7 @@ interface ResourceDashboard {
   monthly_summary: Record<number, {
     total_available: number;
     total_booked: number;
+    total_capacity: number;
     utilization_rate: number;
   }>;
 }
@@ -115,7 +116,7 @@ export default function DashboardPage() {
     return Object.entries(resourceData.monthly_summary).map(([month, data]) => ({
       month: monthNames[parseInt(month) - 1],
       available: data.total_available,
-      booked: data.total_booked,
+      utilized: data.total_booked, // This includes both booked AND reserved hours
       utilization: data.utilization_rate,
     }));
   };
