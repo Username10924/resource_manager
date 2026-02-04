@@ -55,7 +55,7 @@ class DashboardController:
             
             dashboard_data['departments'][dept]['count'] += 1
             
-            # Get employee schedule
+            # Get employee schedule with both project bookings AND reservations
             query = '''
                 SELECT es.*, 
                        COALESCE(
@@ -67,7 +67,17 @@ class DashboardController:
                               AND CAST(strftime('%m', pb.start_date) AS INTEGER) <= es.month
                               AND CAST(strftime('%m', pb.end_date) AS INTEGER) >= es.month
                            ), 0
-                       ) + (es.reserved_hours_per_day * 20) as booked_hours
+                       ) as project_booked_hours,
+                       COALESCE(
+                           (SELECT SUM(er.reserved_hours_per_day * 20)
+                            FROM employee_reservations er
+                            WHERE er.employee_id = es.employee_id
+                              AND er.status = 'active'
+                              AND strftime('%Y', er.start_date) = CAST(es.year AS TEXT)
+                              AND CAST(strftime('%m', er.start_date) AS INTEGER) <= es.month
+                              AND CAST(strftime('%m', er.end_date) AS INTEGER) >= es.month
+                           ), 0
+                       ) as reserved_hours
                 FROM employee_schedules es
                 WHERE es.employee_id = ? AND es.year = ?
                 ORDER BY es.month
@@ -83,20 +93,18 @@ class DashboardController:
             # Update monthly summary and department totals
             for sched in schedule_data:
                 month = sched['month']
-                # available_hours_per_month already accounts for reserved hours
-                # We need to subtract both project bookings AND reserved hours to get actual available hours
                 base_available = sched['available_hours_per_month']
-                booked = sched['booked_hours'] or 0
+                project_booked = sched['project_booked_hours'] or 0
+                reserved = sched['reserved_hours'] or 0
                 
-                # Calculate actual available hours (base available - all utilized hours)
-                # Note: booked includes both project bookings AND reserved hours
-                reserved_hours = (sched['reserved_hours_per_day'] or 0) * 20
-                project_booked_hours = booked - reserved_hours
-                # Subtract both project bookings and reserved hours from available
-                actual_available = base_available - project_booked_hours - reserved_hours
+                # Total utilized = project bookings + reservations
+                total_utilized = project_booked + reserved
+                
+                # Actual available = base available - all utilized hours
+                actual_available = base_available - total_utilized
                 
                 dashboard_data['monthly_summary'][month]['total_available'] += actual_available
-                dashboard_data['monthly_summary'][month]['total_booked'] += booked
+                dashboard_data['monthly_summary'][month]['total_booked'] += total_utilized
                 dashboard_data['monthly_summary'][month]['total_capacity'] += 120  # 6 hrs/day * 20 days
                 dashboard_data['monthly_summary'][month]['employee_count'] += 1
                 
