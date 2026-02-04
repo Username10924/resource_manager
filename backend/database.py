@@ -70,6 +70,23 @@ class Database:
             )
         ''')
         
+        # Employee reservations table (date-range based)
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS employee_reservations (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                employee_id INTEGER NOT NULL,
+                start_date DATE NOT NULL,
+                end_date DATE NOT NULL,
+                reserved_hours_per_day REAL NOT NULL CHECK(reserved_hours_per_day >= 0 AND reserved_hours_per_day <= 6),
+                reason TEXT,
+                status TEXT DEFAULT 'active' CHECK(status IN ('active', 'cancelled')),
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (employee_id) REFERENCES employees (id),
+                CHECK(end_date >= start_date)
+            )
+        ''')
+        
         # Projects table
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS projects (

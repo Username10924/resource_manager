@@ -71,6 +71,26 @@ export const employeeAPI = {
     fetchAPI(`/employees/${id}/availability/${month}/${year}/`),
   getProjects: (id: number, month: number, year: number) => 
     fetchAPI(`/employees/${id}/projects/${month}/${year}/`),
+  // Reservation APIs
+  getReservations: (id: number, includeCancelled: boolean = false) => 
+    fetchAPI(`/employees/${id}/reservations/?include_cancelled=${includeCancelled}`),
+  createReservation: (employeeId: number, data: any) => fetchAPI(`/employees/${employeeId}/reservations/`, {
+    method: 'POST',
+    body: JSON.stringify(data),
+  }),
+  updateReservation: (employeeId: number, reservationId: number, data: any) => 
+    fetchAPI(`/employees/${employeeId}/reservations/${reservationId}/`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    }),
+  deleteReservation: (employeeId: number, reservationId: number) => 
+    fetchAPI(`/employees/${employeeId}/reservations/${reservationId}/`, {
+      method: 'DELETE',
+    }),
+  cancelReservation: (employeeId: number, reservationId: number) => 
+    fetchAPI(`/employees/${employeeId}/reservations/${reservationId}/cancel/`, {
+      method: 'POST',
+    }),
 };
 
 // Project API
@@ -185,6 +205,18 @@ export type User = {
   role: string;
   full_name: string;
   department: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type Reservation = {
+  id: number;
+  employee_id: number;
+  start_date: string;
+  end_date: string;
+  reserved_hours_per_day: number;
+  reason: string | null;
+  status: string;
   created_at: string;
   updated_at: string;
 };

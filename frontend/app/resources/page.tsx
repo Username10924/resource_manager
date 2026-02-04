@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { employeeAPI, dashboardAPI, Employee, Schedule } from '@/lib/api';
+import { employeeAPI, dashboardAPI, Employee, Schedule, Reservation } from '@/lib/api';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/Card';
 import Button from '@/components/Button';
 import Modal from '@/components/Modal';
@@ -196,218 +196,245 @@ function ScheduleModal({
   employee: Employee;
   onUpdate: () => void;
 }) {
-  const [schedules, setSchedules] = useState<Schedule[]>([]);
-  const currentDate = new Date();
-  const [editingSchedule, setEditingSchedule] = useState<{
-    month: number;
-    year: number;
+  const [reservations, setReservations] = useState<Reservation[]>([]);
+  const today = new Date().toISOString().split('T')[0];
+  const nextMonth = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+  
+  const [reservationForm, setReservationForm] = useState<{
+    start_date: string;
+    end_date: string;
     reserved_hours_per_day: number;
+    reason: string;
   }>({
-    month: currentDate.getMonth() + 1,
-    year: currentDate.getFullYear(),
+    start_date: today,
+    end_date: nextMonth,
     reserved_hours_per_day: 0,
+    reason: '',
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [isMonthOpen, setIsMonthOpen] = useState(false);
-
-  const months = getMonthsList();
 
   useEffect(() => {
     if (isOpen) {
-      // Reset form to current month when opening modal
-      const now = new Date();
-      setEditingSchedule({
-        month: now.getMonth() + 1,
-        year: now.getFullYear(),
+      // Reset form when opening modal
+      setReservationForm({
+        start_date: today,
+        end_date: nextMonth,
         reserved_hours_per_day: 0,
+        reason: '',
       });
       setLoading(true);
-      loadSchedules();
+      loadReservations();
     }
   }, [isOpen, employee.id]);
 
-  // Auto-update form when month/year changes to show existing schedule data
-  useEffect(() => {
-    if (Array.isArray(schedules)) {
-      const existingSchedule = schedules.find(
-        (s) => s.month === editingSchedule.month && s.year === editingSchedule.year
-      );
-      if (existingSchedule) {
-        setEditingSchedule((prev) => ({
-          ...prev,
-          reserved_hours_per_day: existingSchedule.reserved_hours_per_day,
-        }));
-      } else {
-        // Reset to 0 if no existing schedule for this month
-        setEditingSchedule((prev) => ({
-          ...prev,
-          reserved_hours_per_day: 0,
-        }));
-      }
-    }
-  }, [editingSchedule.month, editingSchedule.year, schedules]);
-
-  const loadSchedules = async () => {
+  const loadReservations = async () => {
     try {
-      const data = await employeeAPI.getSchedule(employee.id);
-      setSchedules(data);
+      const data = await employeeAPI.getReservations(employee.id, false);
+      setReservations(data);
     } catch (error) {
-      console.error('Error loading schedules:', error);
-      toast.error('Failed to load schedules. Please try again.');
+      console.error('Error loading reservations:', error);
+      toast.error('Failed to load reservations. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleInputChange = (field: keyof typeof editingSchedule, value: number) => {
-    setEditingSchedule((prev) => ({ ...prev, [field]: value }));
+  const handleInputChange = (field: keyof typeof reservationForm, value: string | number) => {
+    setReservationForm((prev) => ({ ...prev, [field]: value }));
   };
 
-  // Calculate available hours based on current form input (updates in real-time)
-  const availableHoursPerDay = 6 - (editingSchedule.reserved_hours_per_day || 0);
-  const availableHoursPerMonth = availableHoursPerDay * 20;
+  // Calculate working days (excludes weekends)
+  const calculateWorkingDays = (startDate: string, endDate: string): number => {
+    if (!startDate || !endDate) return 0;
+    
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    
+    if (isNaN(start.getTime()) || isNaN(end.getTime()) || end < start) {
+      return 0;
+    }
+    
+    let count = 0;
+    const currentDate = new Date(start);
+    
+    while (currentDate <= end) {
+      const dayOfWeek = currentDate.getDay();
+      if (dayOfWeek !== 0 && dayOfWeek !== 6) {
+        count++;
+      }
+      currentDate.setDate(currentDate.getDate() + 1);
+    }
+    
+    return count;
+  };
+
+  const workingDays = calculateWorkingDays(reservationForm.start_date, reservationForm.end_date);
+  const maxHours = workingDays * 6;
+  const totalReservedHours = workingDays * (reservationForm.reserved_hours_per_day || 0);
+  const availableHoursPerDay = 6 - (reservationForm.reserved_hours_per_day || 0);
 
   const handleSave = async () => {
+    if (!reservationForm.start_date || !reservationForm.end_date) {
+      toast.error('Please select both start and end dates');
+      return;
+    }
+
+    if (new Date(reservationForm.end_date) < new Date(reservationForm.start_date)) {
+      toast.error('End date must be after start date');
+      return;
+    }
+
     setSaving(true);
     try {
-      await employeeAPI.updateSchedule(employee.id, editingSchedule);
-      await loadSchedules();
+      await employeeAPI.createReservation(employee.id, reservationForm);
+      await loadReservations();
       onUpdate();
-      toast.success('Schedule saved successfully!');
-      onClose();
+      toast.success('Reservation created successfully!');
+      // Reset form
+      setReservationForm({
+        start_date: today,
+        end_date: nextMonth,
+        reserved_hours_per_day: 0,
+        reason: '',
+      });
     } catch (error: any) {
-      console.error('Error updating schedule:', error);
-      const errorMsg = error.message || 'Failed to save schedule';
+      console.error('Error creating reservation:', error);
+      const errorMsg = error.message || 'Failed to create reservation';
       toast.error(errorMsg);
     } finally {
       setSaving(false);
     }
   };
 
+  const handleDeleteReservation = async (reservationId: number) => {
+    const confirmed = window.confirm('Are you sure you want to delete this reservation?');
+    if (!confirmed) return;
+
+    try {
+      await employeeAPI.deleteReservation(employee.id, reservationId);
+      toast.success('Reservation deleted successfully');
+      await loadReservations();
+      onUpdate();
+    } catch (error: any) {
+      console.error('Error deleting reservation:', error);
+      toast.error(error.message || 'Failed to delete reservation');
+    }
+  };
+
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={`Manage Schedule - ${employee.full_name}`} size="lg">
+    <Modal isOpen={isOpen} onClose={onClose} title={`Manage Reservations - ${employee.full_name}`} size="lg">
       {loading ? (
         <SkeletonModal />
       ) : (
         <div className="space-y-6">
-          {/* Current Schedule Editor */}
+          {/* Create New Reservation */}
           <div className="rounded-lg border border-gray-200 p-4">
-          <h4 className="mb-4 text-sm font-semibold text-gray-900">Set Schedule</h4>
-          
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Select Month
-              </label>
-              <div className="relative">
-                <button
-                  type="button"
-                  onClick={() => setIsMonthOpen(!isMonthOpen)}
-                  className="w-full px-3 py-2 text-left text-sm bg-white border border-gray-300 rounded-lg shadow-sm hover:border-blue-400 hover:shadow-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 flex items-center justify-between group"
-                >
-                  <span className="text-gray-900">
-                    {formatMonth(`${editingSchedule.year}-${String(editingSchedule.month).padStart(2, '0')}`)}
-                  </span>
-                  <svg
-                    className={`w-5 h-5 text-gray-400 transition-transform duration-200 flex-shrink-0 ${isMonthOpen ? 'rotate-180' : ''}`}
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
-                </button>
-                
-                {isMonthOpen && (
-                  <div className="absolute z-10 w-full mt-2 bg-white border border-gray-200 rounded-lg shadow-xl max-h-60 overflow-auto">
-                    {months.map((month) => {
-                      const [year, monthNum] = month.split('-');
-                      const monthValue = parseInt(monthNum);
-                      const yearValue = parseInt(year);
-                      return (
-                        <button
-                          key={month}
-                          type="button"
-                          onClick={() => {
-                            setEditingSchedule((prev) => ({ 
-                              ...prev, 
-                              month: monthValue,
-                              year: yearValue
-                            }));
-                            setIsMonthOpen(false);
-                          }}
-                          className={`w-full px-4 py-3 text-left text-sm hover:bg-blue-50 transition-colors duration-150 first:rounded-t-lg last:rounded-b-lg ${
-                            editingSchedule.month === monthValue && editingSchedule.year === yearValue
-                              ? 'bg-blue-50 text-blue-700 font-medium'
-                              : 'text-gray-700'
-                          }`}
-                        >
-                          {formatMonth(month)}
-                        </button>
-                      );
-                    })}
-                  </div>
-                )}
+            <h4 className="mb-4 text-sm font-semibold text-gray-900">Create New Reservation</h4>
+            
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <Input
+                type="date"
+                label="Start Date"
+                value={reservationForm.start_date}
+                onChange={(e) => handleInputChange('start_date', e.target.value)}
+              />
+              <Input
+                type="date"
+                label="End Date"
+                value={reservationForm.end_date}
+                onChange={(e) => handleInputChange('end_date', e.target.value)}
+              />
+            </div>
+
+            <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <Input
+                type="number"
+                label="Reserved Hours (hrs/day)"
+                value={reservationForm.reserved_hours_per_day}
+                onChange={(e) => handleInputChange('reserved_hours_per_day', parseFloat(e.target.value) || 0)}
+                min="0"
+                max="6"
+                step="0.5"
+              />
+              <Input
+                type="text"
+                label="Reason (optional)"
+                value={reservationForm.reason}
+                onChange={(e) => handleInputChange('reason', e.target.value)}
+                placeholder="e.g., Vacation, Training"
+              />
+            </div>
+
+            <div className="mt-4 rounded-lg bg-blue-50 p-4 space-y-2">
+              <div className="text-sm text-blue-900">
+                <span className="font-medium">Working Days:</span> <span className="font-bold">{workingDays}</span> days
+              </div>
+              <div className="text-sm text-blue-900">
+                <span className="font-medium">Total Reserved Hours:</span> <span className="font-bold">{totalReservedHours.toFixed(1)}</span> hrs
+              </div>
+              <div className="text-sm text-blue-900">
+                <span className="font-medium">Available Hours per Day:</span> <span className="font-bold">{availableHoursPerDay.toFixed(1)}</span> hrs
+              </div>
+              <div className="text-xs text-blue-700 mt-1">
+                (Weekends are excluded from working days calculation)
               </div>
             </div>
-            <Input
-              type="number"
-              label="Reserved Hours (hrs/day)"
-              value={editingSchedule.reserved_hours_per_day}
-              onChange={(e) => handleInputChange('reserved_hours_per_day', parseFloat(e.target.value) || 0)}
-              min="0"
-              max="6"
-              step="0.5"
-            />
-          </div>
 
-          <div className="mt-4 rounded-lg bg-blue-50 p-4">
-            <div className="text-sm font-medium text-blue-900">
-              Available Hours per Day: <span className="text-xl font-bold">{availableHoursPerDay.toFixed(1)}</span> hrs
-            </div>
-            <div className="text-xs text-blue-700 mt-1">
-              (Total: {availableHoursPerMonth.toFixed(0)} hrs/month @ 20 days/month)
-            </div>
-            <div className="mt-1 text-xs text-blue-700">
-              (Calculated as: (6 - reserved hours per day) × 20 workdays)
+            <div className="mt-4 flex justify-end">
+              <Button onClick={handleSave} disabled={saving}>
+                {saving ? 'Creating...' : 'Create Reservation'}
+              </Button>
             </div>
           </div>
 
-          <div className="mt-4 flex justify-end">
-            <Button onClick={handleSave} disabled={saving}>
-              {saving ? 'Saving...' : 'Save Schedule'}
-            </Button>
-          </div>
+          {/* Existing Reservations */}
+          {reservations.length > 0 && (
+            <div>
+              <h4 className="mb-3 text-sm font-semibold text-gray-900">Active Reservations</h4>
+              <div className="space-y-2">
+                {reservations.map((reservation) => (
+                  <div
+                    key={reservation.id}
+                    className={`flex items-center justify-between rounded-lg border p-3 ${
+                      reservation.status === 'cancelled' 
+                        ? 'border-gray-200 bg-gray-50' 
+                        : 'border-gray-200 bg-white'
+                    }`}
+                  >
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <svg className="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                        <div className="text-sm font-medium text-gray-900">
+                          {new Date(reservation.start_date + 'T00:00:00').toLocaleDateString()} - {new Date(reservation.end_date + 'T00:00:00').toLocaleDateString()}
+                        </div>
+                        {reservation.status === 'cancelled' && (
+                          <span className="text-xs px-2 py-1 bg-gray-200 text-gray-700 rounded">Cancelled</span>
+                        )}
+                      </div>
+                      <div className="mt-1 text-xs text-gray-600">
+                        Reserved: {reservation.reserved_hours_per_day}h/day
+                        {reservation.reason && ` • ${reservation.reason}`}
+                      </div>
+                    </div>
+                    {reservation.status === 'active' && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleDeleteReservation(reservation.id)}
+                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                      >
+                        Delete
+                      </Button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
-
-        {/* Existing Schedules */}
-        {schedules.length > 0 && (
-          <div>
-            <h4 className="mb-3 text-sm font-semibold text-gray-900">Schedule History</h4>
-            <div className="space-y-2">
-              {schedules.map((schedule) => (
-                <div
-                  key={schedule.id}
-                  className="flex items-center justify-between rounded-lg border border-gray-200 p-3"
-                >
-                  <div className="flex-1">
-                    <div className="text-sm font-medium text-gray-900">
-                      Month: {schedule.month || 'Current'}
-                    </div>
-                    <div className="mt-1 text-xs text-gray-600">
-                      Reserved: {schedule.reserved_hours_per_day}h/day
-                    </div>
-                  </div>
-                  <div className="text-sm font-semibold text-blue-600">
-                    {schedule.available_hours_per_month} hrs/month
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-      </div>
       )}
     </Modal>
   );
