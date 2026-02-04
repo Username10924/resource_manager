@@ -6,19 +6,41 @@ async function fetchAPI(endpoint: string, options: RequestInit = {}) {
   const userStr = typeof window !== 'undefined' ? localStorage.getItem('user') : null;
   const user = userStr ? JSON.parse(userStr) : null;
   
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+  const url = `${API_BASE_URL}${endpoint}`;
+  const config = {
     ...options,
     headers: {
       'Content-Type': 'application/json',
       ...(user?.username && { 'X-Username': user.username }),
       ...options.headers,
     },
-  });
+  };
+  
+  // Log the request for debugging
+  console.log('API Request:', { url, method: config.method || 'GET', body: options.body });
+  
+  const response = await fetch(url, config);
 
   if (!response.ok) {
     const error = await response.json().catch(() => ({ detail: 'An error occurred' }));
     // FastAPI returns errors in 'detail' field, but also support 'message' for compatibility
-    const errorMessage = error.detail || error.message || `API Error: ${response.status}`;
+    let errorMessage: string;
+    
+    if (typeof error.detail === 'string') {
+      errorMessage = error.detail;
+    } else if (Array.isArray(error.detail)) {
+      // Handle validation errors which might be an array
+      errorMessage = error.detail.map((e: any) => 
+        typeof e === 'string' ? e : e.msg || JSON.stringify(e)
+      ).join(', ');
+    } else if (typeof error.detail === 'object') {
+      errorMessage = JSON.stringify(error.detail);
+    } else if (error.message) {
+      errorMessage = error.message;
+    } else {
+      errorMessage = `API Error: ${response.status}`;
+    }
+    
     throw new Error(errorMessage);
   }
 

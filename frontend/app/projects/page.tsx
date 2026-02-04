@@ -737,25 +737,31 @@ function BookingModal({
 }) {
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
+  
+  // Initialize with default dates
+  const getDefaultDates = () => {
+    const today = new Date();
+    const oneMonthLater = new Date(today);
+    oneMonthLater.setMonth(oneMonthLater.getMonth() + 1);
+    return {
+      startDate: today.toISOString().split('T')[0],
+      endDate: oneMonthLater.toISOString().split('T')[0],
+    };
+  };
+  
   const [bookingData, setBookingData] = useState({
     hours: 0,
-    startDate: '',
-    endDate: '',
+    ...getDefaultDates(),
   });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (isOpen) {
       loadEmployees();
-      // Set default dates to today and one month from today
-      const today = new Date();
-      const oneMonthLater = new Date(today);
-      oneMonthLater.setMonth(oneMonthLater.getMonth() + 1);
-      
+      // Reset to default dates when modal opens
       setBookingData({
         hours: 0,
-        startDate: today.toISOString().split('T')[0],
-        endDate: oneMonthLater.toISOString().split('T')[0],
+        ...getDefaultDates(),
       });
     }
   }, [isOpen]);
@@ -798,8 +804,21 @@ function BookingModal({
   const maxHours = workingDays * 6; // 6 hours per working day
 
   const handleBooking = async () => {
-    if (!selectedEmployee || !bookingData.startDate || !bookingData.endDate || bookingData.hours <= 0) {
-      alert('Please select an employee, date range, and enter valid hours');
+    console.log('Booking data state:', bookingData);
+    console.log('Selected employee:', selectedEmployee);
+    
+    if (!selectedEmployee) {
+      alert('Please select an employee');
+      return;
+    }
+    
+    if (!bookingData.startDate || !bookingData.endDate) {
+      alert('Please select both start and end dates');
+      return;
+    }
+    
+    if (bookingData.hours <= 0) {
+      alert('Please enter valid hours (greater than 0)');
       return;
     }
 
@@ -814,18 +833,24 @@ function BookingModal({
     }
 
     try {
-      await projectAPI.createBooking(project.id, {
+      const bookingPayload = {
         employee_id: selectedEmployee.id,
         start_date: bookingData.startDate,
         end_date: bookingData.endDate,
         booked_hours: bookingData.hours,
-      });
+      };
+      
+      console.log('Creating booking with payload:', bookingPayload);
+      console.log('Project ID:', project.id);
+      
+      await projectAPI.createBooking(project.id, bookingPayload);
       onBook();
       onClose();
       setSelectedEmployee(null);
-      setBookingData({ hours: 0, startDate: '', endDate: '' });
+      setBookingData({ hours: 0, ...getDefaultDates() });
     } catch (error: any) {
       console.error('Error creating booking:', error);
+      console.error('Error details:', { message: error.message, stack: error.stack });
       const errorMessage = error?.message || 'Failed to create booking. Please try again.';
       alert(errorMessage);
     }
