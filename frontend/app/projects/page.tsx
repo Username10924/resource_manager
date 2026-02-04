@@ -54,10 +54,17 @@ export default function ProjectsPage() {
   const loadAllBookings = async () => {
     setLoadingBookings(true);
     try {
+      console.log('Loading all bookings...');
       const bookings = await projectAPI.getAllBookings();
-      setAllBookings(bookings);
+      console.log('Bookings received:', bookings);
+      console.log('Bookings type:', typeof bookings);
+      console.log('Is array:', Array.isArray(bookings));
+      console.log('Bookings length:', bookings?.length);
+      setAllBookings(Array.isArray(bookings) ? bookings : []);
     } catch (error) {
       console.error('Error loading bookings:', error);
+      console.error('Error details:', error);
+      setAllBookings([]);
     } finally {
       setLoadingBookings(false);
     }
@@ -298,9 +305,14 @@ export default function ProjectsPage() {
                 <div className="p-8 text-center">
                   <div className="text-sm text-gray-600">Loading bookings...</div>
                 </div>
-              ) : allBookings.length === 0 ? (
+              ) : !allBookings || allBookings.length === 0 ? (
                 <div className="p-8 text-center">
-                  <div className="text-sm text-gray-600">No bookings found</div>
+                  <div className="text-sm text-gray-600">
+                    No bookings found
+                    <div className="mt-2 text-xs text-gray-500">
+                      {allBookings === null ? 'Error loading bookings' : 'No bookings have been created yet'}
+                    </div>
+                  </div>
                 </div>
               ) : (
                 <div className="overflow-x-auto">
