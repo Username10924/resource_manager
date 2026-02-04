@@ -77,7 +77,26 @@ class DashboardController:
                               AND CAST(strftime('%m', er.start_date) AS INTEGER) <= es.month
                               AND CAST(strftime('%m', er.end_date) AS INTEGER) >= es.month
                            ), 0
-                       ) as reserved_hours
+                       ) as reserved_hours,
+                       COALESCE(
+                           (SELECT SUM(pb.booked_hours) 
+                            FROM project_bookings pb
+                            WHERE pb.employee_id = es.employee_id
+                              AND pb.status != 'cancelled'
+                              AND strftime('%Y', pb.start_date) = CAST(es.year AS TEXT)
+                              AND CAST(strftime('%m', pb.start_date) AS INTEGER) <= es.month
+                              AND CAST(strftime('%m', pb.end_date) AS INTEGER) >= es.month
+                           ), 0
+                       ) + COALESCE(
+                           (SELECT SUM(er.reserved_hours_per_day * 20)
+                            FROM employee_reservations er
+                            WHERE er.employee_id = es.employee_id
+                              AND er.status = 'active'
+                              AND strftime('%Y', er.start_date) = CAST(es.year AS TEXT)
+                              AND CAST(strftime('%m', er.start_date) AS INTEGER) <= es.month
+                              AND CAST(strftime('%m', er.end_date) AS INTEGER) >= es.month
+                           ), 0
+                       ) as booked_hours
                 FROM employee_schedules es
                 WHERE es.employee_id = ? AND es.year = ?
                 ORDER BY es.month

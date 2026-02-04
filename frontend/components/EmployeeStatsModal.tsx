@@ -42,14 +42,19 @@ export default function EmployeeStatsModal({ isOpen, onClose, employee, size = '
     
     return employee.schedule.map((sched: any) => {
       const totalCapacity = 6 * 20; // 6 hours/day * 20 workdays = 120 hours
+      const projectBooked = sched.project_booked_hours || 0;
+      const reserved = sched.reserved_hours || 0;
+      const totalUtilized = sched.booked_hours || (projectBooked + reserved);
       return {
         month: monthNames[sched.month - 1],
         monthNum: sched.month,
         year: sched.year,
         available: sched.available_hours_per_month,
-        booked: sched.booked_hours || 0,
+        booked: projectBooked,
+        reserved: reserved,
+        totalUtilized: totalUtilized,
         utilization: totalCapacity > 0 
-          ? ((sched.booked_hours || 0) / totalCapacity) * 100 
+          ? (totalUtilized / totalCapacity) * 100 
           : 0,
       };
     });
@@ -84,7 +89,10 @@ export default function EmployeeStatsModal({ isOpen, onClose, employee, size = '
   const monthlyData = getMonthlyData();
   const totalAvailable = monthlyData.reduce((sum: number, m: any) => sum + m.available, 0);
   const totalBooked = monthlyData.reduce((sum: number, m: any) => sum + m.booked, 0);
-  const avgUtilization = totalAvailable > 0 ? (totalBooked / totalAvailable) * 100 : 0;
+  const totalReserved = monthlyData.reduce((sum: number, m: any) => sum + m.reserved, 0);
+  const totalUtilized = monthlyData.reduce((sum: number, m: any) => sum + m.totalUtilized, 0);
+  const totalCapacity = 120 * monthlyData.length; // 120 hours per month
+  const avgUtilization = totalCapacity > 0 ? (totalUtilized / totalCapacity) * 100 : 0;
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Employee Statistics" size={size}>
@@ -114,7 +122,7 @@ export default function EmployeeStatsModal({ isOpen, onClose, employee, size = '
         </div>
 
         {/* Summary Stats */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
           <Card>
             <CardContent className="pt-4">
               <div className="text-center">
@@ -126,8 +134,16 @@ export default function EmployeeStatsModal({ isOpen, onClose, employee, size = '
           <Card>
             <CardContent className="pt-4">
               <div className="text-center">
-                <div className="text-sm font-medium text-gray-600">Total Booked</div>
+                <div className="text-sm font-medium text-gray-600">Project Booked</div>
                 <div className="mt-1 text-2xl font-bold text-green-600">{totalBooked}h</div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-4">
+              <div className="text-center">
+                <div className="text-sm font-medium text-gray-600">Reserved Hours</div>
+                <div className="mt-1 text-2xl font-bold text-blue-600">{totalReserved}h</div>
               </div>
             </CardContent>
           </Card>
@@ -168,7 +184,8 @@ export default function EmployeeStatsModal({ isOpen, onClose, employee, size = '
                 />
                 <Legend />
                 <Bar dataKey="available" fill="#9ca3af" name="Available Hours" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="booked" fill="#10b981" name="Booked Hours" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="booked" fill="#10b981" name="Project Booked" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="reserved" fill="#3b82f6" name="Reserved Hours" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </CardContent>
