@@ -153,6 +153,15 @@ class ProjectController:
     def _log_booking(project_id: int, employee_id: int, booking_data: Dict[str, Any]):
         """Log booking activity"""
         from database import db
+        
+        # Convert date objects to strings for JSON serialization
+        serializable_data = {}
+        for key, value in booking_data.items():
+            if isinstance(value, (date, datetime)):
+                serializable_data[key] = value.isoformat()
+            else:
+                serializable_data[key] = value
+        
         query = '''
             INSERT INTO audit_log (action, table_name, record_id, changes)
             VALUES (?, ?, ?, ?)
@@ -160,7 +169,7 @@ class ProjectController:
         changes = json.dumps({
             'project_id': project_id,
             'employee_id': employee_id,
-            'booking_data': booking_data,
+            'booking_data': serializable_data,
             'timestamp': datetime.now().isoformat()
         })
         db.execute(query, ('BOOK_EMPLOYEE', 'project_bookings', None, changes))
