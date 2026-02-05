@@ -613,7 +613,7 @@ function CreateProjectModal({
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            Solution Architect <span className="text-red-500">*</span>
+            Project Manager <span className="text-red-500">*</span>
           </label>
           <div className="relative">
             <button

@@ -36,29 +36,31 @@ export default function EmployeeStatsModal({ isOpen, onClose, employee, size = '
 
   if (!employee) return null;
 
-  const getMonthlyData = () => {
-    if (!employee.schedule) return [];
-    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    
-    return employee.schedule.map((sched: any) => {
-      const totalCapacity = 6 * 20; // 6 hours/day * 20 workdays = 120 hours
-      const projectBooked = sched.project_booked_hours || 0;
-      const reserved = sched.reserved_hours || 0;
-      const totalUtilized = sched.booked_hours || (projectBooked + reserved);
-      return {
-        month: monthNames[sched.month - 1],
-        monthNum: sched.month,
-        year: sched.year,
-        available: sched.available_hours_per_month,
-        booked: projectBooked,
-        reserved: reserved,
-        totalUtilized: totalUtilized,
-        utilization: totalCapacity > 0 
-          ? (totalUtilized / totalCapacity) * 100 
-          : 0,
-      };
-    });
-  };
+const getMonthlyData = () => {
+  if (!employee.schedule) return [];
+  const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  
+  return employee.schedule.map((sched: any) => {
+    const totalCapacity = 6 * 20; // 6 hours/day * 20 workdays = 120 hours
+    const projectBooked = sched.project_booked_hours || 0;
+    const reserved = sched.reserved_hours || 0;
+    const totalUtilized = sched.booked_hours || (projectBooked + reserved);
+    // FIX: calculate actual available hours by subtracting booked and reserved hours
+    const actualAvailable = Math.max(0, sched.available_hours_per_month - projectBooked - reserved);
+    return {
+      month: monthNames[sched.month - 1],
+      monthNum: sched.month,
+      year: sched.year,
+      available: actualAvailable,  // Changed from sched.available_hours_per_month
+      booked: projectBooked,
+      reserved: reserved,
+      totalUtilized: totalUtilized,
+      utilization: totalCapacity > 0 
+        ? (totalUtilized / totalCapacity) * 100 
+        : 0,
+    };
+  });
+};
 
   const loadProjectBookings = async (month: number, year: number, monthName: string) => {
     setLoadingProjects(true);
