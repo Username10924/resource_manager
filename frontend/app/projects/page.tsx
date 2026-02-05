@@ -1021,7 +1021,16 @@ function BookingModal({
   };
 
   const workingDays = calculateWorkingDays(bookingData.startDate, bookingData.endDate);
-  const maxHours = workingDays * 6; // 6 hours per working day
+  
+  // Calculate max hours based on availability data (accounting for existing bookings/reservations)
+  const maxHoursFromAvailability = employeeAvailability?.availability?.available_hours ?? null;
+  const totalMaxHours = workingDays * 6; // 6 hours per working day (theoretical max)
+  const maxHours = maxHoursFromAvailability !== null ? Math.min(totalMaxHours, maxHoursFromAvailability) : totalMaxHours;
+  
+  // Get utilized hours info for display
+  const utilizedHours = employeeAvailability?.availability?.total_utilized_hours ?? 0;
+  const bookedHours = employeeAvailability?.availability?.total_booked_hours ?? 0;
+  const reservedHours = employeeAvailability?.availability?.total_reserved_hours ?? 0;
 
   const handleBooking = async () => {
     console.log('Booking data state:', bookingData);
@@ -1048,7 +1057,17 @@ function BookingModal({
     }
 
     if (bookingData.hours > maxHours) {
-      alert(`Cannot book ${bookingData.hours} hours. Maximum ${maxHours} hours for ${workingDays} working days (6hrs/day).`);
+      if (utilizedHours > 0) {
+        alert(`Cannot book ${bookingData.hours} hours. Employee only has ${maxHours} hours available in this period.\n\nAlready utilized: ${utilizedHours} hours (${bookedHours} booked + ${reservedHours} reserved)\nMaximum capacity: ${totalMaxHours} hours (${workingDays} working days × 6 hrs/day)`);
+      } else {
+        alert(`Cannot book ${bookingData.hours} hours. Maximum ${maxHours} hours for ${workingDays} working days (6hrs/day).`);
+      }
+      return;
+    }
+    
+    // Double-check availability if we have data
+    if (maxHoursFromAvailability !== null && bookingData.hours > maxHoursFromAvailability) {
+      alert(`Cannot book ${bookingData.hours} hours. Employee only has ${maxHoursFromAvailability} hours available after accounting for existing bookings and reservations.`);
       return;
     }
 
@@ -1242,13 +1261,39 @@ function BookingModal({
                 )}
 
                 {workingDays > 0 && (
-                  <div className="rounded-lg border border-gray-200 bg-gray-50 p-3">
+                  <div className={`rounded-lg border p-3 ${
+                    utilizedHours > 0 
+                      ? 'border-amber-200 bg-amber-50' 
+                      : 'border-gray-200 bg-gray-50'
+                  }`}>
                     <div className="text-sm text-gray-900">
                       📅 {workingDays} working days ({new Date(bookingData.startDate).toLocaleDateString()} - {new Date(bookingData.endDate).toLocaleDateString()})
                     </div>
                     <div className="text-xs text-gray-700 mt-1">
-                      Maximum: {maxHours} hours (6 hrs/day)
+                      Maximum capacity: {totalMaxHours} hours (6 hrs/day)
                     </div>
+                    {utilizedHours > 0 && employeeAvailability?.availability && (
+                      <div className="mt-2 pt-2 border-t border-amber-200">
+                        <div className="text-xs text-amber-800">
+                          <span className="font-semibold">Already utilized:</span> {utilizedHours} hours
+                          {bookedHours > 0 && <span> ({bookedHours}h booked)</span>}
+                          {reservedHours > 0 && <span> ({reservedHours}h reserved)</span>}
+                        </div>
+                        <div className={`text-sm font-semibold mt-1 ${maxHours > 0 ? 'text-green-700' : 'text-red-700'}`}>
+                          Available to book: {maxHours} hours
+                        </div>
+                      </div>
+                    )}
+                    {!employeeAvailability?.availability && loadingAvailability && (
+                      <div className="text-xs text-gray-500 mt-1">
+                        Checking availability...
+                      </div>
+                    )}
+                    {!loadingAvailability && !employeeAvailability?.availability && utilizedHours === 0 && (
+                      <div className="text-xs text-green-700 mt-1 font-semibold">
+                        Available to book: {maxHours} hours
+                      </div>
+                    )}
                   </div>
                 )}
 
@@ -1261,13 +1306,30 @@ function BookingModal({
                   max={maxHours}
                 />
 
-                {bookingData.hours > 0 && workingDays > 0 && (
+                {bookingData.hours > 0 && workingDays > 0 && bookingData.hours <= maxHours && (
                   <div className="rounded-lg border border-green-200 bg-green-50 p-3">
                     <div className="text-sm text-green-900">
                       Average: {(bookingData.hours / workingDays).toFixed(1)} hrs/day
                     </div>
                     <div className="text-xs text-green-700 mt-1">
-                      Remaining capacity: {maxHours - bookingData.hours} hours
+                      Remaining capacity after booking: {(maxHours - bookingData.hours).toFixed(1)} hours
+                    </div>
+                  </div>
+                )}
+
+                {bookingData.hours > maxHours && (
+                  <div className="rounded-lg border border-red-300 bg-red-50 p-3">
+                    <div className="flex items-center gap-2 text-sm font-semibold text-red-900">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                      </svg>
+                      Exceeds available hours!
+                    </div>
+                    <div className="text-xs text-red-800 mt-1">
+                      Requested {bookingData.hours} hours but only {maxHours} hours available.
+                      {utilizedHours > 0 && (
+                        <span> ({utilizedHours} hours already utilized)</span>
+                      )}
                     </div>
                   </div>
                 )}
@@ -1276,7 +1338,11 @@ function BookingModal({
                   <Button type="button" variant="secondary" onClick={onClose}>
                     Cancel
                   </Button>
-                  <Button onClick={handleBooking}>
+                  <Button 
+                    onClick={handleBooking}
+                    disabled={bookingData.hours > maxHours || bookingData.hours <= 0 || maxHours <= 0}
+                    className={bookingData.hours > maxHours || maxHours <= 0 ? 'opacity-50 cursor-not-allowed' : ''}
+                  >
                     Confirm Booking
                   </Button>
                 </div>

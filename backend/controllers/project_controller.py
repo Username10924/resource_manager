@@ -67,6 +67,10 @@ class ProjectController:
     @staticmethod
     def book_employee_for_project(project_id: int, booking_data: Dict[str, Any]) -> Dict[str, Any]:
         """Book an employee for a project with date range"""
+        from database import db
+        from models.reservation import EmployeeReservation
+        from datetime import timedelta
+        
         required_fields = ['employee_id', 'start_date', 'end_date', 'booked_hours']
         
         for field in required_fields:
@@ -81,9 +85,95 @@ class ProjectController:
         if not employee:
             return {'error': 'Employee not found'}
         
-        # Note: Availability checking has been simplified
-        # You may want to implement more sophisticated availability logic
-        # based on your business rules for date-based bookings
+        # Parse dates if they're strings
+        start_date = booking_data['start_date']
+        end_date = booking_data['end_date']
+        booked_hours = booking_data['booked_hours']
+        
+        if isinstance(start_date, str):
+            start_date = datetime.strptime(start_date, '%Y-%m-%d').date()
+        if isinstance(end_date, str):
+            end_date = datetime.strptime(end_date, '%Y-%m-%d').date()
+        
+        # Calculate working days
+        def count_working_days(start, end):
+            working_days = 0
+            current = start
+            while current <= end:
+                if current.weekday() < 5:  # Monday=0 to Friday=4
+                    working_days += 1
+                current += timedelta(days=1)
+            return working_days
+        
+        total_working_days = count_working_days(start_date, end_date)
+        max_hours_per_day = 6
+        total_max_hours = total_working_days * max_hours_per_day
+        
+        # Check existing bookings that overlap with this date range
+        bookings_query = '''
+            SELECT pb.*, p.name as project_name
+            FROM project_bookings pb
+            JOIN projects p ON pb.project_id = p.id
+            WHERE pb.employee_id = ? 
+              AND pb.status != 'cancelled'
+              AND (
+                  (pb.start_date <= ? AND pb.end_date >= ?)
+                  OR (pb.start_date <= ? AND pb.end_date >= ?)
+                  OR (pb.start_date >= ? AND pb.end_date <= ?)
+              )
+        '''
+        existing_bookings = db.fetch_all(bookings_query, (
+            booking_data['employee_id'],
+            start_date, start_date,
+            end_date, end_date,
+            start_date, end_date
+        ))
+        
+        # Calculate total booked hours from overlapping bookings
+        total_booked_hours = 0
+        for booking in existing_bookings:
+            b_start = booking['start_date'] if isinstance(booking['start_date'], date) else datetime.strptime(str(booking['start_date']), '%Y-%m-%d').date()
+            b_end = booking['end_date'] if isinstance(booking['end_date'], date) else datetime.strptime(str(booking['end_date']), '%Y-%m-%d').date()
+            
+            overlap_start = max(start_date, b_start)
+            overlap_end = min(end_date, b_end)
+            
+            if overlap_start <= overlap_end:
+                overlap_working_days = count_working_days(overlap_start, overlap_end)
+                booking_total_working_days = count_working_days(b_start, b_end)
+                
+                if booking_total_working_days > 0:
+                    hours_per_day = booking['booked_hours'] / booking_total_working_days
+                    overlap_hours = hours_per_day * overlap_working_days
+                    total_booked_hours += overlap_hours
+        
+        # Get reservations that overlap
+        reservations = EmployeeReservation.get_active_reservations_for_date_range(
+            booking_data['employee_id'], start_date, end_date
+        )
+        
+        total_reserved_hours = 0
+        for reservation in reservations:
+            r_start = reservation.start_date if isinstance(reservation.start_date, date) else datetime.strptime(str(reservation.start_date), '%Y-%m-%d').date()
+            r_end = reservation.end_date if isinstance(reservation.end_date, date) else datetime.strptime(str(reservation.end_date), '%Y-%m-%d').date()
+            
+            overlap_start = max(start_date, r_start)
+            overlap_end = min(end_date, r_end)
+            
+            if overlap_start <= overlap_end:
+                overlap_working_days = count_working_days(overlap_start, overlap_end)
+                total_reserved_hours += reservation.reserved_hours_per_day * overlap_working_days
+        
+        total_utilized_hours = total_booked_hours + total_reserved_hours
+        available_hours = max(0, total_max_hours - total_utilized_hours)
+        
+        # Validate that the requested hours don't exceed available hours
+        if booked_hours > available_hours:
+            return {
+                'error': f'Cannot book {booked_hours} hours. Employee only has {round(available_hours, 1)} hours available in this period. '
+                        f'Already utilized: {round(total_utilized_hours, 1)} hours ({round(total_booked_hours, 1)} booked + {round(total_reserved_hours, 1)} reserved). '
+                        f'Maximum capacity: {total_max_hours} hours ({total_working_days} working days × 6 hrs/day).'
+            }
         
         try:
             result = project.add_booking(

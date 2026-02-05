@@ -236,11 +236,11 @@ async def get_employee_availability_for_date_range(
     start_date: str = Query(..., description="Start date in YYYY-MM-DD format"),
     end_date: str = Query(..., description="End date in YYYY-MM-DD format")
 ):
-    """Get employee's bookings and reservations for a specific date range"""
+    """Get employee's bookings, reservations, and available hours for a specific date range"""
     from models.employee import Employee
     from models.reservation import EmployeeReservation
     from database import db
-    from datetime import datetime
+    from datetime import datetime, timedelta
     
     employee = Employee.get_by_id(employee_id)
     if not employee:
@@ -282,6 +282,71 @@ async def get_employee_availability_for_date_range(
         employee_id, start, end
     )
     
+    # Calculate working days in the requested range
+    def count_working_days(start_date, end_date):
+        working_days = 0
+        current = start_date
+        while current <= end_date:
+            # Count weekdays (Monday=0 to Friday=4 in Python's weekday())
+            if current.weekday() < 5:
+                working_days += 1
+            current += timedelta(days=1)
+        return working_days
+    
+    # Calculate available hours considering overlapping bookings and reservations
+    # We need to track utilization per day
+    total_working_days = count_working_days(start, end)
+    max_hours_per_day = 6
+    total_max_hours = total_working_days * max_hours_per_day
+    
+    # Calculate total booked hours for overlapping bookings
+    # For bookings, we need to calculate how many hours fall within our date range
+    total_booked_hours = 0
+    for booking in bookings:
+        b_start = booking['start_date'] if isinstance(booking['start_date'], type(start)) else datetime.strptime(str(booking['start_date']), '%Y-%m-%d').date()
+        b_end = booking['end_date'] if isinstance(booking['end_date'], type(end)) else datetime.strptime(str(booking['end_date']), '%Y-%m-%d').date()
+        
+        # Find overlap between booking and requested range
+        overlap_start = max(start, b_start)
+        overlap_end = min(end, b_end)
+        
+        if overlap_start <= overlap_end:
+            # Calculate working days in the overlap
+            overlap_working_days = count_working_days(overlap_start, overlap_end)
+            booking_total_working_days = count_working_days(b_start, b_end)
+            
+            # Pro-rate the booked hours based on the overlap
+            if booking_total_working_days > 0:
+                hours_per_day = booking['booked_hours'] / booking_total_working_days
+                overlap_hours = hours_per_day * overlap_working_days
+                total_booked_hours += overlap_hours
+    
+    # Calculate reserved hours
+    # For reservations, hours are per day, so we count days in overlap and multiply
+    total_reserved_hours = 0
+    for reservation in reservations:
+        r_start = reservation.start_date if isinstance(reservation.start_date, type(start)) else datetime.strptime(str(reservation.start_date), '%Y-%m-%d').date()
+        r_end = reservation.end_date if isinstance(reservation.end_date, type(end)) else datetime.strptime(str(reservation.end_date), '%Y-%m-%d').date()
+        
+        # Find overlap between reservation and requested range
+        overlap_start = max(start, r_start)
+        overlap_end = min(end, r_end)
+        
+        if overlap_start <= overlap_end:
+            overlap_working_days = count_working_days(overlap_start, overlap_end)
+            total_reserved_hours += reservation.reserved_hours_per_day * overlap_working_days
+    
+    total_utilized_hours = total_booked_hours + total_reserved_hours
+    available_hours = max(0, total_max_hours - total_utilized_hours)
+    
+    # Calculate max bookable hours per day on average
+    if total_working_days > 0:
+        avg_utilized_per_day = total_utilized_hours / total_working_days
+        avg_available_per_day = max(0, max_hours_per_day - avg_utilized_per_day)
+    else:
+        avg_utilized_per_day = 0
+        avg_available_per_day = max_hours_per_day
+    
     return {
         'employee': employee.to_dict(),
         'date_range': {
@@ -289,7 +354,17 @@ async def get_employee_availability_for_date_range(
             'end_date': end_date
         },
         'bookings': [dict(b) for b in bookings],
-        'reservations': [r.to_dict() for r in reservations]
+        'reservations': [r.to_dict() for r in reservations],
+        'availability': {
+            'working_days': total_working_days,
+            'max_hours_total': total_max_hours,
+            'total_booked_hours': round(total_booked_hours, 1),
+            'total_reserved_hours': round(total_reserved_hours, 1),
+            'total_utilized_hours': round(total_utilized_hours, 1),
+            'available_hours': round(available_hours, 1),
+            'avg_utilized_per_day': round(avg_utilized_per_day, 2),
+            'avg_available_per_day': round(avg_available_per_day, 2)
+        }
     }
 
 @router.delete("/{employee_id}", response_model=Dict[str, Any])
