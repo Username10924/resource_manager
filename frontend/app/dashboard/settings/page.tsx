@@ -246,7 +246,7 @@ export default function SettingsPage() {
               <Button
                 onClick={handleReset}
                 disabled={!hasChanges || saving}
-                variant="outline"
+                variant="secondary"
                 className="flex items-center gap-2"
               >
                 <FaUndo />
