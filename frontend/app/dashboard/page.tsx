@@ -180,9 +180,9 @@ export default function DashboardPage() {
     <div className="space-y-6">
           {/* Page Header with Greeting */}
           <div className="mb-6">
-            <h1 className="text-2xl font-bold text-gray-900">Hey {user?.full_name?.split(' ')[0] || 'Adrian'} -</h1>
+            <h1 className="text-2xl font-bold text-gray-900">Hey {user?.full_name?.split(' ')[0] || 'Ahmed'} -</h1>
             <p className="mt-1 text-sm text-gray-600">
-              here's what's happening with your store today
+              here's what's happening.
             </p>
           </div>
 
@@ -692,7 +692,7 @@ function ProjectDetailsModal({
                           {emp.bookings.map((booking: any, idx: number) => (
                             <div key={idx} className="flex items-center justify-between text-sm bg-gray-50 rounded px-3 py-2">
                               <span className="text-gray-600">
-                                {formatMonth(`${booking.year}-${String(booking.month).padStart(2, '0')}`)}
+                                {formatMonth(`${booking.start_date}`)} - {formatMonth(`${booking.end_date}`)}
                               </span>
                               <span className="font-medium text-gray-900">{booking.booked_hours} hours</span>
                             </div>

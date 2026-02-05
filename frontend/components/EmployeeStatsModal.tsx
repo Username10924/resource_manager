@@ -243,7 +243,7 @@ const getMonthlyData = () => {
                     <th className="px-4 py-2 text-left font-medium text-gray-700">Month</th>
                     <th className="px-4 py-2 text-right font-medium text-gray-700">Available</th>
                     <th className="px-4 py-2 text-right font-medium text-gray-700">Booked</th>
-                    <th className="px-4 py-2 text-right font-medium text-gray-700">Free</th>
+                    <th className="px-4 py-2 text-right font-medium text-gray-700">Reserved</th>
                     <th className="px-4 py-2 text-right font-medium text-gray-700">Utilization</th>
                     <th className="px-4 py-2 text-center font-medium text-gray-700">Details</th>
                   </tr>
@@ -258,7 +258,7 @@ const getMonthlyData = () => {
                       <td className="px-4 py-2 font-medium text-gray-900">{data.month}</td>
                       <td className="px-4 py-2 text-right text-gray-600">{data.available}h</td>
                       <td className="px-4 py-2 text-right text-gray-600">{data.booked}h</td>
-                      <td className="px-4 py-2 text-right text-gray-600">{Math.max(0, data.available - data.booked)}h</td>
+                      <td className="px-4 py-2 text-right text-gray-600">{data.reserved}h</td>
                       <td className="px-4 py-2 text-right">
                         <span 
                           className="inline-flex items-center rounded-full px-2 py-1 text-xs font-medium"
