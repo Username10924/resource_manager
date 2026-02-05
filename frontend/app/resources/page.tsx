@@ -86,7 +86,7 @@ export default function ResourcesPage() {
           <div className="mb-8 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
             <Card>
               <CardContent className="py-6">
-                <div className="text-xs font-medium text-gray-500 uppercase tracking-wide">Available Hours</div>
+                <div className="text-xs font-medium text-gray-500 uppercase tracking-wide">Available Hours This Month</div>
                 <div className="mt-3 text-4xl font-bold bg-gradient-to-r from-gray-600 to-gray-500 bg-clip-text text-transparent">{stats.total_available_hours || 0}</div>
               </CardContent>
             </Card>
