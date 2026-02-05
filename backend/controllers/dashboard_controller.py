@@ -4,11 +4,18 @@ from models.employee import Employee
 from models.project import Project
 from models.user import User
 from database import db
+from controllers.settings_controller import SettingsController
 
 class DashboardController:
     @staticmethod
     def get_resources_dashboard(manager_id: Optional[int] = None) -> Dict[str, Any]:
         """Get resources dashboard data"""
+        
+        # Get dynamic settings
+        settings = SettingsController.get_settings()
+        work_hours_per_day = settings['work_hours_per_day']
+        work_days_per_month = settings['work_days_per_month']
+        monthly_capacity = work_hours_per_day * work_days_per_month
         
         if manager_id:
             # Get manager's team
@@ -56,7 +63,7 @@ class DashboardController:
             dashboard_data['departments'][dept]['count'] += 1
             
             # Get employee schedule with both project bookings AND reservations
-            query = '''
+            query = f'''
                 SELECT es.*, 
                        COALESCE(
                            (SELECT SUM(pb.booked_hours) 
@@ -69,7 +76,7 @@ class DashboardController:
                            ), 0
                        ) as project_booked_hours,
                        COALESCE(
-                           (SELECT SUM(er.reserved_hours_per_day * 20)
+                           (SELECT SUM(er.reserved_hours_per_day * {work_days_per_month})
                             FROM employee_reservations er
                             WHERE er.employee_id = es.employee_id
                               AND er.status = 'active'
@@ -88,7 +95,7 @@ class DashboardController:
                               AND CAST(strftime('%m', pb.end_date) AS INTEGER) >= es.month
                            ), 0
                        ) + COALESCE(
-                           (SELECT SUM(er.reserved_hours_per_day * 20)
+                           (SELECT SUM(er.reserved_hours_per_day * {work_days_per_month})
                             FROM employee_reservations er
                             WHERE er.employee_id = es.employee_id
                               AND er.status = 'active'
@@ -112,7 +119,9 @@ class DashboardController:
             # Update monthly summary and department totals
             for sched in schedule_data:
                 month = sched['month']
-                base_available = sched['available_hours_per_month']
+                # Recalculate base_available dynamically using current settings
+                reserved_hours_per_day = sched['reserved_hours_per_day'] or 0
+                base_available = (work_hours_per_day - reserved_hours_per_day) * work_days_per_month
                 project_booked = sched['project_booked_hours'] or 0
                 reserved = sched['reserved_hours'] or 0
                 
@@ -124,7 +133,7 @@ class DashboardController:
                 
                 dashboard_data['monthly_summary'][month]['total_available'] += actual_available
                 dashboard_data['monthly_summary'][month]['total_booked'] += total_utilized
-                dashboard_data['monthly_summary'][month]['total_capacity'] += 120  # 6 hrs/day * 20 days
+                dashboard_data['monthly_summary'][month]['total_capacity'] += monthly_capacity
                 dashboard_data['monthly_summary'][month]['employee_count'] += 1
                 
                 # Add to department's total available hours (only for current month)

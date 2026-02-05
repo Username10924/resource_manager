@@ -4,6 +4,7 @@ from pydantic import BaseModel, validator
 from datetime import datetime
 
 from controllers.employee_controller import EmployeeController
+from controllers.settings_controller import SettingsController
 from models.user import User
 from dependencies import get_current_user
 
@@ -39,8 +40,9 @@ class ScheduleUpdate(BaseModel):
     
     @validator('reserved_hours_per_day')
     def validate_hours(cls, v):
-        if v < 0 or v > 6:
-            raise ValueError('Reserved hours must be between 0 and 6')
+        # Basic range check - more specific validation done in route handler
+        if v < 0 or v > 24:
+            raise ValueError('Reserved hours must be between 0 and 24')
         return v
 
 @router.post("/", response_model=Dict[str, Any])
@@ -175,7 +177,8 @@ async def get_employee_availability(employee_id: int, month: int, year: int):
     booked_hours = result['booked_hours'] or 0
     
     # Include reserved hours as part of the booked hours for utilization
-    reserved_hours_monthly = schedule.reserved_hours_per_day * 20  # 20 work days per month
+    work_days_per_month = SettingsController.get_work_days_per_month()
+    reserved_hours_monthly = schedule.reserved_hours_per_day * work_days_per_month
     total_utilized_hours = booked_hours + reserved_hours_monthly
     
     available_hours = schedule.get_available_hours() - booked_hours
@@ -296,7 +299,7 @@ async def get_employee_availability_for_date_range(
     # Calculate available hours considering overlapping bookings and reservations
     # We need to track utilization per day
     total_working_days = count_working_days(start, end)
-    max_hours_per_day = 6
+    max_hours_per_day = SettingsController.get_work_hours_per_day()
     total_max_hours = total_working_days * max_hours_per_day
     
     # Calculate total booked hours for overlapping bookings

@@ -1,7 +1,7 @@
 from typing import Optional, Dict, Any, List
 from datetime import datetime
 from database import db
-import config
+from controllers.settings_controller import SettingsController
 
 class EmployeeSchedule:
     def __init__(self, **kwargs):
@@ -53,8 +53,9 @@ class EmployeeSchedule:
     
     def update_reserved_hours(self, reserved_hours: float) -> 'EmployeeSchedule':
         """Update reserved hours and recalculate available hours"""
-        if reserved_hours > config.WORK_HOURS_PER_DAY:
-            raise ValueError(f"Reserved hours cannot exceed {config.WORK_HOURS_PER_DAY} hours per day")
+        work_hours_per_day = SettingsController.get_work_hours_per_day()
+        if reserved_hours > work_hours_per_day:
+            raise ValueError(f"Reserved hours cannot exceed {work_hours_per_day} hours per day")
         
         query = '''
             UPDATE employee_schedules 
@@ -70,7 +71,10 @@ class EmployeeSchedule:
     
     def get_available_hours(self) -> float:
         """Calculate available hours for the month"""
-        available = (config.WORK_HOURS_PER_DAY - self.reserved_hours_per_day) * config.WORK_DAYS_PER_MONTH
+        settings = SettingsController.get_settings()
+        work_hours_per_day = settings['work_hours_per_day']
+        work_days_per_month = settings['work_days_per_month']
+        available = (work_hours_per_day - self.reserved_hours_per_day) * work_days_per_month
         return max(0, available)
     
     def to_dict(self) -> Dict[str, Any]:

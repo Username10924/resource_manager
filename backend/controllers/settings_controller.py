@@ -1,6 +1,7 @@
 from typing import Dict, Any
 import re
 from pathlib import Path
+import importlib
 
 class SettingsController:
     @staticmethod
@@ -36,6 +37,28 @@ class SettingsController:
         return settings
     
     @staticmethod
+    def get_work_hours_per_day() -> int:
+        """Get work hours per day dynamically"""
+        return SettingsController.get_settings()['work_hours_per_day']
+    
+    @staticmethod
+    def get_work_days_per_month() -> int:
+        """Get work days per month dynamically"""
+        return SettingsController.get_settings()['work_days_per_month']
+    
+    @staticmethod
+    def get_monthly_capacity() -> int:
+        """Get monthly capacity (hours_per_day * days_per_month)"""
+        settings = SettingsController.get_settings()
+        return settings['work_hours_per_day'] * settings['work_days_per_month']
+    
+    @staticmethod
+    def reload_config():
+        """Reload the config module to pick up new values"""
+        import config
+        importlib.reload(config)
+    
+    @staticmethod
     def update_settings(settings: Dict[str, Any]) -> Dict[str, Any]:
         """Update business rules settings in config.py"""
         config_path = Path(__file__).parent.parent / "config.py"
@@ -69,6 +92,9 @@ class SettingsController:
             # Write back to file
             with open(config_path, 'w') as f:
                 f.write(content)
+            
+            # Reload config module to pick up new values
+            SettingsController.reload_config()
             
             # Return updated settings
             return SettingsController.get_settings()

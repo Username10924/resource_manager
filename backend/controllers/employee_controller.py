@@ -2,6 +2,7 @@ from typing import List, Dict, Any, Optional
 from models.employee import Employee
 from models.user import User
 from models.schedule import EmployeeSchedule
+from controllers.settings_controller import SettingsController
 
 class EmployeeController:
     @staticmethod
@@ -87,9 +88,17 @@ class EmployeeController:
         
         schedule = EmployeeSchedule.get_employee_yearly_schedule(employee_id, year)
         
-        # Calculate totals
-        total_reserved = sum(s['reserved_hours_per_day'] * 20 for s in schedule)
-        total_available = sum(s['available_hours_per_month'] for s in schedule)
+        # Get dynamic settings
+        settings = SettingsController.get_settings()
+        work_hours_per_day = settings['work_hours_per_day']
+        work_days_per_month = settings['work_days_per_month']
+        
+        # Calculate totals - recalculate available hours dynamically
+        total_reserved = sum(s['reserved_hours_per_day'] * work_days_per_month for s in schedule)
+        total_available = sum(
+            (work_hours_per_day - (s['reserved_hours_per_day'] or 0)) * work_days_per_month 
+            for s in schedule
+        )
         
         return {
             'employee': employee.to_dict(),
@@ -97,8 +106,8 @@ class EmployeeController:
             'totals': {
                 'total_reserved_hours': total_reserved,
                 'total_available_hours': total_available,
-                'work_days_per_month': 20,
-                'work_hours_per_day': 6
+                'work_days_per_month': work_days_per_month,
+                'work_hours_per_day': work_hours_per_day
             }
         }
     

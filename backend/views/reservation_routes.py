@@ -23,8 +23,9 @@ class ReservationCreate(BaseModel):
     
     @validator('reserved_hours_per_day')
     def validate_hours(cls, v):
-        if v < 0 or v > 6:
-            raise ValueError('Reserved hours per day must be between 0 and 6')
+        # Basic range check - more specific validation done in model/route handler
+        if v < 0 or v > 24:
+            raise ValueError('Reserved hours per day must be between 0 and 24')
         return v
 
 class ReservationUpdate(BaseModel):

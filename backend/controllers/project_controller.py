@@ -5,6 +5,7 @@ from models.project import Project
 from models.user import User
 from models.employee import Employee
 from models.schedule import EmployeeSchedule
+from controllers.settings_controller import SettingsController
 
 class ProjectController:
     @staticmethod
@@ -106,7 +107,7 @@ class ProjectController:
             return working_days
         
         total_working_days = count_working_days(start_date, end_date)
-        max_hours_per_day = 6
+        max_hours_per_day = SettingsController.get_work_hours_per_day()
         total_max_hours = total_working_days * max_hours_per_day
         
         # Check existing bookings that overlap with this date range
@@ -172,7 +173,7 @@ class ProjectController:
             return {
                 'error': f'Cannot book {booked_hours} hours. Employee only has {round(available_hours, 1)} hours available in this period. '
                         f'Already utilized: {round(total_utilized_hours, 1)} hours ({round(total_booked_hours, 1)} booked + {round(total_reserved_hours, 1)} reserved). '
-                        f'Maximum capacity: {total_max_hours} hours ({total_working_days} working days × 6 hrs/day).'
+                        f'Maximum capacity: {total_max_hours} hours ({total_working_days} working days × {max_hours_per_day} hrs/day).'
             }
         
         try:

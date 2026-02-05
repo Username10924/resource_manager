@@ -1,6 +1,7 @@
 from typing import Optional, Dict, Any, List
 from datetime import date, datetime
 from database import db
+from controllers.settings_controller import SettingsController
 
 class EmployeeReservation:
     def __init__(self, **kwargs):
@@ -21,8 +22,9 @@ class EmployeeReservation:
         if end_date < start_date:
             raise ValueError("End date must be after or equal to start date")
         
-        if reserved_hours_per_day < 0 or reserved_hours_per_day > 6:
-            raise ValueError("Reserved hours per day must be between 0 and 6")
+        max_hours = SettingsController.get_work_hours_per_day()
+        if reserved_hours_per_day < 0 or reserved_hours_per_day > max_hours:
+            raise ValueError(f"Reserved hours per day must be between 0 and {max_hours}")
         
         # Check for overlapping reservations
         overlap_query = '''
@@ -114,8 +116,9 @@ class EmployeeReservation:
             updates.append('end_date = ?')
             params.append(kwargs['end_date'])
         if 'reserved_hours_per_day' in kwargs:
-            if kwargs['reserved_hours_per_day'] < 0 or kwargs['reserved_hours_per_day'] > 6:
-                raise ValueError("Reserved hours per day must be between 0 and 6")
+            max_hours = SettingsController.get_work_hours_per_day()
+            if kwargs['reserved_hours_per_day'] < 0 or kwargs['reserved_hours_per_day'] > max_hours:
+                raise ValueError(f"Reserved hours per day must be between 0 and {max_hours}")
             updates.append('reserved_hours_per_day = ?')
             params.append(kwargs['reserved_hours_per_day'])
         if 'reason' in kwargs:

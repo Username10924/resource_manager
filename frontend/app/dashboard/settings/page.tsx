@@ -14,7 +14,7 @@ interface Settings {
 }
 
 export default function SettingsPage() {
-  const { token } = useAuth();
+  const { user } = useAuth();
   const [settings, setSettings] = useState<Settings>({
     work_hours_per_day: 6,
     work_days_per_month: 20,
@@ -31,16 +31,21 @@ export default function SettingsPage() {
   const [success, setSuccess] = useState<string | null>(null);
 
   useEffect(() => {
-    fetchSettings();
-  }, []);
+    if (user?.username) {
+      fetchSettings();
+    }
+  }, [user]);
 
   const fetchSettings = async () => {
+    if (!user?.username) return;
+
     try {
       setLoading(true);
       setError(null);
-      const response = await fetch('http://localhost:8000/api/settings', {
+      const response = await fetch('https://resource-manager-kg4d.onrender.com/api/settings', {
         headers: {
-          'Authorization': `Bearer ${token}`,
+          'X-Username': user.username,
+          'Content-Type': 'application/json',
         },
       });
 
@@ -59,15 +64,17 @@ export default function SettingsPage() {
   };
 
   const handleSave = async () => {
+    if (!user?.username) return;
+
     try {
       setSaving(true);
       setError(null);
       setSuccess(null);
 
-      const response = await fetch('http://localhost:8000/api/settings', {
+      const response = await fetch('https://resource-manager-kg4d.onrender.com/api/settings', {
         method: 'PUT',
         headers: {
-          'Authorization': `Bearer ${token}`,
+          'X-Username': user.username,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(settings),
