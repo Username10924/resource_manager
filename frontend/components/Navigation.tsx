@@ -11,7 +11,8 @@ import {
   FaProjectDiagram,
   FaSignOutAlt,
   FaBars,
-  FaTimes
+  FaTimes,
+  FaCog
 } from 'react-icons/fa';
 import { useState } from 'react';
 
@@ -47,6 +48,9 @@ export default function Navigation() {
         { href: '/projects', label: 'Projects', icon: FaProjectDiagram, section: 'ANALYTICS' }
       );
     }
+
+    // Settings is available to all roles
+    baseLinks.push({ href: '/dashboard/settings', label: 'Settings', icon: FaCog, section: 'CONFIGURATION' });
 
     return baseLinks;
   };
@@ -100,13 +104,44 @@ export default function Navigation() {
 
           {/* Navigation Links */}
           <div className="flex-1 overflow-y-auto py-4">
-            {!isCollapsed && (
-              <div className="px-5 mb-3">
-                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">ANALYTICS</p>
-              </div>
-            )}
             <div className="space-y-1 px-3">
-              {links.map((link) => {
+              {/* Analytics Section */}
+              {!isCollapsed && (
+                <div className="px-2 mb-3">
+                  <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">ANALYTICS</p>
+                </div>
+              )}
+              {links.filter(link => link.section === 'ANALYTICS').map((link) => {
+                const isActive = pathname === link.href;
+                const Icon = link.icon;
+                return (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    className={cn(
+                      'flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all group',
+                      isActive
+                        ? 'text-gray-700'
+                        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                    )}
+                    title={isCollapsed ? link.label : undefined}
+                  >
+                    <Icon className={cn(
+                      "flex-shrink-0 text-lg",
+                      isActive ? "text-gray-700" : "text-gray-500 group-hover:text-gray-700"
+                    )} />
+                    {!isCollapsed && <span>{link.label}</span>}
+                  </Link>
+                );
+              })}
+
+              {/* Configuration Section */}
+              {!isCollapsed && (
+                <div className="px-2 mb-3 mt-6">
+                  <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">CONFIGURATION</p>
+                </div>
+              )}
+              {links.filter(link => link.section === 'CONFIGURATION').map((link) => {
                 const isActive = pathname === link.href;
                 const Icon = link.icon;
                 return (

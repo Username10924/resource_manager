@@ -7,7 +7,7 @@ import os
 from datetime import datetime
 
 from config import APP_CONFIG
-from views import employee_routes, project_routes, dashboard_routes, user_routes, reservation_routes
+from views import employee_routes, project_routes, dashboard_routes, user_routes, reservation_routes, settings_routes
 from models.user import User
 from dependencies import get_current_user
 
@@ -34,6 +34,7 @@ app.include_router(employee_routes.router, dependencies=[Depends(get_current_use
 app.include_router(project_routes.router, dependencies=[Depends(get_current_user)])
 app.include_router(dashboard_routes.router, dependencies=[Depends(get_current_user)])
 app.include_router(reservation_routes.router, dependencies=[Depends(get_current_user)])
+app.include_router(settings_routes.router, dependencies=[Depends(get_current_user)])
 
 # User routes - some endpoints need to be public for login
 app.include_router(user_routes.router)
