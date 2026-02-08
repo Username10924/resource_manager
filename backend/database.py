@@ -24,7 +24,7 @@ class Database:
     def _create_tables(self):
         cursor = self.conn.cursor()
         
-        # Users table (Line Managers and Solution Architects)
+        # Solution architects are Project Managers in frontend
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS users (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
