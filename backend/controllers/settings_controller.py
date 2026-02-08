@@ -1,14 +1,7 @@
 from typing import Dict, Any
 import re
-import hmac
-import hashlib
-import time
-import secrets
 from pathlib import Path
 import importlib
-
-# Secret key for signing site tokens - regenerated on server restart
-_site_token_secret = secrets.token_hex(32)
 
 class SettingsController:
     @staticmethod
@@ -133,44 +126,6 @@ class SettingsController:
         return password == SettingsController.get_site_password()
 
     @staticmethod
-    def generate_site_token() -> str:
-        """Generate a signed site access token"""
-        global _site_token_secret
-        timestamp = str(int(time.time()))
-        password_hash = hashlib.sha256(SettingsController.get_site_password().encode()).hexdigest()[:16]
-        payload = f"{timestamp}:{password_hash}"
-        signature = hmac.new(_site_token_secret.encode(), payload.encode(), hashlib.sha256).hexdigest()
-        return f"{payload}:{signature}"
-
-    @staticmethod
-    def verify_site_token(token: str) -> bool:
-        """Verify a site access token is valid and was signed with the current password"""
-        global _site_token_secret
-        try:
-            parts = token.split(':')
-            if len(parts) != 3:
-                return False
-            timestamp, password_hash, signature = parts
-            # Verify signature
-            payload = f"{timestamp}:{password_hash}"
-            expected_sig = hmac.new(_site_token_secret.encode(), payload.encode(), hashlib.sha256).hexdigest()
-            if not hmac.compare_digest(signature, expected_sig):
-                return False
-            # Verify password hash matches current password
-            current_hash = hashlib.sha256(SettingsController.get_site_password().encode()).hexdigest()[:16]
-            if not hmac.compare_digest(password_hash, current_hash):
-                return False
-            return True
-        except Exception:
-            return False
-
-    @staticmethod
-    def invalidate_tokens():
-        """Invalidate all existing tokens by rotating the secret"""
-        global _site_token_secret
-        _site_token_secret = secrets.token_hex(32)
-
-    @staticmethod
     def update_site_password(new_password: str) -> bool:
         """Update the site access password in config.py"""
         config_path = Path(__file__).parent.parent / "config.py"
@@ -192,8 +147,6 @@ class SettingsController:
                 f.write(content)
             
             SettingsController.reload_config()
-            # Invalidate all existing tokens since password changed
-            SettingsController.invalidate_tokens()
             return True
         except Exception as e:
             raise Exception(f"Error updating site password: {str(e)}")

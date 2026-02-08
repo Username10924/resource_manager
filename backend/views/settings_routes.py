@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException
 from typing import Dict, Any
 from pydantic import BaseModel, Field
 
@@ -36,20 +36,10 @@ async def update_settings(
 
 @public_router.post("/verify-password")
 async def verify_site_password(data: PasswordVerify):
-    """Verify site access password - public endpoint, returns signed token"""
+    """Verify site access password - public endpoint"""
     if SettingsController.verify_site_password(data.password):
-        token = SettingsController.generate_site_token()
-        return {"success": True, "message": "Access granted", "token": token}
+        return {"success": True, "message": "Access granted"}
     raise HTTPException(status_code=401, detail="Invalid password")
-
-@public_router.post("/verify-token")
-async def verify_site_token(request: Request):
-    """Verify a site access token is still valid"""
-    from fastapi import Request as _R
-    token = request.headers.get("X-Site-Token", "")
-    if token and SettingsController.verify_site_token(token):
-        return {"valid": True}
-    raise HTTPException(status_code=401, detail="Invalid or expired token")
 
 @router.put("/site-password")
 async def update_site_password(

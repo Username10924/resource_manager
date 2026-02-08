@@ -1,11 +1,16 @@
 from typing import Optional, Dict, Any
 from datetime import datetime
 from database import db
+from passlib.context import CryptContext
+
+# Password hashing
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 class User:
     def __init__(self, **kwargs):
         self.id = kwargs.get('id')
         self.username = kwargs.get('username')
+        self.password_hash = kwargs.get('password_hash')
         self.role = kwargs.get('role')
         self.full_name = kwargs.get('full_name')
         self.department = kwargs.get('department')
@@ -13,12 +18,23 @@ class User:
         self.updated_at = kwargs.get('updated_at')
     
     @staticmethod
-    def create(username: str, role: str, full_name: str, department: Optional[str] = None) -> 'User':
+    def hash_password(password: str) -> str:
+        """Hash a password for storing."""
+        return pwd_context.hash(password)
+    
+    def verify_password(self, password: str) -> bool:
+        """Verify a password against the hash."""
+        return pwd_context.verify(password, self.password_hash)
+    
+    @staticmethod
+    def create(username: str, password: str, role: str, full_name: str, department: Optional[str] = None) -> 'User':
+        """Create a new user with hashed password."""
+        password_hash = User.hash_password(password)
         query = '''
-            INSERT INTO users (username, role, full_name, department)
-            VALUES (?, ?, ?, ?)
+            INSERT INTO users (username, password_hash, role, full_name, department)
+            VALUES (?, ?, ?, ?, ?)
         '''
-        cursor = db.execute(query, (username, role, full_name, department))
+        cursor = db.execute(query, (username, password_hash, role, full_name, department))
         db.commit()
         return User.get_by_id(cursor.lastrowid)
     

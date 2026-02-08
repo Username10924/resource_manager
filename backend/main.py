@@ -1,8 +1,6 @@
 from fastapi import FastAPI, Depends, HTTPException, status, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from starlette.middleware.base import BaseHTTPMiddleware
-from starlette.responses import JSONResponse
 from typing import Optional
 import uvicorn
 import os
@@ -11,8 +9,7 @@ from datetime import datetime
 from config import APP_CONFIG
 from views import employee_routes, project_routes, dashboard_routes, user_routes, reservation_routes, settings_routes
 from models.user import User
-from dependencies import get_current_user
-from controllers.settings_controller import SettingsController
+from dependencies import get_current_user, create_access_token
 
 app = FastAPI(**APP_CONFIG)
 
@@ -32,33 +29,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Paths that don't require site token
-PUBLIC_PATHS = {"/", "/health", "/api/settings/verify-password", "/api/settings/verify-token", "/docs", "/openapi.json", "/redoc"}
-
-class SiteTokenMiddleware(BaseHTTPMiddleware):
-    """Middleware to verify site access token on all requests"""
-    async def dispatch(self, request: Request, call_next):
-        path = request.url.path
-        # Allow public paths, OPTIONS (CORS preflight), and static files
-        if (
-            request.method == "OPTIONS"
-            or path in PUBLIC_PATHS
-            or path.startswith("/uploads/")
-            or path.startswith("/api/users/login")
-            or path.startswith("/api/users/register")
-        ):
-            return await call_next(request)
-        
-        token = request.headers.get("X-Site-Token", "")
-        if not token or not SettingsController.verify_site_token(token):
-            return JSONResponse(
-                status_code=403,
-                content={"detail": "Site access token is invalid or expired. Please re-enter the site password."},
-            )
-        return await call_next(request)
-
-app.add_middleware(SiteTokenMiddleware)
-
 # Include routers with authentication dependency
 app.include_router(employee_routes.router, dependencies=[Depends(get_current_user)])
 app.include_router(project_routes.router, dependencies=[Depends(get_current_user)])
@@ -76,7 +46,7 @@ async def root():
     return {
         "message": "Employee Scheduling & Project Management System",
         "version": APP_CONFIG["version"],
-        "authentication": "Use X-Username header with username",
+        "authentication": "Use Bearer token in Authorization header",
         "endpoints": {
             "employees": "/api/employees",
             "projects": "/api/projects",
@@ -91,92 +61,93 @@ async def health_check():
 
 @app.post("/login")
 async def login(request: Request):
-    """Login endpoint - validates username and role match"""
+    """Login endpoint - validates username and password, returns JWT token"""
     data = await request.json()
     username = data.get('username')
-    role = data.get('role')
+    password = data.get('password')
     
     if not username:
         raise HTTPException(status_code=400, detail="Username is required")
     
-    if not role:
-        raise HTTPException(status_code=400, detail="Role is required")
-    
-    # Validate role is one of the allowed roles
-    allowed_roles = ['line_manager', 'solution_architect', 'dashboard_viewer', 'admin']
-    if role not in allowed_roles:
-        raise HTTPException(status_code=400, detail=f"Invalid role. Must be one of: {', '.join(allowed_roles)}")
+    if not password:
+        raise HTTPException(status_code=400, detail="Password is required")
     
     user = User.get_by_username(username)
     if not user:
         raise HTTPException(
             status_code=401, 
-            detail="Invalid username or role. Please check your credentials or register first."
+            detail="Invalid username or password"
         )
     
-    # Validate that the role matches
-    if user.role != role:
+    # Verify password
+    if not user.verify_password(password):
         raise HTTPException(
             status_code=401,
-            detail=f"Invalid role for user {username}. Expected role: {user.role}"
+            detail="Invalid username or password"
         )
+    
+    # Create access token
+    access_token = create_access_token(data={"sub": user.username})
     
     return {
         "success": True,
+        "access_token": access_token,
+        "token_type": "bearer",
         "user": user.to_dict(),
         "message": "Login successful"
     }
 
-@app.post("/register")
-async def register(request: Request):
-    """Register endpoint - creates new user with specified role"""
-    data = await request.json()
-    username = data.get('username')
-    role = data.get('role')
-    full_name = data.get('full_name')
-    department = data.get('department')
-    
-    if not username:
-        raise HTTPException(status_code=400, detail="Username is required")
-    
-    if not role:
-        raise HTTPException(status_code=400, detail="Role is required")
-    
-    if not full_name:
-        raise HTTPException(status_code=400, detail="Full name is required")
-    
-    # Validate role is one of the allowed roles
-    allowed_roles = ['line_manager', 'solution_architect', 'dashboard_viewer', 'admin']
-    if role not in allowed_roles:
-        raise HTTPException(status_code=400, detail=f"Invalid role. Must be one of: {', '.join(allowed_roles)}")
-    
-    # Check if user already exists
-    existing_user = User.get_by_username(username)
-    if existing_user:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Username '{username}' is already taken. Please choose a different username or login instead."
-        )
-    
-    # Create new user
-    user = User.create(
-        username=username,
-        role=role,
-        full_name=full_name,
-        department=department
-    )
-    
-    return {
-        "success": True,
-        "user": user.to_dict(),
-        "message": "Registration successful"
-    }
-
 @app.on_event("startup")
 async def startup_event():
-    """Initialize database """
+    """Initialize database and create predefined users"""
     from database import db
-    from datetime import datetime
+    
+    # Predefined users with their credentials
+    predefined_users = [
+        {
+            "username": "admin",
+            "password": "admin123",
+            "role": "admin",
+            "full_name": "System Administrator",
+            "department": "IT"
+        },
+        {
+            "username": "john.manager",
+            "password": "manager123",
+            "role": "line_manager",
+            "full_name": "John Manager",
+            "department": "Engineering"
+        },
+        {
+            "username": "sarah.architect",
+            "password": "architect123",
+            "role": "solution_architect",
+            "full_name": "Sarah Architect",
+            "department": "Engineering"
+        },
+        {
+            "username": "viewer",
+            "password": "viewer123",
+            "role": "dashboard_viewer",
+            "full_name": "Dashboard Viewer",
+            "department": "Management"
+        }
+    ]
+    
+    # Create predefined users if they don't exist
+    for user_data in predefined_users:
+        existing_user = User.get_by_username(user_data["username"])
+        if not existing_user:
+            User.create(
+                username=user_data["username"],
+                password=user_data["password"],
+                role=user_data["role"],
+                full_name=user_data["full_name"],
+                department=user_data["department"]
+            )
+            print(f"Created user: {user_data['username']} ({user_data['role']})")
+        else:
+            print(f"User already exists: {user_data['username']}")
     
 
 if __name__ == "__main__":

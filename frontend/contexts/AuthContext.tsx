@@ -5,8 +5,7 @@ import { User, authService } from '@/lib/auth';
 
 interface AuthContextType {
   user: User | null;
-  login: (username: string, role: User['role']) => Promise<void>;
-  register: (username: string, role: User['role'], fullName: string, department?: string) => Promise<void>;
+  login: (username: string, password: string) => Promise<void>;
   logout: () => void;
   isAuthenticated: boolean;
 }
@@ -25,13 +24,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsLoading(false);
   }, []);
 
-  const login = async (username: string, role: User['role']) => {
-    const user = await authService.login(username, role);
-    setUser(user);
-  };
-
-  const register = async (username: string, role: User['role'], fullName: string, department?: string) => {
-    const user = await authService.register(username, role, fullName, department);
+  const login = async (username: string, password: string) => {
+    const user = await authService.login(username, password);
     setUser(user);
   };
 
@@ -41,7 +35,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, register, logout, isAuthenticated: !!user }}>
+    <AuthContext.Provider value={{ user, login, logout, isAuthenticated: !!user }}>
       {!isMounted || isLoading ? (
         <div className="flex h-screen items-center justify-center bg-gradient-to-br from-gray-50 via-white to-gray-100/40">
           <div className="flex flex-col items-center gap-4">

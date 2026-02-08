@@ -6,7 +6,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/Card';
 import Button from '@/components/Button';
 import Input from '@/components/Input';
 import { FaCog, FaSave, FaUndo, FaLock, FaEye, FaEyeSlash } from 'react-icons/fa';
-import { getSiteToken, clearSiteToken } from '@/components/PasswordGate';
 
 interface Settings {
   work_hours_per_day: number;
@@ -56,7 +55,6 @@ export default function SettingsPage() {
       const response = await fetch('https://resource-manager-kg4d.onrender.com/api/settings', {
         headers: {
           'X-Username': user.username,
-          'X-Site-Token': getSiteToken(),
           'Content-Type': 'application/json',
         },
       });
@@ -87,7 +85,6 @@ export default function SettingsPage() {
         method: 'PUT',
         headers: {
           'X-Username': user.username,
-          'X-Site-Token': getSiteToken(),
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(settings),
@@ -157,7 +154,6 @@ export default function SettingsPage() {
         method: 'PUT',
         headers: {
           'X-Username': user.username,
-          'X-Site-Token': getSiteToken(),
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
@@ -171,15 +167,11 @@ export default function SettingsPage() {
         throw new Error(err.detail || 'Failed to update password');
       }
 
-      setPasswordSuccess('Site password updated successfully! You will be redirected to re-enter the new password.');
+      setPasswordSuccess('Site password updated successfully!');
       setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
-      // Clear token and force re-authentication with new password
-      setTimeout(() => {
-        clearSiteToken();
-        window.location.reload();
-      }, 2000);
+      setTimeout(() => setPasswordSuccess(null), 3000);
     } catch (err) {
       setPasswordError(err instanceof Error ? err.message : 'An error occurred');
     } finally {
