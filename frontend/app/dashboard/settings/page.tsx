@@ -129,7 +129,8 @@ export default function SettingsPage() {
     settings.work_days_per_month !== originalSettings.work_days_per_month ||
     settings.months_in_year !== originalSettings.months_in_year;
 
-  coconst accessToken = localStorage.getItem('access_token');
+  const handlePasswordChange = async () => {
+    const accessToken = localStorage.getItem('access_token');
     if (!accessToken) return;
 
     if (!currentPassword || !newPassword) {
@@ -167,8 +168,7 @@ export default function SettingsPage() {
         throw new Error(err.detail || 'Failed to update password');
       }
 
-      setPasswordSuccess('P
-      setPasswordSuccess('Site password updated successfully!');
+      setPasswordSuccess('Password updated successfully!');
       setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
@@ -371,7 +371,8 @@ export default function SettingsPage() {
             </p>
           </CardContent>
         </Card>
-User Password Card */}
+
+        {/* User Password Card */}
         <Card className="mt-6">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -381,8 +382,7 @@ User Password Card */}
           </CardHeader>
           <CardContent className="p-6">
             <p className="text-sm text-gray-600 mb-4">
-              Update your account password. You will need to use the new password the next time you log in
-              Change the password required to access this site. All users will need to re-enter the new password.
+              Update your account password. You will need to use the new password the next time you log in.
             </p>
 
             {passwordError && (

@@ -74,11 +74,7 @@ export default function DashboardPage() {
     
     try {
       if (viewMode === 'resources') {
-        const response = await fetch('https://resource-manager-kg4d.onrender.com/api/dashboard/resources', {
-          headers: {
-            'X-Username': user?.username || '',
-          },
-        });
+        const response = await fetch('https://resource-manager-kg4d.onrender.com/api/dashboard/resources');
         
         if (response.ok) {
           const data = await response.json();
@@ -87,11 +83,7 @@ export default function DashboardPage() {
           setError('Failed to load resources dashboard');
         }
       } else {
-        const response = await fetch('https://resource-manager-kg4d.onrender.com/api/dashboard/projects', {
-          headers: {
-            'X-Username': user?.username || '',
-          },
-        });
+        const response = await fetch('https://resource-manager-kg4d.onrender.com/api/dashboard/projects');
         
         if (response.ok) {
           const data = await response.json();
