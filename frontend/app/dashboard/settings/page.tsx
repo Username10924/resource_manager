@@ -41,20 +41,19 @@ export default function SettingsPage() {
   const [showNewPassword, setShowNewPassword] = useState(false);
 
   useEffect(() => {
-    if (user?.username) {
-      fetchSettings();
-    }
-  }, [user]);
+    fetchSettings();
+  }, []);
 
   const fetchSettings = async () => {
-    if (!user?.username) return;
+    const accessToken = localStorage.getItem('access_token');
+    if (!accessToken) return;
 
     try {
       setLoading(true);
       setError(null);
       const response = await fetch('https://resource-manager-kg4d.onrender.com/api/settings', {
         headers: {
-          'X-Username': user.username,
+          'Authorization': `Bearer ${accessToken}`,
           'Content-Type': 'application/json',
         },
       });
@@ -74,7 +73,8 @@ export default function SettingsPage() {
   };
 
   const handleSave = async () => {
-    if (!user?.username) return;
+    const accessToken = localStorage.getItem('access_token');
+    if (!accessToken) return;
 
     try {
       setSaving(true);
@@ -84,7 +84,7 @@ export default function SettingsPage() {
       const response = await fetch('https://resource-manager-kg4d.onrender.com/api/settings', {
         method: 'PUT',
         headers: {
-          'X-Username': user.username,
+          'Authorization': `Bearer ${accessToken}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(settings),
@@ -129,8 +129,8 @@ export default function SettingsPage() {
     settings.work_days_per_month !== originalSettings.work_days_per_month ||
     settings.months_in_year !== originalSettings.months_in_year;
 
-  const handlePasswordChange = async () => {
-    if (!user?.username) return;
+  coconst accessToken = localStorage.getItem('access_token');
+    if (!accessToken) return;
 
     if (!currentPassword || !newPassword) {
       setPasswordError('Please fill in all password fields');
@@ -150,10 +150,10 @@ export default function SettingsPage() {
       setPasswordError(null);
       setPasswordSuccess(null);
 
-      const response = await fetch('https://resource-manager-kg4d.onrender.com/api/settings/site-password', {
+      const response = await fetch('https://resource-manager-kg4d.onrender.com/api/settings/change-password', {
         method: 'PUT',
         headers: {
-          'X-Username': user.username,
+          'Authorization': `Bearer ${accessToken}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
@@ -167,6 +167,7 @@ export default function SettingsPage() {
         throw new Error(err.detail || 'Failed to update password');
       }
 
+      setPasswordSuccess('P
       setPasswordSuccess('Site password updated successfully!');
       setCurrentPassword('');
       setNewPassword('');
@@ -211,12 +212,29 @@ export default function SettingsPage() {
         <div className="mb-6">
           <div className="flex items-center gap-3 mb-2">
             <FaCog className="text-2xl text-gray-700" />
-            <h1 className="text-2xl font-bold text-gray-900">Business Rules Settings</h1>
+            <h1 className="text-2xl font-bold text-gray-900">Settings</h1>
           </div>
           <p className="text-gray-600">
-            Configure the business rules used for resource calculations and project scheduling
+            Configure business rules and manage your account
           </p>
         </div>
+
+        {/* Current User Info */}
+        {user && (
+          <Card className="mb-6 border-blue-200 bg-blue-50/30">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-600 mb-1">Logged in as</p>
+                  <p className="font-semibold text-gray-900">{user.full_name}</p>
+                  <p className="text-sm text-gray-600">
+                    {user.username} • {user.role.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Alerts */}
         {error && (
@@ -319,7 +337,7 @@ export default function SettingsPage() {
         {/* Info Card */}
         <Card className="mt-6">
           <CardContent className="p-6">
-            <h3 className="font-semibold text-gray-900 mb-2">About These Settings</h3>
+            <h3 className="font-semibold text-gray-900 mb-2">About Business Rules</h3>
             <p className="text-sm text-gray-600 mb-3">
               These business rules are used throughout the system to calculate:
             </p>
@@ -335,16 +353,35 @@ export default function SettingsPage() {
           </CardContent>
         </Card>
 
-        {/* Site Password Card */}
+        {/* User Management Info */}
+        <Card className="mt-6 border-gray-300">
+          <CardContent className="p-6">
+            <h3 className="font-semibold text-gray-900 mb-2">User Management</h3>
+            <p className="text-sm text-gray-600 mb-3">
+              This system uses predefined user accounts with individual passwords. Each user has their own credentials and assigned role:
+            </p>
+            <ul className="list-disc list-inside text-sm text-gray-600 space-y-1">
+              <li><strong>Admin</strong> - Full system access</li>
+              <li><strong>Line Manager</strong> - Manage employee schedules and availability</li>
+              <li><strong>Project Manager</strong> - Create projects and book resources</li>
+              <li><strong>Dashboard Viewer</strong> - View reports and analytics</li>
+            </ul>
+            <p className="text-sm text-gray-500 mt-3">
+              Contact your system administrator to add or modify user accounts.
+            </p>
+          </CardContent>
+        </Card>
+User Password Card */}
         <Card className="mt-6">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <FaLock className="text-gray-600" />
-              Site Access Password
+              Change Your Password
             </CardTitle>
           </CardHeader>
           <CardContent className="p-6">
             <p className="text-sm text-gray-600 mb-4">
+              Update your account password. You will need to use the new password the next time you log in
               Change the password required to access this site. All users will need to re-enter the new password.
             </p>
 

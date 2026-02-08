@@ -21,6 +21,10 @@ class PasswordUpdate(BaseModel):
     current_password: str = Field(min_length=1, description="Current site password")
     new_password: str = Field(min_length=1, description="New site password")
 
+class UserPasswordUpdate(BaseModel):
+    current_password: str = Field(min_length=1, description="Current user password")
+    new_password: str = Field(min_length=4, description="New user password (min 4 characters)")
+
 @router.get("", response_model=Dict[str, Any])
 async def get_settings(current_user: User = Depends(get_current_user)):
     """Get current business rules settings - accessible to all roles"""
@@ -55,3 +59,24 @@ async def update_site_password(
         return {"success": True, "message": "Site password updated successfully"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+@router.put("/change-password")
+async def change_user_password(
+    data: UserPasswordUpdate,
+    current_user: User = Depends(get_current_user)
+):
+    """Change the current user's password"""
+    # Verify current password
+    if not current_user.verify_password(data.current_password):
+        raise HTTPException(status_code=400, detail="Current password is incorrect")
+    
+    # Update password
+    try:
+        from database import db
+        new_hash = User.hash_password(data.new_password)
+        query = 'UPDATE users SET password_hash = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?'
+        db.execute(query, (new_hash, current_user.id))
+        db.commit()
+        return {"success": True, "message": "Password updated successfully"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to update password: {str(e)}")
