@@ -6,12 +6,16 @@ async function fetchAPI(endpoint: string, options: RequestInit = {}) {
   const userStr = typeof window !== 'undefined' ? localStorage.getItem('user') : null;
   const user = userStr ? JSON.parse(userStr) : null;
   
+  // Get site token from localStorage
+  const siteToken = typeof window !== 'undefined' ? localStorage.getItem('site_token') : null;
+  
   const url = `${API_BASE_URL}${endpoint}`;
   const config = {
     ...options,
     headers: {
       'Content-Type': 'application/json',
       ...(user?.username && { 'X-Username': user.username }),
+      ...(siteToken && { 'X-Site-Token': siteToken }),
       ...options.headers,
     },
   };
@@ -22,6 +26,14 @@ async function fetchAPI(endpoint: string, options: RequestInit = {}) {
   const response = await fetch(url, config);
 
   if (!response.ok) {
+    // If site token is invalid/expired, clear it and force re-auth
+    if (response.status === 403) {
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('site_token');
+        window.location.reload();
+      }
+    }
+    
     const error = await response.json().catch(() => ({ detail: 'An error occurred' }));
     // FastAPI returns errors in 'detail' field, but also support 'message' for compatibility
     let errorMessage: string;

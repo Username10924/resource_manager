@@ -1,6 +1,8 @@
 from fastapi import FastAPI, Depends, HTTPException, status, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.responses import JSONResponse
 from typing import Optional
 import uvicorn
 import os
@@ -10,6 +12,7 @@ from config import APP_CONFIG
 from views import employee_routes, project_routes, dashboard_routes, user_routes, reservation_routes, settings_routes
 from models.user import User
 from dependencies import get_current_user
+from controllers.settings_controller import SettingsController
 
 app = FastAPI(**APP_CONFIG)
 
@@ -28,6 +31,33 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Paths that don't require site token
+PUBLIC_PATHS = {"/", "/health", "/api/settings/verify-password", "/api/settings/verify-token", "/docs", "/openapi.json", "/redoc"}
+
+class SiteTokenMiddleware(BaseHTTPMiddleware):
+    """Middleware to verify site access token on all requests"""
+    async def dispatch(self, request: Request, call_next):
+        path = request.url.path
+        # Allow public paths, OPTIONS (CORS preflight), and static files
+        if (
+            request.method == "OPTIONS"
+            or path in PUBLIC_PATHS
+            or path.startswith("/uploads/")
+            or path.startswith("/api/users/login")
+            or path.startswith("/api/users/register")
+        ):
+            return await call_next(request)
+        
+        token = request.headers.get("X-Site-Token", "")
+        if not token or not SettingsController.verify_site_token(token):
+            return JSONResponse(
+                status_code=403,
+                content={"detail": "Site access token is invalid or expired. Please re-enter the site password."},
+            )
+        return await call_next(request)
+
+app.add_middleware(SiteTokenMiddleware)
 
 # Include routers with authentication dependency
 app.include_router(employee_routes.router, dependencies=[Depends(get_current_user)])

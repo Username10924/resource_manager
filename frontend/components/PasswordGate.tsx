@@ -4,7 +4,18 @@ import { useState, useEffect, FormEvent } from 'react';
 import { FaLock, FaEye, FaEyeSlash } from 'react-icons/fa';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://resource-manager-kg4d.onrender.com/api';
-const STORAGE_KEY = 'site_authenticated';
+const TOKEN_KEY = 'site_token';
+
+export function getSiteToken(): string {
+  if (typeof window === 'undefined') return '';
+  return localStorage.getItem(TOKEN_KEY) || '';
+}
+
+export function clearSiteToken(): void {
+  if (typeof window !== 'undefined') {
+    localStorage.removeItem(TOKEN_KEY);
+  }
+}
 
 export default function PasswordGate({ children }: { children: React.ReactNode }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -15,11 +26,27 @@ export default function PasswordGate({ children }: { children: React.ReactNode }
   const [showPassword, setShowPassword] = useState(false);
 
   useEffect(() => {
-    const authenticated = localStorage.getItem(STORAGE_KEY);
-    if (authenticated === 'true') {
-      setIsAuthenticated(true);
+    const token = localStorage.getItem(TOKEN_KEY);
+    if (token) {
+      // Validate token with backend
+      fetch(`${API_BASE_URL}/settings/verify-token`, {
+        method: 'POST',
+        headers: { 'X-Site-Token': token },
+      })
+        .then((res) => {
+          if (res.ok) {
+            setIsAuthenticated(true);
+          } else {
+            localStorage.removeItem(TOKEN_KEY);
+          }
+        })
+        .catch(() => {
+          localStorage.removeItem(TOKEN_KEY);
+        })
+        .finally(() => setIsChecking(false));
+    } else {
+      setIsChecking(false);
     }
-    setIsChecking(false);
   }, []);
 
   const handleSubmit = async (e: FormEvent) => {
@@ -40,7 +67,8 @@ export default function PasswordGate({ children }: { children: React.ReactNode }
       });
 
       if (response.ok) {
-        localStorage.setItem(STORAGE_KEY, 'true');
+        const data = await response.json();
+        localStorage.setItem(TOKEN_KEY, data.token);
         setIsAuthenticated(true);
       } else {
         setError('Invalid password. Please try again.');
