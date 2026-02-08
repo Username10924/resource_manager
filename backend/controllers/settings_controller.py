@@ -101,3 +101,52 @@ class SettingsController:
             
         except Exception as e:
             raise Exception(f"Error updating config: {str(e)}")
+
+    @staticmethod
+    def get_site_password() -> str:
+        """Get the current site access password from config.py"""
+        config_path = Path(__file__).parent.parent / "config.py"
+        default_password = "Welcome@123"
+        
+        try:
+            with open(config_path, 'r') as f:
+                content = f.read()
+            
+            match = re.search(r'SITE_PASSWORD\s*=\s*["\'](.+?)["\']', content)
+            if match:
+                return match.group(1)
+        except Exception as e:
+            print(f"Error reading site password: {e}")
+        
+        return default_password
+
+    @staticmethod
+    def verify_site_password(password: str) -> bool:
+        """Verify the provided password against the site password"""
+        return password == SettingsController.get_site_password()
+
+    @staticmethod
+    def update_site_password(new_password: str) -> bool:
+        """Update the site access password in config.py"""
+        config_path = Path(__file__).parent.parent / "config.py"
+        
+        try:
+            with open(config_path, 'r') as f:
+                content = f.read()
+            
+            if re.search(r'SITE_PASSWORD\s*=', content):
+                content = re.sub(
+                    r'SITE_PASSWORD\s*=\s*["\'].+?["\']',
+                    f'SITE_PASSWORD = "{new_password}"',
+                    content
+                )
+            else:
+                content += f'\nSITE_PASSWORD = "{new_password}"\n'
+            
+            with open(config_path, 'w') as f:
+                f.write(content)
+            
+            SettingsController.reload_config()
+            return True
+        except Exception as e:
+            raise Exception(f"Error updating site password: {str(e)}")

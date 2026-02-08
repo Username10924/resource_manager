@@ -35,6 +35,7 @@ app.include_router(project_routes.router, dependencies=[Depends(get_current_user
 app.include_router(dashboard_routes.router, dependencies=[Depends(get_current_user)])
 app.include_router(reservation_routes.router, dependencies=[Depends(get_current_user)])
 app.include_router(settings_routes.router, dependencies=[Depends(get_current_user)])
+app.include_router(settings_routes.public_router)  # Public password verification
 
 # User routes - some endpoints need to be public for login
 app.include_router(user_routes.router)

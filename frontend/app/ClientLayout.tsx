@@ -2,13 +2,15 @@
 
 import { AuthProvider } from "@/contexts/AuthContext";
 import AppLayout from "@/components/AppLayout";
+import PasswordGate from "@/components/PasswordGate";
 import { Toaster } from "react-hot-toast";
 
 export default function ClientLayout({ children }: { children: React.ReactNode }) {
   return (
-    <AuthProvider>
-      <AppLayout>{children}</AppLayout>
-      <Toaster 
+    <PasswordGate>
+      <AuthProvider>
+        <AppLayout>{children}</AppLayout>
+        <Toaster 
         position="top-right"
         toastOptions={{
           duration: 4000,
@@ -33,6 +35,6 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
           },
         }}
       />
-    </AuthProvider>
+    </PasswordGate>
   );
 }

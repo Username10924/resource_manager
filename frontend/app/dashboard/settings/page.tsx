@@ -5,7 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/Card';
 import Button from '@/components/Button';
 import Input from '@/components/Input';
-import { FaCog, FaSave, FaUndo } from 'react-icons/fa';
+import { FaCog, FaSave, FaUndo, FaLock, FaEye, FaEyeSlash } from 'react-icons/fa';
 
 interface Settings {
   work_hours_per_day: number;
@@ -29,6 +29,16 @@ export default function SettingsPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+
+  // Password change state
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [passwordSaving, setPasswordSaving] = useState(false);
+  const [passwordError, setPasswordError] = useState<string | null>(null);
+  const [passwordSuccess, setPasswordSuccess] = useState<string | null>(null);
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
 
   useEffect(() => {
     if (user?.username) {
@@ -118,6 +128,56 @@ export default function SettingsPage() {
     settings.work_hours_per_day !== originalSettings.work_hours_per_day ||
     settings.work_days_per_month !== originalSettings.work_days_per_month ||
     settings.months_in_year !== originalSettings.months_in_year;
+
+  const handlePasswordChange = async () => {
+    if (!user?.username) return;
+
+    if (!currentPassword || !newPassword) {
+      setPasswordError('Please fill in all password fields');
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setPasswordError('New passwords do not match');
+      return;
+    }
+    if (newPassword.length < 4) {
+      setPasswordError('New password must be at least 4 characters');
+      return;
+    }
+
+    try {
+      setPasswordSaving(true);
+      setPasswordError(null);
+      setPasswordSuccess(null);
+
+      const response = await fetch('https://resource-manager-kg4d.onrender.com/api/settings/site-password', {
+        method: 'PUT',
+        headers: {
+          'X-Username': user.username,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          current_password: currentPassword,
+          new_password: newPassword,
+        }),
+      });
+
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({ detail: 'Failed to update password' }));
+        throw new Error(err.detail || 'Failed to update password');
+      }
+
+      setPasswordSuccess('Site password updated successfully!');
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+      setTimeout(() => setPasswordSuccess(null), 3000);
+    } catch (err) {
+      setPasswordError(err instanceof Error ? err.message : 'An error occurred');
+    } finally {
+      setPasswordSaving(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -272,6 +332,103 @@ export default function SettingsPage() {
             <p className="text-sm text-gray-600 mt-3">
               <strong>Note:</strong> Changes will take effect immediately and apply to all future calculations.
             </p>
+          </CardContent>
+        </Card>
+
+        {/* Site Password Card */}
+        <Card className="mt-6">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <FaLock className="text-gray-600" />
+              Site Access Password
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-6">
+            <p className="text-sm text-gray-600 mb-4">
+              Change the password required to access this site. All users will need to re-enter the new password.
+            </p>
+
+            {passwordError && (
+              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
+                {passwordError}
+              </div>
+            )}
+            {passwordSuccess && (
+              <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg text-sm text-green-700">
+                {passwordSuccess}
+              </div>
+            )}
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Current Password
+                </label>
+                <div className="relative max-w-xs">
+                  <input
+                    type={showCurrentPassword ? 'text' : 'password'}
+                    value={currentPassword}
+                    onChange={(e) => setCurrentPassword(e.target.value)}
+                    className="block w-full rounded-lg border border-gray-300 px-3 py-2 pr-10 text-sm shadow-sm focus:border-gray-400 focus:outline-none"
+                    placeholder="Enter current password"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  >
+                    {showCurrentPassword ? <FaEyeSlash size={14} /> : <FaEye size={14} />}
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  New Password
+                </label>
+                <div className="relative max-w-xs">
+                  <input
+                    type={showNewPassword ? 'text' : 'password'}
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    className="block w-full rounded-lg border border-gray-300 px-3 py-2 pr-10 text-sm shadow-sm focus:border-gray-400 focus:outline-none"
+                    placeholder="Enter new password"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowNewPassword(!showNewPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  >
+                    {showNewPassword ? <FaEyeSlash size={14} /> : <FaEye size={14} />}
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Confirm New Password
+                </label>
+                <Input
+                  type="password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  className="max-w-xs"
+                  placeholder="Confirm new password"
+                />
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3 mt-6 pt-4 border-t border-gray-200">
+              <Button
+                onClick={handlePasswordChange}
+                disabled={passwordSaving || (!currentPassword && !newPassword)}
+                variant="primary"
+                className="flex items-center gap-2"
+              >
+                <FaLock />
+                {passwordSaving ? 'Updating...' : 'Update Password'}
+              </Button>
+            </div>
           </CardContent>
         </Card>
       </div>

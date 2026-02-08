@@ -22,3 +22,6 @@ APP_CONFIG = {
 WORK_HOURS_PER_DAY = 6
 WORK_DAYS_PER_MONTH = 20
 MONTHS_IN_YEAR = 12
+
+# Site access password
+SITE_PASSWORD = "Welcome@123"
