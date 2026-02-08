@@ -1,10 +1,7 @@
 from typing import Optional, Dict, Any
 from datetime import datetime
 from database import db
-from passlib.context import CryptContext
-
-# Password hashing
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+import bcrypt
 
 class User:
     def __init__(self, **kwargs):
@@ -20,11 +17,16 @@ class User:
     @staticmethod
     def hash_password(password: str) -> str:
         """Hash a password for storing."""
-        return pwd_context.hash(password)
+        salt = bcrypt.gensalt()
+        password_bytes = password.encode('utf-8')
+        hashed = bcrypt.hashpw(password_bytes, salt)
+        return hashed.decode('utf-8')
     
     def verify_password(self, password: str) -> bool:
         """Verify a password against the hash."""
-        return pwd_context.verify(password, self.password_hash)
+        password_bytes = password.encode('utf-8')
+        hash_bytes = self.password_hash.encode('utf-8')
+        return bcrypt.checkpw(password_bytes, hash_bytes)
     
     @staticmethod
     def create(username: str, password: str, role: str, full_name: str, department: Optional[str] = None) -> 'User':
