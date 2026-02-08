@@ -622,7 +622,7 @@ function CreateProjectModal({
               className="w-full px-3 py-2 text-left text-sm bg-white border border-gray-300 rounded-lg shadow-sm hover:border-gray-400 hover:shadow-md focus:outline-none focus:border-gray-400 transition-all duration-200 flex items-center justify-between group"
             >
               <span className="text-gray-900">
-                {architects.find(a => a.id === formData.solution_architect_id)?.full_name || 'Select an architect'}
+                {architects.find(a => a.id === formData.solution_architect_id)?.full_name || 'Select a project manager'}
               </span>
               <svg
                 className={`w-5 h-5 text-gray-400 transition-transform duration-200 flex-shrink-0 ${isArchitectOpen ? 'rotate-180' : ''}`}
@@ -807,22 +807,80 @@ function EditProjectModal({
   project: Project;
   onUpdate: () => void;
 }) {
+  const [architects, setArchitects] = useState<User[]>([]);
+  const [isArchitectOpen, setIsArchitectOpen] = useState(false);
+  const [attachments, setAttachments] = useState<File[]>([]);
+  const [isDragging, setIsDragging] = useState(false);
   const [formData, setFormData] = useState({
     name: project.name,
     description: project.description,
     status: project.status,
     progress: project.progress,
+    solution_architect_id: (project as any).solution_architect_id || 2,
   });
+
+  useEffect(() => {
+    if (isOpen) {
+      loadArchitects();
+      // Reset state when modal opens
+      setFormData({
+        name: project.name,
+        description: project.description,
+        status: project.status,
+        progress: project.progress,
+        solution_architect_id: (project as any).solution_architect_id || 2,
+      });
+      setAttachments([]);
+    }
+  }, [isOpen, project]);
+
+  const loadArchitects = async () => {
+    try {
+      const data = await userAPI.getArchitects();
+      setArchitects(data);
+    } catch (error) {
+      console.error('Error loading architects:', error);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
+      console.log('[EDIT] Updating project with formData:', formData);
       await projectAPI.update(project.id, formData);
+      
+      // Upload new attachments if any
+      if (attachments.length > 0) {
+        console.log(`[EDIT] Uploading ${attachments.length} new attachments for project ID:`, project.id);
+        for (const file of attachments) {
+          try {
+            console.log('[EDIT] Uploading file:', file.name);
+            const uploadResult = await projectAPI.uploadAttachment(project.id, file);
+            console.log('[EDIT] Upload successful:', uploadResult);
+          } catch (uploadError) {
+            console.error('[EDIT] Error uploading file:', file.name, uploadError);
+            alert(`Failed to upload ${file.name}: ${uploadError}`);
+          }
+        }
+      }
+      
       onUpdate();
       onClose();
     } catch (error) {
-      console.error('Error updating project:', error);
+      console.error('[EDIT] Error updating project:', error);
+      const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred';
+      alert(`Failed to update project: ${errorMessage}`);
     }
+  };
+
+  const handleFileSelect = (files: FileList | null) => {
+    if (files) {
+      setAttachments(prev => [...prev, ...Array.from(files)]);
+    }
+  };
+
+  const removeAttachment = (index: number) => {
+    setAttachments(prev => prev.filter((_, i) => i !== index));
   };
 
   return (
@@ -879,6 +937,53 @@ function EditProjectModal({
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
+            Project Manager <span className="text-red-500">*</span>
+          </label>
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setIsArchitectOpen(!isArchitectOpen)}
+              className="w-full px-3 py-2 text-left text-sm bg-white border border-gray-300 rounded-lg shadow-sm hover:border-gray-400 hover:shadow-md focus:outline-none focus:border-gray-400 transition-all duration-200 flex items-center justify-between group"
+            >
+              <span className="text-gray-900">
+                {architects.find(a => a.id === formData.solution_architect_id)?.full_name || 'Select a project manager'}
+              </span>
+              <svg
+                className={`w-5 h-5 text-gray-400 transition-transform duration-200 flex-shrink-0 ${isArchitectOpen ? 'rotate-180' : ''}`}
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+            
+            {isArchitectOpen && (
+              <div className="absolute z-10 w-full mt-2 bg-white border border-gray-200 rounded-lg shadow-xl max-h-60 overflow-auto">
+                {architects.map((architect) => (
+                  <button
+                    key={architect.id}
+                    type="button"
+                    onClick={() => {
+                      setFormData({ ...formData, solution_architect_id: architect.id });
+                      setIsArchitectOpen(false);
+                    }}
+                    className={`w-full px-4 py-3 text-left text-sm hover:bg-gray-50 transition-colors duration-150 first:rounded-t-lg last:rounded-b-lg ${
+                      formData.solution_architect_id === architect.id
+                        ? 'bg-gray-50 text-gray-700 font-medium'
+                        : 'text-gray-700'
+                    }`}
+                  >
+                    {architect.full_name}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
             Status
           </label>
           <select
@@ -902,6 +1007,84 @@ function EditProjectModal({
           max="100"
           required
         />
+
+        {/* New File Attachments */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Add New Attachments
+          </label>
+          <div
+            className={`relative border-2 border-dashed rounded-lg p-6 transition-colors ${
+              isDragging
+                ? 'border-gray-400 bg-gray-50'
+                : 'border-gray-300 hover:border-gray-400'
+            }`}
+            onDragOver={(e) => {
+              e.preventDefault();
+              setIsDragging(true);
+            }}
+            onDragLeave={() => setIsDragging(false)}
+            onDrop={(e) => {
+              e.preventDefault();
+              setIsDragging(false);
+              handleFileSelect(e.dataTransfer.files);
+            }}
+          >
+            <input
+              type="file"
+              multiple
+              onChange={(e) => handleFileSelect(e.target.files)}
+              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+            />
+            <div className="text-center">
+              <svg
+                className="mx-auto h-12 w-12 text-gray-400"
+                stroke="currentColor"
+                fill="none"
+                viewBox="0 0 48 48"
+              >
+                <path
+                  d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02"
+                  strokeWidth={2}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+              <p className="mt-2 text-sm text-gray-600">
+                Drag and drop files here, or click to select files
+              </p>
+            </div>
+          </div>
+
+          {/* New attachments list */}
+          {attachments.length > 0 && (
+            <div className="mt-3 space-y-2">
+              {attachments.map((file, index) => (
+                <div
+                  key={index}
+                  className="flex items-center justify-between p-2 bg-gray-50 rounded-lg border border-gray-200"
+                >
+                  <div className="flex items-center gap-2">
+                    <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                    </svg>
+                    <span className="text-sm text-gray-900">{file.name}</span>
+                    <span className="text-xs text-gray-500">
+                      ({(file.size / 1024).toFixed(1)} KB)
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => removeAttachment(index)}
+                    className="text-red-600 hover:text-red-800 text-xs font-medium"
+                  >
+                    Remove
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
 
         <div className="flex justify-end gap-3 pt-4">
           <Button type="button" variant="secondary" onClick={onClose}>

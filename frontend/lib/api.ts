@@ -119,6 +119,7 @@ export const projectAPI = {
     body: JSON.stringify(data),
   }),
   uploadAttachment: async (projectId: number, file: File) => {
+    const accessToken = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
     const userStr = typeof window !== 'undefined' ? localStorage.getItem('user') : null;
     const user = userStr ? JSON.parse(userStr) : null;
     
@@ -128,6 +129,7 @@ export const projectAPI = {
     const response = await fetch(`${API_BASE_URL}/projects/${projectId}/attachments`, {
       method: 'POST',
       headers: {
+        ...(accessToken && { 'Authorization': `Bearer ${accessToken}` }),
         ...(user?.username && { 'X-Username': user.username }),
       },
       body: formData,

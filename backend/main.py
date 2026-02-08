@@ -99,55 +99,20 @@ async def login(request: Request):
 
 @app.on_event("startup")
 async def startup_event():
-    """Initialize database and create predefined users"""
+    """Initialize database and create admin user"""
     from database import db
     
-    # Predefined users with their credentials
-    predefined_users = [
-        {
-            "username": "admin",
-            "password": "admin123",
-            "role": "admin",
-            "full_name": "System Administrator",
-            "department": "IT"
-        },
-        {
-            "username": "john.manager",
-            "password": "manager123",
-            "role": "line_manager",
-            "full_name": "John Manager",
-            "department": "Engineering"
-        },
-        {
-            "username": "sarah.architect",
-            "password": "architect123",
-            "role": "solution_architect",
-            "full_name": "Sarah Architect",
-            "department": "Engineering"
-        },
-        {
-            "username": "viewer",
-            "password": "viewer123",
-            "role": "dashboard_viewer",
-            "full_name": "Dashboard Viewer",
-            "department": "Management"
-        }
-    ]
-    
-    # Create predefined users if they don't exist
-    for user_data in predefined_users:
-        existing_user = User.get_by_username(user_data["username"])
-        if not existing_user:
-            User.create(
-                username=user_data["username"],
-                password=user_data["password"],
-                role=user_data["role"],
-                full_name=user_data["full_name"],
-                department=user_data["department"]
-            )
-            print(f"Created user: {user_data['username']} ({user_data['role']})")
-        else:
-            print(f"User already exists: {user_data['username']}")
+    # Create admin user if it doesn't exist
+    admin_user = User.get_by_username("admin")
+    if not admin_user:
+        User.create(
+            username="admin",
+            password="admin123",
+            role="admin",
+            full_name="System Administrator",
+            department="IT"
+        )
+        print("Created admin user: admin (admin)")
     
 
 if __name__ == "__main__":

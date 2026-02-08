@@ -24,6 +24,7 @@ class ProjectUpdate(BaseModel):
     description: Optional[str] = None
     status: Optional[str] = None
     progress: Optional[int] = None
+    solution_architect_id: Optional[int] = None
     start_date: Optional[date] = None
     end_date: Optional[date] = None
 

@@ -95,6 +95,9 @@ class Project:
         if 'end_date' in kwargs:
             updates.append('end_date = ?')
             params.append(kwargs['end_date'])
+        if 'solution_architect_id' in kwargs:
+            updates.append('solution_architect_id = ?')
+            params.append(kwargs['solution_architect_id'])
         if 'attachments' in kwargs:
             attachments_json = json.dumps(kwargs['attachments'])
             updates.append('attachments = ?')

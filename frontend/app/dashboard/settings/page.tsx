@@ -5,7 +5,16 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/Card';
 import Button from '@/components/Button';
 import Input from '@/components/Input';
-import { FaCog, FaSave, FaUndo, FaLock, FaEye, FaEyeSlash } from 'react-icons/fa';
+import { FaCog, FaSave, FaUndo, FaLock, FaEye, FaEyeSlash, FaUsers, FaPlus, FaTrash } from 'react-icons/fa';
+
+interface UserData {
+  id: number;
+  username: string;
+  full_name: string;
+  role: string;
+  department?: string;
+  created_at: string;
+}
 
 interface Settings {
   work_hours_per_day: number;
@@ -15,6 +24,7 @@ interface Settings {
 
 export default function SettingsPage() {
   const { user } = useAuth();
+  const [activeTab, setActiveTab] = useState<'config' | 'password' | 'users'>('config');
   const [settings, setSettings] = useState<Settings>({
     work_hours_per_day: 6,
     work_days_per_month: 20,
@@ -40,9 +50,29 @@ export default function SettingsPage() {
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
 
+  // User management state
+  const [users, setUsers] = useState<UserData[]>([]);
+  const [usersLoading, setUsersLoading] = useState(false);
+  const [showAddUserModal, setShowAddUserModal] = useState(false);
+  const [newUser, setNewUser] = useState({
+    username: '',
+    password: '',
+    full_name: '',
+    role: 'dashboard_viewer',
+    department: '',
+  });
+  const [userError, setUserError] = useState<string | null>(null);
+  const [userSuccess, setUserSuccess] = useState<string | null>(null);
+
   useEffect(() => {
     fetchSettings();
   }, []);
+
+  useEffect(() => {
+    if (activeTab === 'users') {
+      fetchUsers();
+    }
+  }, [activeTab]);
 
   const fetchSettings = async () => {
     const accessToken = localStorage.getItem('access_token');
@@ -180,6 +210,107 @@ export default function SettingsPage() {
     }
   };
 
+  const fetchUsers = async () => {
+    const accessToken = localStorage.getItem('access_token');
+    if (!accessToken) return;
+
+    try {
+      setUsersLoading(true);
+      setUserError(null);
+      const response = await fetch('https://resource-manager-kg4d.onrender.com/api/users', {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch users');
+      }
+
+      const data = await response.json();
+      setUsers(data);
+    } catch (err) {
+      setUserError(err instanceof Error ? err.message : 'An error occurred');
+    } finally {
+      setUsersLoading(false);
+    }
+  };
+
+  const handleAddUser = async () => {
+    const accessToken = localStorage.getItem('access_token');
+    if (!accessToken) return;
+
+    if (!newUser.username || !newUser.password || !newUser.full_name) {
+      setUserError('Username, password, and full name are required');
+      return;
+    }
+
+    try {
+      setUserError(null);
+      setUserSuccess(null);
+      const response = await fetch('https://resource-manager-kg4d.onrender.com/api/users/', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(newUser),
+      });
+
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({ detail: 'Failed to create user' }));
+        throw new Error(err.detail || 'Failed to create user');
+      }
+
+      setUserSuccess('User created successfully!');
+      setShowAddUserModal(false);
+      setNewUser({
+        username: '',
+        password: '',
+        full_name: '',
+        role: 'dashboard_viewer',
+        department: '',
+      });
+      fetchUsers();
+      setTimeout(() => setUserSuccess(null), 3000);
+    } catch (err) {
+      setUserError(err instanceof Error ? err.message : 'An error occurred');
+    }
+  };
+
+  const handleDeleteUser = async (userId: number) => {
+    const accessToken = localStorage.getItem('access_token');
+    if (!accessToken) return;
+
+    if (!confirm('Are you sure you want to delete this user?')) {
+      return;
+    }
+
+    try {
+      setUserError(null);
+      setUserSuccess(null);
+      const response = await fetch(`https://resource-manager-kg4d.onrender.com/api/users/${userId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({ detail: 'Failed to delete user' }));
+        throw new Error(err.detail || 'Failed to delete user');
+      }
+
+      setUserSuccess('User deleted successfully!');
+      fetchUsers();
+      setTimeout(() => setUserSuccess(null), 3000);
+    } catch (err) {
+      setUserError(err instanceof Error ? err.message : 'An error occurred');
+    }
+  };
+
   if (loading) {
     return (
       <div className="p-6">
@@ -207,7 +338,7 @@ export default function SettingsPage() {
 
   return (
     <div className="p-6">
-      <div className="max-w-2xl mx-auto">
+      <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="mb-6">
           <div className="flex items-center gap-3 mb-2">
@@ -236,23 +367,72 @@ export default function SettingsPage() {
           </Card>
         )}
 
+        {/* Tabs */}
+        <div className="mb-6 border-b border-gray-200">
+          <nav className="-mb-px flex space-x-8">
+            <button
+              onClick={() => setActiveTab('config')}
+              className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
+                activeTab === 'config'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                <FaCog />
+                Configuration
+              </div>
+            </button>
+            <button
+              onClick={() => setActiveTab('password')}
+              className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
+                activeTab === 'password'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                <FaLock />
+                Change Password
+              </div>
+            </button>
+            {user?.role === 'admin' && (
+              <button
+                onClick={() => setActiveTab('users')}
+                className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
+                  activeTab === 'users'
+                    ? 'border-blue-500 text-blue-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  <FaUsers />
+                  User Management
+                </div>
+              </button>
+            )}
+          </nav>
+        </div>
+
         {/* Alerts */}
-        {error && (
+        {(error || userError) && (
           <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
-            {error}
+            {error || userError}
           </div>
         )}
-        {success && (
+        {(success || userSuccess) && (
           <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg text-green-700">
-            {success}
+            {success || userSuccess}
           </div>
         )}
 
-        {/* Settings Form */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Configuration</CardTitle>
-          </CardHeader>
+        {/* Configuration Tab */}
+        {activeTab === 'config' && (
+          <>
+            <Card>
+              <CardHeader>
+                <CardTitle>Configuration</CardTitle>
+              </CardHeader>
           <CardContent className="p-6">
             <div className="space-y-6">
               {/* Work Hours Per Day */}
@@ -352,27 +532,11 @@ export default function SettingsPage() {
             </p>
           </CardContent>
         </Card>
+          </>
+        )}
 
-        {/* User Management Info */}
-        <Card className="mt-6 border-gray-300">
-          <CardContent className="p-6">
-            <h3 className="font-semibold text-gray-900 mb-2">User Management</h3>
-            <p className="text-sm text-gray-600 mb-3">
-              This system uses predefined user accounts with individual passwords. Each user has their own credentials and assigned role:
-            </p>
-            <ul className="list-disc list-inside text-sm text-gray-600 space-y-1">
-              <li><strong>Admin</strong> - Full system access</li>
-              <li><strong>Line Manager</strong> - Manage employee schedules and availability</li>
-              <li><strong>Project Manager</strong> - Create projects and book resources</li>
-              <li><strong>Dashboard Viewer</strong> - View reports and analytics</li>
-            </ul>
-            <p className="text-sm text-gray-500 mt-3">
-              Contact your system administrator to add or modify user accounts.
-            </p>
-          </CardContent>
-        </Card>
-
-        {/* User Password Card */}
+        {/* Password Change Tab */}
+        {activeTab === 'password' && (
         <Card className="mt-6">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -468,6 +632,200 @@ export default function SettingsPage() {
             </div>
           </CardContent>
         </Card>
+        )}
+
+        {/* User Management Tab */}
+        {activeTab === 'users' && user?.role === 'admin' && (
+          <>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-semibold text-gray-900">Manage Users</h2>
+              <Button
+                onClick={() => setShowAddUserModal(true)}
+                variant="primary"
+                className="flex items-center gap-2"
+              >
+                <FaPlus />
+                Add User
+              </Button>
+            </div>
+
+            {usersLoading ? (
+              <Card>
+                <CardContent className="p-6">
+                  <div className="space-y-4">
+                    {[1, 2, 3].map((i) => (
+                      <div key={i} className="h-16 bg-gray-200 rounded animate-pulse"></div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            ) : (
+              <Card>
+                <CardContent className="p-0">
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y divide-gray-200">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Username
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Full Name
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Role
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Department
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Actions
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {users.map((userData) => (
+                          <tr key={userData.id}>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                              {userData.username}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                              {userData.full_name}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                              <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
+                                {userData.role.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                              {userData.department || '-'}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                              {userData.id !== user?.id && (
+                                <Button
+                                  onClick={() => handleDeleteUser(userData.id)}
+                                  variant="secondary"
+                                  className="flex items-center gap-2 text-red-600 hover:text-red-700"
+                                >
+                                  <FaTrash />
+                                  Delete
+                                </Button>
+                              )}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Add User Modal */}
+            {showAddUserModal && (
+              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                <Card className="w-full max-w-md">
+                  <CardHeader>
+                    <CardTitle>Add New User</CardTitle>
+                  </CardHeader>
+                  <CardContent className="p-6">
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Username *
+                        </label>
+                        <Input
+                          type="text"
+                          value={newUser.username}
+                          onChange={(e) => setNewUser({ ...newUser, username: e.target.value })}
+                          placeholder="Enter username"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Password *
+                        </label>
+                        <Input
+                          type="password"
+                          value={newUser.password}
+                          onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
+                          placeholder="Enter password"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Full Name *
+                        </label>
+                        <Input
+                          type="text"
+                          value={newUser.full_name}
+                          onChange={(e) => setNewUser({ ...newUser, full_name: e.target.value })}
+                          placeholder="Enter full name"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Role *
+                        </label>
+                        <select
+                          value={newUser.role}
+                          onChange={(e) => setNewUser({ ...newUser, role: e.target.value })}
+                          className="block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-gray-400 focus:outline-none"
+                        >
+                          <option value="dashboard_viewer">Dashboard Viewer</option>
+                          <option value="line_manager">Line Manager</option>
+                          <option value="solution_architect">Solution Architect</option>
+                          <option value="admin">Admin</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Department
+                        </label>
+                        <Input
+                          type="text"
+                          value={newUser.department}
+                          onChange={(e) => setNewUser({ ...newUser, department: e.target.value })}
+                          placeholder="Enter department (optional)"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-3 mt-6 pt-4 border-t border-gray-200">
+                      <Button
+                        onClick={handleAddUser}
+                        variant="primary"
+                        className="flex items-center gap-2"
+                      >
+                        <FaPlus />
+                        Create User
+                      </Button>
+                      <Button
+                        onClick={() => {
+                          setShowAddUserModal(false);
+                          setNewUser({
+                            username: '',
+                            password: '',
+                            full_name: '',
+                            role: 'dashboard_viewer',
+                            department: '',
+                          });
+                        }}
+                        variant="secondary"
+                      >
+                        Cancel
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            )}
+          </>
+        )}
       </div>
     </div>
   );
