@@ -35,7 +35,7 @@ class ReservationUpdate(BaseModel):
     reason: Optional[str] = None
     status: Optional[str] = None
 
-@router.post("/", response_model=Dict[str, Any])
+@router.post("", response_model=Dict[str, Any])
 async def create_reservation(employee_id: int, reservation: ReservationCreate):
     """Create a new reservation for an employee"""
     # Check if employee exists
@@ -57,7 +57,7 @@ async def create_reservation(employee_id: int, reservation: ReservationCreate):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to create reservation: {str(e)}")
 
-@router.get("/", response_model=List[Dict[str, Any]])
+@router.get("", response_model=List[Dict[str, Any]])
 async def get_reservations(employee_id: int, include_cancelled: bool = False):
     """Get all reservations for an employee"""
     employee = Employee.get_by_id(employee_id)

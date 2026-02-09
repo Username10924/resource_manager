@@ -48,65 +48,65 @@ async function fetchAPI(endpoint: string, options: RequestInit = {}) {
 
 // Employee API
 export const employeeAPI = {
-  getAll: () => fetchAPI('/employees/'),
-  getById: (id: number) => fetchAPI(`/employees/${id}/`),
-  create: (data: any) => fetchAPI('/employees/', {
+  getAll: () => fetchAPI('/employees'),
+  getById: (id: number) => fetchAPI(`/employees/${id}`),
+  create: (data: any) => fetchAPI('/employees', {
     method: 'POST',
     body: JSON.stringify(data),
   }),
-  update: (id: number, data: any) => fetchAPI(`/employees/${id}/`, {
+  update: (id: number, data: any) => fetchAPI(`/employees/${id}`, {
     method: 'PUT',
     body: JSON.stringify(data),
   }),
-  delete: (id: number) => fetchAPI(`/employees/${id}/`, {
+  delete: (id: number) => fetchAPI(`/employees/${id}`, {
     method: 'DELETE',
   }),
-  getSchedule: (id: number) => fetchAPI(`/employees/${id}/schedule/`),
-  updateSchedule: (id: number, data: any) => fetchAPI(`/employees/${id}/schedule/`, {
+  getSchedule: (id: number) => fetchAPI(`/employees/${id}/schedule`),
+  updateSchedule: (id: number, data: any) => fetchAPI(`/employees/${id}/schedule`, {
     method: 'PUT',
     body: JSON.stringify(data),
   }),
   getAvailability: (id: number, month: number, year: number) => 
-    fetchAPI(`/employees/${id}/availability/${month}/${year}/`),
+    fetchAPI(`/employees/${id}/availability/${month}/${year}`),
   getProjects: (id: number, month: number, year: number) => 
-    fetchAPI(`/employees/${id}/projects/${month}/${year}/`),
+    fetchAPI(`/employees/${id}/projects/${month}/${year}`),
   // Reservation APIs
   getReservations: (id: number, includeCancelled: boolean = false) => 
-    fetchAPI(`/employees/${id}/reservations/?include_cancelled=${includeCancelled}`),
-  createReservation: (employeeId: number, data: any) => fetchAPI(`/employees/${employeeId}/reservations/`, {
+    fetchAPI(`/employees/${id}/reservations?include_cancelled=${includeCancelled}`),
+  createReservation: (employeeId: number, data: any) => fetchAPI(`/employees/${employeeId}/reservations`, {
     method: 'POST',
     body: JSON.stringify(data),
   }),
   updateReservation: (employeeId: number, reservationId: number, data: any) => 
-    fetchAPI(`/employees/${employeeId}/reservations/${reservationId}/`, {
+    fetchAPI(`/employees/${employeeId}/reservations/${reservationId}`, {
       method: 'PUT',
       body: JSON.stringify(data),
     }),
   deleteReservation: (employeeId: number, reservationId: number) => 
-    fetchAPI(`/employees/${employeeId}/reservations/${reservationId}/`, {
+    fetchAPI(`/employees/${employeeId}/reservations/${reservationId}`, {
       method: 'DELETE',
     }),
   cancelReservation: (employeeId: number, reservationId: number) => 
-    fetchAPI(`/employees/${employeeId}/reservations/${reservationId}/cancel/`, {
+    fetchAPI(`/employees/${employeeId}/reservations/${reservationId}/cancel`, {
       method: 'POST',
     }),
   getAvailabilityForDateRange: (employeeId: number, startDate: string, endDate: string) =>
-    fetchAPI(`/employees/${employeeId}/availability-range/?start_date=${startDate}&end_date=${endDate}`),
+    fetchAPI(`/employees/${employeeId}/availability-range?start_date=${startDate}&end_date=${endDate}`),
 };
 
 // Project API
 export const projectAPI = {
-  getAll: () => fetchAPI('/projects/'),
-  getById: (id: number) => fetchAPI(`/projects/${id}/`),
-  create: (data: any) => fetchAPI('/projects/', {
+  getAll: () => fetchAPI('/projects'),
+  getById: (id: number) => fetchAPI(`/projects/${id}`),
+  create: (data: any) => fetchAPI('/projects', {
     method: 'POST',
     body: JSON.stringify(data),
   }),
-  update: (id: number, data: any) => fetchAPI(`/projects/${id}/`, {
+  update: (id: number, data: any) => fetchAPI(`/projects/${id}`, {
     method: 'PUT',
     body: JSON.stringify(data),
   }),
-  delete: (id: number) => fetchAPI(`/projects/${id}/`, {
+  delete: (id: number) => fetchAPI(`/projects/${id}`, {
     method: 'DELETE',
   }),
   getBookings: (id: number) => fetchAPI(`/projects/${id}/bookings`),
@@ -114,7 +114,7 @@ export const projectAPI = {
   deleteBooking: (bookingId: number) => fetchAPI(`/projects/bookings/${bookingId}`, {
     method: 'DELETE',
   }),
-  createBooking: (projectId: number, data: any) => fetchAPI(`/projects/${projectId}/bookings/`, {
+  createBooking: (projectId: number, data: any) => fetchAPI(`/projects/${projectId}/bookings`, {
     method: 'POST',
     body: JSON.stringify(data),
   }),
@@ -146,14 +146,14 @@ export const projectAPI = {
 
 // Dashboard API
 export const dashboardAPI = {
-  getResourceStats: () => fetchAPI('/dashboard/resources/'),
-  getProjectStats: () => fetchAPI('/dashboard/projects/'),
+  getResourceStats: () => fetchAPI('/dashboard/resources'),
+  getProjectStats: () => fetchAPI('/dashboard/projects'),
 };
 
 // User API
 export const userAPI = {
-  getAll: () => fetchAPI('/users/'),
-  getArchitects: () => fetchAPI('/users/architects/'),
+  getAll: () => fetchAPI('/users'),
+  getArchitects: () => fetchAPI('/users/architects'),
 };
 
 export type Employee = {

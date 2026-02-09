@@ -11,13 +11,13 @@ async def get_users_by_role(role: str):
     users = User.get_by_role(role)
     return [user.to_dict() for user in users]
 
-@router.get("/architects/", response_model=List[Dict[str, Any]])
+@router.get("/architects", response_model=List[Dict[str, Any]])
 async def get_solution_architects(current_user: User = Depends(get_current_user)):
     """Get all solution architects - requires authentication"""
     architects = User.get_by_role('solution_architect')
     return [architect.to_dict() for architect in architects]
 
-@router.get("/", response_model=List[Dict[str, Any]])
+@router.get("", response_model=List[Dict[str, Any]])
 async def get_all_users(current_user: User = Depends(get_current_user)):
     """Get all users - requires authentication"""
     # Get all roles
@@ -28,7 +28,7 @@ async def get_all_users(current_user: User = Depends(get_current_user)):
         all_users.extend([user.to_dict() for user in users])
     return all_users
 
-@router.post("/", response_model=Dict[str, Any])
+@router.post("", response_model=Dict[str, Any])
 async def create_user(request: Request, current_user: User = Depends(get_current_user)):
     """Create a new user - admin only"""
     # Check if current user is admin

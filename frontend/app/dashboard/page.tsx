@@ -5,7 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/Card';
 import Button from '@/components/Button';
 import Modal from '@/components/Modal';
-import { projectAPI, Booking } from '@/lib/api';
+import { projectAPI, Booking, dashboardAPI } from '@/lib/api';
 import { formatMonth } from '@/lib/utils';
 import StatsCard from '@/components/StatsCard';
 import { SkeletonDashboardCharts } from '@/components/Skeleton';
@@ -74,23 +74,11 @@ export default function DashboardPage() {
     
     try {
       if (viewMode === 'resources') {
-        const response = await fetch('https://dplanner.westeurope.cloudapp.azure.com/api/dashboard/resources');
-        
-        if (response.ok) {
-          const data = await response.json();
-          setResourceData(data);
-        } else {
-          setError('Failed to load resources dashboard');
-        }
+        const data = await dashboardAPI.getResourceStats();
+        setResourceData(data);
       } else {
-        const response = await fetch('https://dplanner.westeurope.cloudapp.azure.com/api/dashboard/projects');
-        
-        if (response.ok) {
-          const data = await response.json();
-          setProjectData(data);
-        } else {
-          setError('Failed to load projects dashboard');
-        }
+        const data = await dashboardAPI.getProjectStats();
+        setProjectData(data);
       }
     } catch (err) {
       setError('An error occurred while fetching data');

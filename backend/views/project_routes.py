@@ -46,7 +46,7 @@ class BookingRequest(BaseModel):
             raise ValueError('Booked hours must be greater than 0')
         return v
 
-@router.post("/", response_model=Dict[str, Any])
+@router.post("", response_model=Dict[str, Any])
 async def create_project(project: ProjectCreate):
     """Create a new project"""
     result = ProjectController.create_project(project.dict())
@@ -54,7 +54,7 @@ async def create_project(project: ProjectCreate):
         raise HTTPException(status_code=400, detail=result['error'])
     return result
 
-@router.get("/", response_model=List[Dict[str, Any]])
+@router.get("", response_model=List[Dict[str, Any]])
 async def get_projects(
     architect_id: Optional[int] = Query(None, description="Filter by solution architect"),
     status: Optional[str] = Query(None, description="Filter by status")

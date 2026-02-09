@@ -249,7 +249,7 @@ export default function SettingsPage() {
     try {
       setUserError(null);
       setUserSuccess(null);
-      const response = await fetch('https://dplanner.westeurope.cloudapp.azure.com/api/users/', {
+      const response = await fetch('https://dplanner.westeurope.cloudapp.azure.com/api/users', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${accessToken}`,

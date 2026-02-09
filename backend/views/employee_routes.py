@@ -45,7 +45,7 @@ class ScheduleUpdate(BaseModel):
             raise ValueError('Reserved hours must be between 0 and 24')
         return v
 
-@router.post("/", response_model=Dict[str, Any])
+@router.post("", response_model=Dict[str, Any])
 async def create_employee(employee: EmployeeCreate, current_user: User = Depends(get_current_user)):
     """Create a new employee"""
     employee_data = employee.dict()
@@ -59,7 +59,7 @@ async def create_employee(employee: EmployeeCreate, current_user: User = Depends
         raise HTTPException(status_code=400, detail=result['error'])
     return result
 
-@router.get("/", response_model=List[EmployeeResponse])
+@router.get("", response_model=List[EmployeeResponse])
 async def get_employees(
     current_user: User = Depends(get_current_user),
     manager_id: Optional[int] = Query(None, description="Filter by line manager"),
@@ -233,7 +233,7 @@ async def get_employee_projects(employee_id: int, month: int, year: int):
     
     return bookings
 
-@router.get("/{employee_id}/availability-range/", response_model=Dict[str, Any])
+@router.get("/{employee_id}/availability-range", response_model=Dict[str, Any])
 async def get_employee_availability_for_date_range(
     employee_id: int,
     start_date: str = Query(..., description="Start date in YYYY-MM-DD format"),
