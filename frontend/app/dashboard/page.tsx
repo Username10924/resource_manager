@@ -25,8 +25,6 @@ import {
 } from 'react-icons/fa';
 import EmployeeStatsModal from '@/components/EmployeeStatsModal';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE || 'http://dplanner.westeurope.cloudapp.azure.com:8000';
-
 type ViewMode = 'resources' | 'projects' | 'employees';
 
 interface ResourceDashboard {
@@ -73,11 +71,10 @@ export default function DashboardPage() {
   const fetchDashboardData = async () => {
     setIsLoading(true);
     setError('');
-    const API_BASE = process.env.NEXT_PUBLIC_API_BASE || 'http://dplanner.westeurope.cloudapp.azure.com:8000';
     
     try {
       if (viewMode === 'resources') {
-        const response = await fetch(`${API_BASE}/api/dashboard/resources`);
+        const response = await fetch('http://dplanner.westeurope.cloudapp.azure.com:8000/api/dashboard/resources');
         
         if (response.ok) {
           const data = await response.json();
@@ -86,7 +83,7 @@ export default function DashboardPage() {
           setError('Failed to load resources dashboard');
         }
       } else {
-        const response = await fetch(`${API_BASE}/api/dashboard/projects`);
+        const response = await fetch('http://dplanner.westeurope.cloudapp.azure.com:8000/api/dashboard/projects');
         
         if (response.ok) {
           const data = await response.json();
@@ -649,7 +646,7 @@ function ProjectDetailsModal({
                     </div>
                   </div>
                   <a
-                    href={`${API_BASE}/${attachment.path}`}
+                    href={`http://dplanner.westeurope.cloudapp.azure.com:8000/${attachment.path}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-gray-600 hover:text-gray-800 text-sm font-medium"
