@@ -1,4 +1,8 @@
-const API_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_URL;
+const API_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'https://dplanner.westeurope.cloudapp.azure.com/api';
+
+if (!process.env.NEXT_PUBLIC_BACKEND_URL) {
+  console.warn('NEXT_PUBLIC_BACKEND_URL is not set, using default backend URL');
+}
 
 // Helper function for API calls
 async function fetchAPI(endpoint: string, options: RequestInit = {}) {
