@@ -81,7 +81,7 @@ export default function SettingsPage() {
     try {
       setLoading(true);
       setError(null);
-      const response = await fetch('https://resource-manager-kg4d.onrender.com/api/settings', {
+      const response = await fetch('http://dplanner.westeurope.cloudapp.azure.com:8000/api/settings', {
         headers: {
           'Authorization': `Bearer ${accessToken}`,
           'Content-Type': 'application/json',
@@ -111,7 +111,7 @@ export default function SettingsPage() {
       setError(null);
       setSuccess(null);
 
-      const response = await fetch('https://resource-manager-kg4d.onrender.com/api/settings', {
+      const response = await fetch('http://dplanner.westeurope.cloudapp.azure.com:8000/api/settings', {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${accessToken}`,
@@ -181,7 +181,7 @@ export default function SettingsPage() {
       setPasswordError(null);
       setPasswordSuccess(null);
 
-      const response = await fetch('https://resource-manager-kg4d.onrender.com/api/settings/change-password', {
+      const response = await fetch('http://dplanner.westeurope.cloudapp.azure.com:8000/api/settings/change-password', {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${accessToken}`,
@@ -217,7 +217,7 @@ export default function SettingsPage() {
     try {
       setUsersLoading(true);
       setUserError(null);
-      const response = await fetch('https://resource-manager-kg4d.onrender.com/api/users', {
+      const response = await fetch('http://dplanner.westeurope.cloudapp.azure.com:8000/api/users', {
         headers: {
           'Authorization': `Bearer ${accessToken}`,
           'Content-Type': 'application/json',
@@ -249,7 +249,7 @@ export default function SettingsPage() {
     try {
       setUserError(null);
       setUserSuccess(null);
-      const response = await fetch('https://resource-manager-kg4d.onrender.com/api/users/', {
+      const response = await fetch('http://dplanner.westeurope.cloudapp.azure.com:8000/api/users/', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${accessToken}`,
@@ -290,7 +290,7 @@ export default function SettingsPage() {
     try {
       setUserError(null);
       setUserSuccess(null);
-      const response = await fetch(`https://resource-manager-kg4d.onrender.com/api/users/${userId}`, {
+      const response = await fetch(`http://dplanner.westeurope.cloudapp.azure.com:8000/api/users/${userId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${accessToken}`,

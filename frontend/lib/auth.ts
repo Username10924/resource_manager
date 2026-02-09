@@ -11,7 +11,7 @@ export interface User {
 export const authService = {
   login: async (username: string, password: string): Promise<User> => {
     // Call the backend login endpoint
-    const response = await fetch('https://resource-manager-kg4d.onrender.com/login', {
+    const response = await fetch('http://dplanner.westeurope.cloudapp.azure.com:8000/login', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

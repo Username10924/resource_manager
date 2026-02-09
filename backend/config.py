@@ -25,17 +25,3 @@ MONTHS_IN_YEAR = 12
 
 # Site access password
 SITE_PASSWORD = "Welcome@123"
-
-# CORS allowed origins
-ALLOWED_ORIGINS = [
-    "http://localhost:3000",
-    "http://localhost:3001",
-    "https://localhost:3000",
-    "https://localhost:3001",
-    "http://188.245.248.171:3000",
-    "https://188.245.248.171:3000",
-    "http://188.245.248.171",
-    "https://188.245.248.171",
-    "http://dplanner.westeurope.cloudapp.azure.com/",
-    "https://resourcemanager-gi1bs678q-username10924s-projects.vercel.app/"
-]

@@ -6,7 +6,7 @@ import uvicorn
 import os
 from datetime import datetime
 
-from config import APP_CONFIG, ALLOWED_ORIGINS
+from config import APP_CONFIG
 from views import employee_routes, project_routes, dashboard_routes, user_routes, reservation_routes, settings_routes
 from models.user import User
 from dependencies import get_current_user, create_access_token
@@ -23,11 +23,10 @@ app.mount("/uploads", StaticFiles(directory=upload_dir), name="uploads")
 # CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=ALLOWED_ORIGINS,
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
-    expose_headers=["*"],
 )
 
 # Include routers with authentication dependency

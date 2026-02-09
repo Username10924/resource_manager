@@ -106,16 +106,7 @@ export default function Home() {
           </CardContent>
         </Card>
 
-        {/* Info Text */}
-        <div className="mt-6 rounded-lg bg-white/60 backdrop-blur-sm border border-gray-200 p-4">
-          <p className="text-center text-xs font-semibold text-gray-700 mb-2">Demo Credentials:</p>
-          <div className="space-y-1 text-xs text-gray-600">
-            <p><strong>Admin:</strong> admin / admin123</p>
-            <p><strong>Line Manager:</strong> john.manager / manager123</p>
-            <p><strong>Project Manager:</strong> sarah.architect / architect123</p>
-            <p><strong>Viewer:</strong> viewer / viewer123</p>
-          </div>
-        </div>
+
       </div>
     </div>
   );

@@ -74,7 +74,7 @@ export default function DashboardPage() {
     
     try {
       if (viewMode === 'resources') {
-        const response = await fetch('https://resource-manager-kg4d.onrender.com/api/dashboard/resources');
+        const response = await fetch('http://dplanner.westeurope.cloudapp.azure.com:8000/api/dashboard/resources');
         
         if (response.ok) {
           const data = await response.json();
@@ -83,7 +83,7 @@ export default function DashboardPage() {
           setError('Failed to load resources dashboard');
         }
       } else {
-        const response = await fetch('https://resource-manager-kg4d.onrender.com/api/dashboard/projects');
+        const response = await fetch('http://dplanner.westeurope.cloudapp.azure.com:8000/api/dashboard/projects');
         
         if (response.ok) {
           const data = await response.json();
@@ -646,7 +646,7 @@ function ProjectDetailsModal({
                     </div>
                   </div>
                   <a
-                    href={`https://resource-manager-kg4d.onrender.com/${attachment.path}`}
+                    href={`http://dplanner.westeurope.cloudapp.azure.com:8000/${attachment.path}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-gray-600 hover:text-gray-800 text-sm font-medium"

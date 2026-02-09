@@ -251,7 +251,17 @@ export default function ProjectsPage() {
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
                       <CardTitle>{project.name}</CardTitle>
-                      <p className="mt-1 text-sm text-gray-600 line-clamp-2">
+                      {(project as any).project_code && (
+                        <div className="mt-1">
+                          <span className="inline-flex items-center gap-1 text-xs font-mono font-semibold text-blue-700 bg-blue-50 px-2.5 py-1 rounded-md border border-blue-200">
+                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14" />
+                            </svg>
+                            {(project as any).project_code}
+                          </span>
+                        </div>
+                      )}
+                      <p className="mt-2 text-sm text-gray-600 line-clamp-2">
                         {project.description}
                       </p>
                     </div>
@@ -504,6 +514,7 @@ function CreateProjectModal({
   const [isArchitectOpen, setIsArchitectOpen] = useState(false);
   const [attachments, setAttachments] = useState<File[]>([]);
   const [isDragging, setIsDragging] = useState(false);
+  const [allProjects, setAllProjects] = useState<Project[]>([]);
   const [formData, setFormData] = useState({
     project_code: '',
     name: '',
@@ -516,8 +527,16 @@ function CreateProjectModal({
   useEffect(() => {
     if (isOpen) {
       loadArchitects();
+      loadProjects();
     }
   }, [isOpen]);
+
+  // Auto-generate project code when solution architect changes
+  useEffect(() => {
+    if (formData.solution_architect_id && architects.length > 0 && allProjects.length > 0) {
+      generateProjectCode();
+    }
+  }, [formData.solution_architect_id, architects, allProjects]);
 
   const loadArchitects = async () => {
     try {
@@ -529,6 +548,75 @@ function CreateProjectModal({
     } catch (error) {
       console.error('Error loading architects:', error);
     }
+  };
+
+  const loadProjects = async () => {
+    try {
+      const data = await projectAPI.getAll();
+      setAllProjects(data);
+    } catch (error) {
+      console.error('Error loading projects:', error);
+    }
+  };
+
+  const getDepartmentPrefix = (department: string): string => {
+    // Map department names to prefixes
+    const departmentMap: Record<string, string> = {
+      'Finance': 'FIN',
+      'Engineering': 'ENG',
+      'IT': 'IT',
+      'Marketing': 'MKT',
+      'Sales': 'SAL',
+      'HR': 'HR',
+      'Human Resources': 'HR',
+      'Operations': 'OPS',
+      'Product': 'PRD',
+      'Design': 'DES',
+      'Legal': 'LEG',
+      'Customer Support': 'SUP',
+      'Research': 'RES',
+    };
+
+    // Check if department exists in map
+    if (departmentMap[department]) {
+      return departmentMap[department];
+    }
+
+    // Otherwise, take first 3 letters and uppercase
+    return department.substring(0, 3).toUpperCase();
+  };
+
+  const generateProjectCode = () => {
+    const selectedArchitect = architects.find(a => a.id === formData.solution_architect_id);
+    if (!selectedArchitect || !selectedArchitect.department) return;
+
+    const prefix = getDepartmentPrefix(selectedArchitect.department);
+    
+    // Find all projects with this prefix
+    const prefixPattern = new RegExp(`^${prefix}-(\\d+)$`);
+    const matchingProjects = allProjects.filter(p => {
+      const code = (p as any).project_code || p.name;
+      return prefixPattern.test(code);
+    });
+
+    // Find the highest number
+    let maxNumber = 0;
+    matchingProjects.forEach(p => {
+      const code = (p as any).project_code || p.name;
+      const match = code.match(prefixPattern);
+      if (match && match[1]) {
+        const num = parseInt(match[1], 10);
+        if (num > maxNumber) {
+          maxNumber = num;
+        }
+      }
+    });
+
+    // Generate next code
+    const nextNumber = maxNumber + 1;
+    const projectCode = `${prefix}-${String(nextNumber).padStart(3, '0')}`;
+    
+    setFormData(prev => ({ ...prev, project_code: projectCode }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -583,13 +671,19 @@ function CreateProjectModal({
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Create New Project" size="md">
       <form onSubmit={handleSubmit} className="space-y-4">
-        <Input
-          label="Project Code"
-          value={formData.project_code}
-          onChange={(e) => setFormData({ ...formData, project_code: e.target.value })}
-          placeholder="e.g., PROJ-001"
-          required
-        />
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Project Code
+          </label>
+          <input
+            type="text"
+            value={formData.project_code}
+            readOnly
+            className="block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm bg-gray-50 text-gray-600 cursor-not-allowed"
+            placeholder="Auto-generated based on department"
+          />
+          <p className="mt-1 text-xs text-gray-500">Auto-generated based on project manager's department</p>
+        </div>
         
         <Input
           label="Project Name"
@@ -641,7 +735,7 @@ function CreateProjectModal({
                     key={architect.id}
                     type="button"
                     onClick={() => {
-                      setFormData({ ...formData, solution_architect_id: architect.id });
+                      setFormData(prev => ({ ...prev, solution_architect_id: architect.id }));
                       setIsArchitectOpen(false);
                     }}
                     className={`w-full px-4 py-3 text-left text-sm hover:bg-gray-50 transition-colors duration-150 first:rounded-t-lg last:rounded-b-lg ${
@@ -902,7 +996,7 @@ function EditProjectModal({
                     <span className="text-sm text-gray-900">{attachment.filename}</span>
                   </div>
                   <a
-                    href={`https://resource-manager-kg4d.onrender.com/${attachment.path}`}
+                    href={`http://dplanner.westeurope.cloudapp.azure.com:8000/${attachment.path}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-gray-600 hover:text-gray-800 text-xs font-medium"
@@ -1579,6 +1673,21 @@ function ProjectDetailsModal({
       <div className="space-y-6">
         {/* Project Info */}
         <div className="space-y-4">
+          {/* Project Code */}
+          {(project as any).project_code && (
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <h3 className="text-xs font-semibold text-blue-900 uppercase tracking-wide mb-2">Project Code</h3>
+              <div className="flex items-center gap-2">
+                <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14" />
+                </svg>
+                <span className="text-lg font-mono font-bold text-blue-900">
+                  {(project as any).project_code}
+                </span>
+              </div>
+            </div>
+          )}
+
           <div>
             <h3 className="text-sm font-semibold text-gray-700 mb-2">Description</h3>
             <p className="text-sm text-gray-600">{project.description}</p>
@@ -1625,7 +1734,7 @@ function ProjectDetailsModal({
                     </div>
                   </div>
                   <a
-                    href={`https://resource-manager-kg4d.onrender.com/${attachment.path}`}
+                    href={`http://dplanner.westeurope.cloudapp.azure.com:8000/${attachment.path}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-gray-600 hover:text-gray-800 text-sm font-medium"

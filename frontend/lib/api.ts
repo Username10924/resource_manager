@@ -1,4 +1,4 @@
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://resource-manager-kg4d.onrender.com/api';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://dplanner.westeurope.cloudapp.azure.com:8000/api';
 
 // Helper function for API calls
 async function fetchAPI(endpoint: string, options: RequestInit = {}) {
