@@ -1,4 +1,4 @@
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://48.209.17.114:8000/api';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://dplanner.westeurope.cloudapp.azure.com:8000/api';
 
 // Helper function for API calls
 async function fetchAPI(endpoint: string, options: RequestInit = {}) {
