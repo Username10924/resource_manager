@@ -996,7 +996,7 @@ function EditProjectModal({
                     <span className="text-sm text-gray-900">{attachment.filename}</span>
                   </div>
                   <a
-                    href={`https://dplanner.westeurope.cloudapp.azure.com:8000/${attachment.path}`}
+                    href={`https://dplanner.westeurope.cloudapp.azure.com/${attachment.path}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-gray-600 hover:text-gray-800 text-xs font-medium"
@@ -1734,7 +1734,7 @@ function ProjectDetailsModal({
                     </div>
                   </div>
                   <a
-                    href={`https://dplanner.westeurope.cloudapp.azure.com:8000/${attachment.path}`}
+                    href={`https://dplanner.westeurope.cloudapp.azure.com/${attachment.path}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-gray-600 hover:text-gray-800 text-sm font-medium"

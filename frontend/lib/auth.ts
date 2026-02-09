@@ -11,7 +11,7 @@ export interface User {
 export const authService = {
   login: async (username: string, password: string): Promise<User> => {
     // Call the backend login endpoint
-    const response = await fetch('https://dplanner.westeurope.cloudapp.azure.com:8000/login', {
+    const response = await fetch('https://dplanner.westeurope.cloudapp.azure.com/login', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
