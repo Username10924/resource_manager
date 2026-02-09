@@ -9,6 +9,8 @@ import Input from '@/components/Input';
 import { formatMonth, getMonthsList } from '@/lib/utils';
 import { SkeletonProjectsPage, Skeleton } from '@/components/Skeleton';
 
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE || 'http://dplanner.westeurope.cloudapp.azure.com:8000';
+
 export default function ProjectsPage() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [stats, setStats] = useState<any>(null);
@@ -996,7 +998,7 @@ function EditProjectModal({
                     <span className="text-sm text-gray-900">{attachment.filename}</span>
                   </div>
                   <a
-                    href={`http://dplanner.westeurope.cloudapp.azure.com:8000/${attachment.path}`}
+                    href={`${API_BASE}/${attachment.path}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-gray-600 hover:text-gray-800 text-xs font-medium"
@@ -1734,7 +1736,7 @@ function ProjectDetailsModal({
                     </div>
                   </div>
                   <a
-                    href={`http://dplanner.westeurope.cloudapp.azure.com:8000/${attachment.path}`}
+                    href={`${API_BASE}/${attachment.path}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-gray-600 hover:text-gray-800 text-sm font-medium"

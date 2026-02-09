@@ -78,10 +78,11 @@ export default function SettingsPage() {
     const accessToken = localStorage.getItem('access_token');
     if (!accessToken) return;
 
+    const API_BASE = process.env.NEXT_PUBLIC_API_BASE || 'http://dplanner.westeurope.cloudapp.azure.com:8000';
     try {
       setLoading(true);
       setError(null);
-      const response = await fetch('http://dplanner.westeurope.cloudapp.azure.com:8000/api/settings', {
+      const response = await fetch(`${API_BASE}/api/settings`, {
         headers: {
           'Authorization': `Bearer ${accessToken}`,
           'Content-Type': 'application/json',
@@ -106,12 +107,13 @@ export default function SettingsPage() {
     const accessToken = localStorage.getItem('access_token');
     if (!accessToken) return;
 
+    const API_BASE = process.env.NEXT_PUBLIC_API_BASE || 'http://dplanner.westeurope.cloudapp.azure.com:8000';
     try {
       setSaving(true);
       setError(null);
       setSuccess(null);
 
-      const response = await fetch('http://dplanner.westeurope.cloudapp.azure.com:8000/api/settings', {
+      const response = await fetch(`${API_BASE}/api/settings`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${accessToken}`,
@@ -163,6 +165,7 @@ export default function SettingsPage() {
     const accessToken = localStorage.getItem('access_token');
     if (!accessToken) return;
 
+    const API_BASE = process.env.NEXT_PUBLIC_API_BASE || 'http://dplanner.westeurope.cloudapp.azure.com:8000';
     if (!currentPassword || !newPassword) {
       setPasswordError('Please fill in all password fields');
       return;
@@ -181,7 +184,7 @@ export default function SettingsPage() {
       setPasswordError(null);
       setPasswordSuccess(null);
 
-      const response = await fetch('http://dplanner.westeurope.cloudapp.azure.com:8000/api/settings/change-password', {
+      const response = await fetch(`${API_BASE}/api/settings/change-password`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${accessToken}`,
@@ -214,10 +217,11 @@ export default function SettingsPage() {
     const accessToken = localStorage.getItem('access_token');
     if (!accessToken) return;
 
+    const API_BASE = process.env.NEXT_PUBLIC_API_BASE || 'http://dplanner.westeurope.cloudapp.azure.com:8000';
     try {
       setUsersLoading(true);
       setUserError(null);
-      const response = await fetch('http://dplanner.westeurope.cloudapp.azure.com:8000/api/users', {
+      const response = await fetch(`${API_BASE}/api/users`, {
         headers: {
           'Authorization': `Bearer ${accessToken}`,
           'Content-Type': 'application/json',
@@ -241,6 +245,7 @@ export default function SettingsPage() {
     const accessToken = localStorage.getItem('access_token');
     if (!accessToken) return;
 
+    const API_BASE = process.env.NEXT_PUBLIC_API_BASE || 'http://dplanner.westeurope.cloudapp.azure.com:8000';
     if (!newUser.username || !newUser.password || !newUser.full_name) {
       setUserError('Username, password, and full name are required');
       return;
@@ -249,7 +254,7 @@ export default function SettingsPage() {
     try {
       setUserError(null);
       setUserSuccess(null);
-      const response = await fetch('http://dplanner.westeurope.cloudapp.azure.com:8000/api/users/', {
+      const response = await fetch(`${API_BASE}/api/users/`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${accessToken}`,
@@ -283,6 +288,7 @@ export default function SettingsPage() {
     const accessToken = localStorage.getItem('access_token');
     if (!accessToken) return;
 
+    const API_BASE = process.env.NEXT_PUBLIC_API_BASE || 'http://dplanner.westeurope.cloudapp.azure.com:8000';
     if (!confirm('Are you sure you want to delete this user?')) {
       return;
     }
@@ -290,7 +296,7 @@ export default function SettingsPage() {
     try {
       setUserError(null);
       setUserSuccess(null);
-      const response = await fetch(`http://dplanner.westeurope.cloudapp.azure.com:8000/api/users/${userId}`, {
+      const response = await fetch(`${API_BASE}/api/users/${userId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${accessToken}`,

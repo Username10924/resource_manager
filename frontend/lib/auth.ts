@@ -8,10 +8,12 @@ export interface User {
   department: string | null;
 }
 
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE || 'http://dplanner.westeurope.cloudapp.azure.com:8000';
+
 export const authService = {
   login: async (username: string, password: string): Promise<User> => {
     // Call the backend login endpoint
-    const response = await fetch('http://dplanner.westeurope.cloudapp.azure.com:8000/login', {
+    const response = await fetch(`${API_BASE}/login`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
