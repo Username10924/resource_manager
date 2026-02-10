@@ -104,8 +104,7 @@ export default function DashboardPage() {
         };
         
         setResourceData(processedData);
-        setAllBookings(bookingsashboardAPI.getResourceStats();
-        setResourceData(data);
+        setAllBookings(bookings);
       } else {
         const data = await dashboardAPI.getProjectStats();
         setProjectData(data);
