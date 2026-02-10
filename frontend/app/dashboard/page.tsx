@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/Card";
 import Button from "@/components/Button";
 import Modal from "@/components/Modal";
 import { projectAPI, Booking, dashboardAPI } from "@/lib/api";
-import { formatMonth } from "@/lib/utils";
+import { formatMonth, processEmployeeScheduleWithBookings } from "@/lib/utils";
 import StatsCard from "@/components/StatsCard";
 import { SkeletonDashboardCharts } from "@/components/Skeleton";
 import UtilizationChart from "@/components/charts/UtilizationChart";
@@ -61,6 +61,7 @@ export default function DashboardPage() {
   const [viewMode, setViewMode] = useState<ViewMode>("resources");
   const [resourceData, setResourceData] = useState<ResourceDashboard | null>(null);
   const [projectData, setProjectData] = useState<ProjectDashboard | null>(null);
+  const [allBookings, setAllBookings] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const [selectedEmployee, setSelectedEmployee] = useState<any>(null);
@@ -79,8 +80,30 @@ export default function DashboardPage() {
     setError("");
 
     try {
-      if (viewMode === "resources") {
-        const data = await dashboardAPI.getResourceStats();
+      if// Fetch both dashboard data and all bookings
+        const [data, bookings] = await Promise.all([
+          dashboardAPI.getResourceStats(),
+          projectAPI.getAllBookings(),
+        ]);
+        
+        // Process all employees with correct monthly booking calculations
+        const processedData = {
+          ...data,
+          departments: Object.fromEntries(
+            Object.entries(data.departments).map(([dept, deptData]: [string, any]) => [
+              dept,
+              {
+                ...deptData,
+                employees: deptData.employees.map((emp: any) =>
+                  processEmployeeScheduleWithBookings(emp, bookings)
+                ),
+              },
+            ])
+          ),
+        };
+        
+        setResourceData(processedData);
+        setAllBookings(bookingsashboardAPI.getResourceStats();
         setResourceData(data);
       } else {
         const data = await dashboardAPI.getProjectStats();

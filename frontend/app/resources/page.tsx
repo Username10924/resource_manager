@@ -1,12 +1,12 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { employeeAPI, dashboardAPI, Employee, Schedule, Reservation } from '@/lib/api';
+import { employeeAPI, dashboardAPI, Employee, Schedule, Reservation, projectAPI } from '@/lib/api';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/Card';
 import Button from '@/components/Button';
 import Modal from '@/components/Modal';
 import Input from '@/components/Input';
-import { formatMonth, getMonthsList } from '@/lib/utils';
+import { formatMonth, getMonthsList, processEmployeeScheduleWithBookings } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
 import toast from 'react-hot-toast';
 import { SkeletonResourcesPage, SkeletonModal, SkeletonScheduleHistory } from '@/components/Skeleton';
@@ -26,15 +26,22 @@ export default function ResourcesPage() {
 
   const loadData = async () => {
     try {
-      const [employeesData, statsData] = await Promise.all([
+      const [employeesData, statsData, bookings] = await Promise.all([
         employeeAPI.getAll(),
         dashboardAPI.getResourceStats(user?.id),
+        projectAPI.getAllBookings(),
       ]);
       // Filter employees to only show those under current line manager
       const filteredEmployees = user?.id 
         ? employeesData.filter((emp: Employee) => emp.line_manager_id === user.id)
         : employeesData;
-      setEmployees(filteredEmployees);
+      
+      // Process employees with correct monthly booking calculations
+      const processedEmployees = filteredEmployees.map((emp: any) =>
+        processEmployeeScheduleWithBookings(emp, bookings)
+      );
+      
+      setEmployees(processedEmployees);
       setStats(statsData);
     } catch (error) {
       console.error('Error loading data:', error);
