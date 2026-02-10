@@ -508,11 +508,12 @@ function AddEmployeeModal({
   const departments = [
     'Project Manager',
     'Business Analyst',
-    'Solution Architect',
+    'Solution Architecture',
     'Development',
     'Integration',
     'Operations',
     'Analytics',
+    'Enterprise Architecture',
   ];
 
   const handleSubmit = async (e: React.FormEvent) => {
