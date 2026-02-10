@@ -109,7 +109,7 @@ class Database:
         
         # Project bookings (horizontal allocation)
         cursor.execute('''
-            CREATE TABLE project_bookings (
+            CREATE TABLE IF NOT EXISTS project_bookings (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 project_id INTEGER NOT NULL,
                 employee_id INTEGER NOT NULL,
