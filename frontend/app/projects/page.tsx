@@ -560,8 +560,8 @@ function CreateProjectModal({
   onClose: () => void;
   onCreate: () => void;
 }) {
-  const [architects, setArchitects] = useState<User[]>([]);
-  const [isArchitectOpen, setIsArchitectOpen] = useState(false);
+  const [employees, setEmployees] = useState<Employee[]>([]);
+  const [isEmployeeOpen, setIsEmployeeOpen] = useState(false);
   const [attachments, setAttachments] = useState<File[]>([]);
   const [isDragging, setIsDragging] = useState(false);
   const [allProjects, setAllProjects] = useState<Project[]>([]);
@@ -569,34 +569,34 @@ function CreateProjectModal({
     project_code: "",
     name: "",
     description: "",
-    solution_architect_id: 2, // ID 2 is Sarah Architect (first solution architect in DB)
+    solution_architect_id: 0, // Will be set to first employee
     start_date: "",
     end_date: "",
   });
 
   useEffect(() => {
     if (isOpen) {
-      loadArchitects();
+      loadEmployees();
       loadProjects();
     }
   }, [isOpen]);
 
-  // Auto-generate project code when solution architect changes
+  // Auto-generate project code when project manager changes
   useEffect(() => {
-    if (formData.solution_architect_id && architects.length > 0 && allProjects.length > 0) {
+    if (formData.solution_architect_id && employees.length > 0 && allProjects.length > 0) {
       generateProjectCode();
     }
-  }, [formData.solution_architect_id, architects, allProjects]);
+  }, [formData.solution_architect_id, employees, allProjects]);
 
-  const loadArchitects = async () => {
+  const loadEmployees = async () => {
     try {
-      const data = await userAPI.getArchitects();
-      setArchitects(data);
+      const data = await employeeAPI.getAll();
+      setEmployees(data);
       if (data.length > 0 && !formData.solution_architect_id) {
         setFormData((prev) => ({ ...prev, solution_architect_id: data[0].id }));
       }
     } catch (error) {
-      console.error("Error loading architects:", error);
+      console.error("Error loading employees:", error);
     }
   };
 
@@ -637,10 +637,10 @@ function CreateProjectModal({
   };
 
   const generateProjectCode = () => {
-    const selectedArchitect = architects.find((a) => a.id === formData.solution_architect_id);
-    if (!selectedArchitect || !selectedArchitect.department) return;
+    const selectedEmployee = employees.find((e) => e.id === formData.solution_architect_id);
+    if (!selectedEmployee || !selectedEmployee.department) return;
 
-    const prefix = getDepartmentPrefix(selectedArchitect.department);
+    const prefix = getDepartmentPrefix(selectedEmployee.department);
 
     // Find all projects with this prefix
     const prefixPattern = new RegExp(`^${prefix}-(\\d+)$`);
@@ -714,7 +714,7 @@ function CreateProjectModal({
         project_code: "",
         name: "",
         description: "",
-        solution_architect_id: 2,
+        solution_architect_id: 0,
         start_date: "",
         end_date: "",
       });
@@ -768,16 +768,16 @@ function CreateProjectModal({
           <div className="relative">
             <button
               type="button"
-              onClick={() => setIsArchitectOpen(!isArchitectOpen)}
+              onClick={() => setIsEmployeeOpen(!isEmployeeOpen)}
               className="w-full px-3 py-2 text-left text-sm bg-white border border-gray-300 rounded-lg shadow-sm hover:border-gray-400 hover:shadow-md focus:outline-none focus:border-gray-400 transition-all duration-200 flex items-center justify-between group"
             >
               <span className="text-gray-900">
-                {architects.find((a) => a.id === formData.solution_architect_id)?.full_name ||
+                {employees.find((e) => e.id === formData.solution_architect_id)?.full_name ||
                   "Select a project manager"}
               </span>
               <svg
                 className={`w-5 h-5 text-gray-400 transition-transform duration-200 flex-shrink-0 ${
-                  isArchitectOpen ? "rotate-180" : ""
+                  isEmployeeOpen ? "rotate-180" : ""
                 }`}
                 fill="none"
                 stroke="currentColor"
@@ -792,23 +792,24 @@ function CreateProjectModal({
               </svg>
             </button>
 
-            {isArchitectOpen && (
+            {isEmployeeOpen && (
               <div className="absolute z-10 w-full mt-2 bg-white border border-gray-200 rounded-lg shadow-xl max-h-60 overflow-auto">
-                {architects.map((architect) => (
+                {employees.map((employee) => (
                   <button
-                    key={architect.id}
+                    key={employee.id}
                     type="button"
                     onClick={() => {
-                      setFormData((prev) => ({ ...prev, solution_architect_id: architect.id }));
-                      setIsArchitectOpen(false);
+                      setFormData((prev) => ({ ...prev, solution_architect_id: employee.id }));
+                      setIsEmployeeOpen(false);
                     }}
                     className={`w-full px-4 py-3 text-left text-sm hover:bg-gray-50 transition-colors duration-150 first:rounded-t-lg last:rounded-b-lg ${
-                      formData.solution_architect_id === architect.id
+                      formData.solution_architect_id === employee.id
                         ? "bg-gray-50 text-gray-700 font-medium"
                         : "text-gray-700"
                     }`}
                   >
-                    {architect.full_name}
+                    <div className="font-medium">{employee.full_name}</div>
+                    <div className="text-xs text-gray-500">{employee.department} - {employee.position}</div>
                   </button>
                 ))}
               </div>
@@ -962,8 +963,8 @@ function EditProjectModal({
   project: Project;
   onUpdate: () => void;
 }) {
-  const [architects, setArchitects] = useState<User[]>([]);
-  const [isArchitectOpen, setIsArchitectOpen] = useState(false);
+  const [employees, setEmployees] = useState<Employee[]>([]);
+  const [isEmployeeOpen, setIsEmployeeOpen] = useState(false);
   const [attachments, setAttachments] = useState<File[]>([]);
   const [isDragging, setIsDragging] = useState(false);
   const [formData, setFormData] = useState({
@@ -971,30 +972,30 @@ function EditProjectModal({
     description: project.description,
     status: project.status,
     progress: project.progress,
-    solution_architect_id: (project as any).solution_architect_id || 2,
+    solution_architect_id: (project as any).solution_architect_id || 0,
   });
 
   useEffect(() => {
     if (isOpen) {
-      loadArchitects();
+      loadEmployees();
       // Reset state when modal opens
       setFormData({
         name: project.name,
         description: project.description,
         status: project.status,
         progress: project.progress,
-        solution_architect_id: (project as any).solution_architect_id || 2,
+        solution_architect_id: (project as any).solution_architect_id || 0,
       });
       setAttachments([]);
     }
   }, [isOpen, project]);
 
-  const loadArchitects = async () => {
+  const loadEmployees = async () => {
     try {
-      const data = await userAPI.getArchitects();
-      setArchitects(data);
+      const data = await employeeAPI.getAll();
+      setEmployees(data);
     } catch (error) {
-      console.error("Error loading architects:", error);
+      console.error("Error loading employees:", error);
     }
   };
 
@@ -1111,16 +1112,16 @@ function EditProjectModal({
           <div className="relative">
             <button
               type="button"
-              onClick={() => setIsArchitectOpen(!isArchitectOpen)}
+              onClick={() => setIsEmployeeOpen(!isEmployeeOpen)}
               className="w-full px-3 py-2 text-left text-sm bg-white border border-gray-300 rounded-lg shadow-sm hover:border-gray-400 hover:shadow-md focus:outline-none focus:border-gray-400 transition-all duration-200 flex items-center justify-between group"
             >
               <span className="text-gray-900">
-                {architects.find((a) => a.id === formData.solution_architect_id)?.full_name ||
+                {employees.find((e) => e.id === formData.solution_architect_id)?.full_name ||
                   "Select a project manager"}
               </span>
               <svg
                 className={`w-5 h-5 text-gray-400 transition-transform duration-200 flex-shrink-0 ${
-                  isArchitectOpen ? "rotate-180" : ""
+                  isEmployeeOpen ? "rotate-180" : ""
                 }`}
                 fill="none"
                 stroke="currentColor"
@@ -1135,23 +1136,24 @@ function EditProjectModal({
               </svg>
             </button>
 
-            {isArchitectOpen && (
+            {isEmployeeOpen && (
               <div className="absolute z-10 w-full mt-2 bg-white border border-gray-200 rounded-lg shadow-xl max-h-60 overflow-auto">
-                {architects.map((architect) => (
+                {employees.map((employee) => (
                   <button
-                    key={architect.id}
+                    key={employee.id}
                     type="button"
                     onClick={() => {
-                      setFormData({ ...formData, solution_architect_id: architect.id });
-                      setIsArchitectOpen(false);
+                      setFormData({ ...formData, solution_architect_id: employee.id });
+                      setIsEmployeeOpen(false);
                     }}
                     className={`w-full px-4 py-3 text-left text-sm hover:bg-gray-50 transition-colors duration-150 first:rounded-t-lg last:rounded-b-lg ${
-                      formData.solution_architect_id === architect.id
+                      formData.solution_architect_id === employee.id
                         ? "bg-gray-50 text-gray-700 font-medium"
                         : "text-gray-700"
                     }`}
                   >
-                    {architect.full_name}
+                    <div className="font-medium">{employee.full_name}</div>
+                    <div className="text-xs text-gray-500">{employee.department} - {employee.position}</div>
                   </button>
                 ))}
               </div>
