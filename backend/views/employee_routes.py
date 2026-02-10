@@ -18,6 +18,12 @@ class EmployeeCreate(BaseModel):
     line_manager_id: int
     available_days_per_year: int = 240
 
+class EmployeeUpdate(BaseModel):
+    full_name: Optional[str] = None
+    department: Optional[str] = None
+    position: Optional[str] = None
+    available_days_per_year: Optional[int] = None
+
 class EmployeeResponse(BaseModel):
     id: int
     full_name: str
@@ -98,6 +104,28 @@ async def get_employee(employee_id: int, current_user: User = Depends(get_curren
         raise HTTPException(status_code=403, detail="Access denied: You can only view your own employees")
     
     result = EmployeeController.get_employee_by_id(employee_id)
+    return result
+
+@router.put("/{employee_id}", response_model=Dict[str, Any])
+async def update_employee(employee_id: int, employee_data: EmployeeUpdate, current_user: User = Depends(get_current_user)):
+    """Update employee details"""
+    from models.employee import Employee
+    
+    # Get employee first to check line manager
+    employee = Employee.get_by_id(employee_id)
+    if not employee:
+        raise HTTPException(status_code=404, detail="Employee not found")
+    
+    # Line managers can only update their own employees
+    if current_user.role == 'line_manager' and employee.line_manager_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Access denied: You can only update your own employees")
+    
+    # Convert to dict and remove None values
+    update_data = {k: v for k, v in employee_data.dict().items() if v is not None}
+    
+    result = EmployeeController.update_employee(employee_id, update_data)
+    if 'error' in result:
+        raise HTTPException(status_code=400, detail=result['error'])
     return result
 
 @router.put("/{employee_id}/schedule", response_model=Dict[str, Any])

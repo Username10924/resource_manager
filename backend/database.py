@@ -24,6 +24,9 @@ class Database:
     def _create_tables(self):
         cursor = self.conn.cursor()
         
+        # Run migrations first
+        self._run_migrations()
+        
         # Solution architects are Project Managers in frontend
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS users (
@@ -78,7 +81,7 @@ class Database:
                 employee_id INTEGER NOT NULL,
                 start_date DATE NOT NULL,
                 end_date DATE NOT NULL,
-                reserved_hours_per_day REAL NOT NULL CHECK(reserved_hours_per_day >= 0 AND reserved_hours_per_day <= 6),
+                reserved_hours_per_day REAL NOT NULL CHECK(reserved_hours_per_day >= 0),
                 reason TEXT,
                 status TEXT DEFAULT 'active' CHECK(status IN ('active', 'cancelled')),
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -140,6 +143,52 @@ class Database:
         ''')
         
         self.conn.commit()
+    
+    def _run_migrations(self):
+        """Run database migrations"""
+        cursor = self.conn.cursor()
+        
+        # Check if employee_reservations table has the old constraint
+        cursor.execute('''
+            SELECT sql FROM sqlite_master 
+            WHERE type='table' AND name='employee_reservations'
+        ''')
+        result = cursor.fetchone()
+        
+        if result and 'reserved_hours_per_day <= 6' in result[0]:
+            print("Migrating employee_reservations table to remove hardcoded constraint...")
+            
+            # Create new table with updated constraint
+            cursor.execute('''
+                CREATE TABLE employee_reservations_new (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    employee_id INTEGER NOT NULL,
+                    start_date DATE NOT NULL,
+                    end_date DATE NOT NULL,
+                    reserved_hours_per_day REAL NOT NULL CHECK(reserved_hours_per_day >= 0),
+                    reason TEXT,
+                    status TEXT DEFAULT 'active' CHECK(status IN ('active', 'cancelled')),
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (employee_id) REFERENCES employees (id),
+                    CHECK(end_date >= start_date)
+                )
+            ''')
+            
+            # Copy data from old table
+            cursor.execute('''
+                INSERT INTO employee_reservations_new 
+                SELECT * FROM employee_reservations
+            ''')
+            
+            # Drop old table
+            cursor.execute('DROP TABLE employee_reservations')
+            
+            # Rename new table
+            cursor.execute('ALTER TABLE employee_reservations_new RENAME TO employee_reservations')
+            
+            self.conn.commit()
+            print("Migration completed successfully!")
     
     # query helpers
     def execute(self, query: str, params: Tuple = ()) -> sqlite3.Cursor:

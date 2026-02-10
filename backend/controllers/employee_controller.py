@@ -112,6 +112,26 @@ class EmployeeController:
         }
     
     @staticmethod
+    def update_employee(employee_id: int, employee_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Update employee details"""
+        employee = Employee.get_by_id(employee_id)
+        if not employee:
+            return {'error': 'Employee not found'}
+        
+        try:
+            # Only allow updating specific fields
+            allowed_fields = ['full_name', 'department', 'position', 'available_days_per_year']
+            update_data = {k: v for k, v in employee_data.items() if k in allowed_fields}
+            
+            if not update_data:
+                return {'error': 'No valid fields to update'}
+            
+            updated_employee = employee.update(**update_data)
+            return {'success': True, 'employee': updated_employee.to_dict()}
+        except Exception as e:
+            return {'error': f'Failed to update employee: {str(e)}'}
+    
+    @staticmethod
     def delete_employee(employee_id: int) -> Dict[str, Any]:
         """Delete an employee"""
         employee = Employee.get_by_id(employee_id)
