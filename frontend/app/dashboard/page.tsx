@@ -80,7 +80,8 @@ export default function DashboardPage() {
     setError("");
 
     try {
-      if// Fetch both dashboard data and all bookings
+      if (viewMode === "resources") {
+        // Fetch both dashboard data and all bookings
         const [data, bookings] = await Promise.all([
           dashboardAPI.getResourceStats(),
           projectAPI.getAllBookings(),
