@@ -178,7 +178,7 @@ export type Employee = {
   full_name: string;
   position: string;
   department: string;
-  line_manager_id: number;
+  line_manager_id: number | null;
   total_hours_per_day: number;
   available_days_per_year: number;
   status: string;

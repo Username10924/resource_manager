@@ -32,7 +32,7 @@ export default function ResourcesPage() {
       ]);
       // Filter employees to only show those under current line manager
       const filteredEmployees = user?.id 
-        ? employeesData.filter(emp => emp.line_manager_id === user.id)
+        ? employeesData.filter((emp: Employee) => emp.line_manager_id === user.id)
         : employeesData;
       setEmployees(filteredEmployees);
       setStats(statsData);
