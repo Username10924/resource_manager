@@ -26,25 +26,6 @@ class EmployeeReservation:
         if reserved_hours_per_day < 0 or reserved_hours_per_day > max_hours:
             raise ValueError(f"Reserved hours per day must be between 0 and {max_hours}")
         
-        # Check for overlapping reservations
-        # Use strict inequalities to allow adjacent date ranges
-        # Two ranges overlap if: start1 < end2 AND end1 > start2
-        overlap_query = '''
-            SELECT id FROM employee_reservations
-            WHERE employee_id = ? 
-                AND status = 'active'
-                AND start_date < ?
-                AND end_date > ?
-        '''
-        existing = db.fetch_one(overlap_query, (
-            employee_id,
-            end_date,
-            start_date
-        ))
-        
-        if existing:
-            raise ValueError("Overlapping reservation already exists for this period")
-        
         query = '''
             INSERT INTO employee_reservations 
             (employee_id, start_date, end_date, reserved_hours_per_day, reason)
