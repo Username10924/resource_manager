@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { employeeAPI, dashboardAPI, Employee, Schedule, Reservation, projectAPI } from '@/lib/api';
+import { employeeAPI, dashboardAPI, Employee, Schedule, Reservation, projectAPI, settingsAPI, Settings } from '@/lib/api';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/Card';
 import Button from '@/components/Button';
 import Modal from '@/components/Modal';
@@ -270,6 +270,7 @@ function ScheduleModal({
   onUpdate: () => void;
 }) {
   const [reservations, setReservations] = useState<Reservation[]>([]);
+  const [settings, setSettings] = useState<Settings>({ work_hours_per_day: 6, work_days_per_month: 20, months_in_year: 12 });
   const today = new Date().toISOString().split('T')[0];
   const nextMonth = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
   
@@ -289,6 +290,18 @@ function ScheduleModal({
 
   useEffect(() => {
     if (isOpen) {
+      // Fetch business rules settings
+      const fetchSettings = async () => {
+        try {
+          const fetchedSettings = await settingsAPI.getSettings();
+          setSettings(fetchedSettings);
+        } catch (error) {
+          console.error('Error fetching settings:', error);
+          // Keep default values if fetch fails
+        }
+      };
+      fetchSettings();
+      
       // Reset form when opening modal
       setReservationForm({
         start_date: today,
@@ -343,9 +356,9 @@ function ScheduleModal({
   };
 
   const workingDays = calculateWorkingDays(reservationForm.start_date, reservationForm.end_date);
-  const maxHours = workingDays * 6;
+  const maxHours = workingDays * settings.work_hours_per_day;
   const totalReservedHours = workingDays * (reservationForm.reserved_hours_per_day || 0);
-  const availableHoursPerDay = 6 - (reservationForm.reserved_hours_per_day || 0);
+  const availableHoursPerDay = settings.work_hours_per_day - (reservationForm.reserved_hours_per_day || 0);
 
   const handleSave = async () => {
     if (!reservationForm.start_date || !reservationForm.end_date) {
@@ -427,7 +440,7 @@ function ScheduleModal({
                 value={reservationForm.reserved_hours_per_day}
                 onChange={(e) => handleInputChange('reserved_hours_per_day', parseFloat(e.target.value) || 0)}
                 min="0"
-                max="6"
+                max={settings.work_hours_per_day.toString()}
                 step="0.5"
               />
               <Input
