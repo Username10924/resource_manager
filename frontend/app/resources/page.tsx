@@ -18,6 +18,8 @@ export default function ResourcesPage() {
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
   const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
   const [isAddEmployeeModalOpen, setIsAddEmployeeModalOpen] = useState(false);
+  const [isEditEmployeeModalOpen, setIsEditEmployeeModalOpen] = useState(false);
+  const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -64,6 +66,11 @@ export default function ResourcesPage() {
   const openScheduleModal = (employee: Employee) => {
     setSelectedEmployee(employee);
     setIsScheduleModalOpen(true);
+  };
+
+  const openEditModal = (employee: Employee) => {
+    setEditingEmployee(employee);
+    setIsEditEmployeeModalOpen(true);
   };
 
   const handleDeleteEmployee = async (employee: Employee) => {
@@ -186,6 +193,13 @@ export default function ResourcesPage() {
                           <Button
                             variant="ghost"
                             size="sm"
+                            onClick={() => openEditModal(employee)}
+                          >
+                            Edit
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
                             onClick={() => openScheduleModal(employee)}
                           >
                             Manage Schedule
@@ -227,6 +241,19 @@ export default function ResourcesPage() {
           onClose={() => setIsAddEmployeeModalOpen(false)}
           onAdd={loadData}
         />
+
+        {/* Edit Employee Modal */}
+        {editingEmployee && (
+          <EditEmployeeModal
+            isOpen={isEditEmployeeModalOpen}
+            onClose={() => {
+              setIsEditEmployeeModalOpen(false);
+              setEditingEmployee(null);
+            }}
+            employee={editingEmployee}
+            onUpdate={loadData}
+          />
+        )}
     </>
   );
 }
@@ -615,6 +642,150 @@ function AddEmployeeModal({
             Cancel
           </Button>
           <Button type="submit">Add Employee</Button>
+        </div>
+      </form>
+    </Modal>
+  );
+}
+
+function EditEmployeeModal({
+  isOpen,
+  onClose,
+  employee,
+  onUpdate,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  employee: Employee;
+  onUpdate: () => void;
+}) {
+  const [formData, setFormData] = useState({
+    full_name: employee.full_name,
+    department: employee.department,
+    position: employee.position,
+    available_days_per_year: employee.available_days_per_year,
+  });
+  const [isDepartmentOpen, setIsDepartmentOpen] = useState(false);
+
+  const departments = [
+    'Project Manager',
+    'Business Analyst',
+    'Solution Architecture',
+    'Development',
+    'Integration',
+    'Operations',
+    'Analytics',
+    'Enterprise Architecture',
+  ];
+
+  // Update form data when employee changes
+  useEffect(() => {
+    setFormData({
+      full_name: employee.full_name,
+      department: employee.department,
+      position: employee.position,
+      available_days_per_year: employee.available_days_per_year,
+    });
+  }, [employee]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      await employeeAPI.update(employee.id, formData);
+      toast.success(`${formData.full_name} has been updated successfully`);
+      onUpdate();
+      onClose();
+    } catch (error) {
+      console.error('Error updating employee:', error);
+      toast.error('Failed to update employee. Please try again.');
+    }
+  };
+
+  return (
+    <Modal isOpen={isOpen} onClose={onClose} title="Edit Employee" size="md">
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <Input
+          label="Full Name"
+          value={formData.full_name}
+          onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
+          required
+        />
+        <div className="relative">
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Department <span className="text-red-500">*</span>
+          </label>
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setIsDepartmentOpen(!isDepartmentOpen)}
+              className="w-full px-3 py-2 text-left text-sm bg-white border border-gray-300 rounded-lg shadow-sm hover:border-gray-400 hover:shadow-md focus:outline-none focus:ring-1 focus:ring-gray-400 focus:border-gray-400 transition-all duration-200 flex items-center justify-between group"
+            >
+              <span className={formData.department ? 'text-gray-900' : 'text-gray-500'}>
+                {formData.department || 'Select a department'}
+              </span>
+              <svg
+                className={`w-5 h-5 text-gray-400 transition-transform duration-200 flex-shrink-0 ${isDepartmentOpen ? 'rotate-180' : ''}`}
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+            
+            {isDepartmentOpen && (
+              <div className="absolute z-10 w-full mt-2 bg-white border border-gray-200 rounded-lg shadow-xl max-h-60 overflow-auto">
+                {departments.map((dept) => (
+                  <button
+                    key={dept}
+                    type="button"
+                    onClick={() => {
+                      setFormData({ ...formData, department: dept });
+                      setIsDepartmentOpen(false);
+                    }}
+                    className={`w-full px-4 py-3 text-left text-sm hover:bg-gray-50 transition-colors duration-150 first:rounded-t-lg last:rounded-b-lg ${
+                      formData.department === dept
+                        ? 'bg-gray-50 text-gray-700 font-medium'
+                        : 'text-gray-700'
+                    }`}
+                  >
+                    {dept}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+          {!formData.department && (
+            <input
+              type="text"
+              required
+              className="absolute opacity-0 pointer-events-none"
+              value={formData.department}
+              onChange={() => {}}
+            />
+          )}
+        </div>
+        <Input
+          label="Position"
+          value={formData.position}
+          onChange={(e) => setFormData({ ...formData, position: e.target.value })}
+          required
+        />
+        <Input
+          type="number"
+          label="Available Days per Year"
+          value={formData.available_days_per_year}
+          onChange={(e) => setFormData({ ...formData, available_days_per_year: parseInt(e.target.value) })}
+          min="0"
+          max="365"
+          required
+        />
+        
+        <div className="flex justify-end gap-3 pt-4">
+          <Button type="button" variant="secondary" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button type="submit">Update Employee</Button>
         </div>
       </form>
     </Modal>
