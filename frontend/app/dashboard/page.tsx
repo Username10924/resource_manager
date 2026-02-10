@@ -789,7 +789,7 @@ function ProjectDetailsModal({
                                 {formatMonth(`${booking.end_date}`)}
                               </span>
                               <span className="font-medium text-gray-900">
-                                {booking.booked_hours} hours
+                                {booking.booked_hours} hours total
                               </span>
                             </div>
                           ))}

@@ -63,12 +63,63 @@ const getMonthlyData = () => {
   });
 };
 
+  // Helper function to calculate working days between two dates (excluding weekends)
+  const calculateWorkingDays = (startDate: Date, endDate: Date): number => {
+    let count = 0;
+    const current = new Date(startDate);
+    
+    while (current <= endDate) {
+      const dayOfWeek = current.getDay();
+      if (dayOfWeek !== 0 && dayOfWeek !== 6) {
+        count++;
+      }
+      current.setDate(current.getDate() + 1);
+    }
+    
+    return count;
+  };
+
+  // Helper function to calculate hours for a specific month from a booking
+  const calculateMonthlyBookingHours = (booking: ProjectBooking, targetMonth: number, targetYear: number): number => {
+    const bookingStart = new Date(booking.start_date);
+    const bookingEnd = new Date(booking.end_date);
+    
+    // Calculate total working days in the booking period
+    const totalWorkingDays = calculateWorkingDays(bookingStart, bookingEnd);
+    
+    if (totalWorkingDays === 0) return 0;
+    
+    // Calculate hours per day
+    const hoursPerDay = booking.booked_hours / totalWorkingDays;
+    
+    // Determine the overlap period for the target month
+    const monthStart = new Date(targetYear, targetMonth - 1, 1);
+    const monthEnd = new Date(targetYear, targetMonth, 0); // Last day of month
+    
+    const overlapStart = bookingStart > monthStart ? bookingStart : monthStart;
+    const overlapEnd = bookingEnd < monthEnd ? bookingEnd : monthEnd;
+    
+    // If no overlap, return 0
+    if (overlapStart > overlapEnd) return 0;
+    
+    // Calculate working days in the overlap period
+    const overlapWorkingDays = calculateWorkingDays(overlapStart, overlapEnd);
+    
+    // Return hours allocated to this month
+    return hoursPerDay * overlapWorkingDays;
+  };
+
   const loadProjectBookings = async (month: number, year: number, monthName: string) => {
     setLoadingProjects(true);
     setSelectedMonth({ month, year, monthName });
     try {
       const bookings = await employeeAPI.getProjects(employee.id, month, year);
-      setProjectBookings(bookings);
+      // Calculate actual monthly hours for each booking
+      const bookingsWithMonthlyHours = bookings.map((booking: ProjectBooking) => ({
+        ...booking,
+        monthly_hours: calculateMonthlyBookingHours(booking, month, year)
+      }));
+      setProjectBookings(bookingsWithMonthlyHours as any);
     } catch (error) {
       console.error('Error loading project bookings:', error);
       setProjectBookings([]);
@@ -333,8 +384,13 @@ const getMonthlyData = () => {
                           </div>
                         </div>
                         <div className="text-right">
-                          <div className="text-2xl font-bold text-gray-900">{booking.booked_hours}h</div>
-                          <div className="text-xs text-gray-500">booked</div>
+                          <div className="text-2xl font-bold text-gray-900">{(booking as any).monthly_hours?.toFixed(1) || booking.booked_hours}h</div>
+                          <div className="text-xs text-gray-500">this month</div>
+                          {booking.booked_hours !== (booking as any).monthly_hours && (
+                            <div className="text-xs text-gray-400 mt-1">
+                              {booking.booked_hours}h total
+                            </div>
+                          )}
                         </div>
                       </div>
                       
@@ -371,7 +427,7 @@ const getMonthlyData = () => {
                     <div className="flex items-center justify-between">
                       <span className="text-gray-700 font-semibold text-lg">Total Hours for {selectedMonth?.monthName}</span>
                       <span className="text-2xl font-bold text-gray-700">
-                        {projectBookings.reduce((sum, b) => sum + b.booked_hours, 0)}h
+                        {projectBookings.reduce((sum, b) => sum + ((b as any).monthly_hours || b.booked_hours), 0).toFixed(1)}h
                       </span>
                     </div>
                   </div>

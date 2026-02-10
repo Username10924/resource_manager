@@ -443,6 +443,7 @@ export default function ProjectsPage() {
                         </td>
                         <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-900">
                           {booking.booked_hours}h
+                          <span className="text-xs text-gray-500 ml-1">(total)</span>
                         </td>
                         <td className="whitespace-nowrap px-6 py-4 text-right text-sm">
                           <Button
@@ -1604,7 +1605,7 @@ function BookingModal({
                                         booking.end_date + "T00:00:00"
                                       ).toLocaleDateString()}
                                     </div>
-                                    <div className="mt-1">{booking.booked_hours} hours</div>
+                                    <div className="mt-1">{booking.booked_hours} hours total</div>
                                   </div>
                                 ))}
                               </div>
@@ -1989,7 +1990,7 @@ function ProjectDetailsModal({
                                 {new Date(booking.end_date).toLocaleDateString()}
                               </span>
                               <span className="font-medium text-gray-900">
-                                {booking.booked_hours} hours
+                                {booking.booked_hours} hours total
                               </span>
                             </div>
                           ))}
