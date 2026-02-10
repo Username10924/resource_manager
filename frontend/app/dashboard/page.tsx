@@ -81,11 +81,17 @@ export default function DashboardPage() {
 
     try {
       if (viewMode === "resources") {
-        // Fetch both dashboard data and all bookings
-        const [data, bookings] = await Promise.all([
-          dashboardAPI.getResourceStats(),
-          projectAPI.getAllBookings(),
-        ]);
+        // Fetch dashboard data first
+        const data = await dashboardAPI.getResourceStats();
+        
+        // Fetch bookings separately with error handling
+        let bookings: any[] = [];
+        try {
+          bookings = await projectAPI.getAllBookings();
+        } catch (bookingError) {
+          console.error("Error fetching bookings, continuing with empty bookings:", bookingError);
+          // Continue with empty bookings array
+        }
         
         // Process all employees with correct monthly booking calculations
         const processedData = {

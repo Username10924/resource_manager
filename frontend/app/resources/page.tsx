@@ -26,15 +26,23 @@ export default function ResourcesPage() {
 
   const loadData = async () => {
     try {
-      const [employeesData, statsData, bookings] = await Promise.all([
+      const [employeesData, statsData] = await Promise.all([
         employeeAPI.getAll(),
         dashboardAPI.getResourceStats(user?.id),
-        projectAPI.getAllBookings(),
       ]);
+      
       // Filter employees to only show those under current line manager
       const filteredEmployees = user?.id 
         ? employeesData.filter((emp: Employee) => emp.line_manager_id === user.id)
         : employeesData;
+      
+      // Fetch bookings separately with error handling
+      let bookings: any[] = [];
+      try {
+        bookings = await projectAPI.getAllBookings();
+      } catch (bookingError) {
+        console.error('Error fetching bookings, continuing with empty bookings:', bookingError);
+      }
       
       // Process employees with correct monthly booking calculations
       const processedEmployees = filteredEmployees.map((emp: any) =>
