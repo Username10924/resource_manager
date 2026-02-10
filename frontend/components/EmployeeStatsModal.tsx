@@ -3,7 +3,7 @@ import Modal from './Modal';
 import { Card, CardContent, CardHeader, CardTitle } from './Card';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, Cell } from 'recharts';
 import { FaUser, FaBriefcase, FaEnvelope, FaBuilding, FaChartBar, FaClock, FaProjectDiagram, FaChevronRight } from 'react-icons/fa';
-import { employeeAPI } from '@/lib/api';
+import { employeeAPI, settingsAPI, Settings } from '@/lib/api';
 import { calculateMonthlyBookingHours } from '@/lib/utils';
 
 interface EmployeeStatsModalProps {
@@ -34,35 +34,55 @@ export default function EmployeeStatsModal({ isOpen, onClose, employee, size = '
   const [selectedMonth, setSelectedMonth] = useState<{ month: number; year: number; monthName: string } | null>(null);
   const [projectBookings, setProjectBookings] = useState<ProjectBooking[]>([]);
   const [loadingProjects, setLoadingProjects] = useState(false);
+  const [settings, setSettings] = useState<Settings>({ work_hours_per_day: 6, work_days_per_month: 20, months_in_year: 12 });
+
+  // Fetch business rules settings when modal opens
+  useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        const fetchedSettings = await settingsAPI.getSettings();
+        setSettings(fetchedSettings);
+      } catch (error) {
+        console.error('Error fetching settings:', error);
+        // Keep default values if fetch fails
+      }
+    };
+    
+    if (isOpen) {
+      fetchSettings();
+    }
+  }, [isOpen]);
 
   if (!employee) return null;
 
-const getMonthlyData = () => {
-  if (!employee.schedule) return [];
-  const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-  
-  return employee.schedule.map((sched: any) => {
-    const totalCapacity = 6 * 20; // 6 hours/day * 20 workdays = 120 hours
-    const projectBooked = sched.project_booked_hours || 0;
-    const reserved = sched.reserved_hours || 0;
-    const totalUtilized = sched.booked_hours || (projectBooked + reserved);
-    // Calculate actual available hours (capacity minus utilized)
-    const capacity = sched.available_hours_per_month || totalCapacity;
-    const actualAvailable = Math.max(0, capacity - projectBooked - reserved);
-    return {
-      month: monthNames[sched.month - 1],
-      monthNum: sched.month,
-      year: sched.year,
-      available: actualAvailable,
-      booked: projectBooked,
-      reserved: reserved,
-      totalUtilized: totalUtilized,
-      utilization: totalCapacity > 0 
-        ? (totalUtilized / totalCapacity) * 100 
-        : 0,
-    };
-  });
-};
+  const getMonthlyData = () => {
+    if (!employee.schedule) return [];
+    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    
+    // Use business rules from backend instead of hardcoded values
+    const totalCapacity = settings.work_hours_per_day * settings.work_days_per_month;
+    
+    return employee.schedule.map((sched: any) => {
+      const projectBooked = sched.project_booked_hours || 0;
+      const reserved = sched.reserved_hours || 0;
+      const totalUtilized = sched.booked_hours || (projectBooked + reserved);
+      // Calculate actual available hours (capacity minus utilized)
+      const capacity = sched.available_hours_per_month || totalCapacity;
+      const actualAvailable = Math.max(0, capacity - projectBooked - reserved);
+      return {
+        month: monthNames[sched.month - 1],
+        monthNum: sched.month,
+        year: sched.year,
+        available: actualAvailable,
+        booked: projectBooked,
+        reserved: reserved,
+        totalUtilized: totalUtilized,
+        utilization: totalCapacity > 0 
+          ? (totalUtilized / totalCapacity) * 100 
+          : 0,
+      };
+    });
+  };
 
   const loadProjectBookings = async (month: number, year: number, monthName: string) => {
     setLoadingProjects(true);
@@ -106,7 +126,8 @@ const getMonthlyData = () => {
   const totalBooked = monthlyData.reduce((sum: number, m: any) => sum + m.booked, 0);
   const totalReserved = monthlyData.reduce((sum: number, m: any) => sum + m.reserved, 0);
   const totalUtilized = monthlyData.reduce((sum: number, m: any) => sum + m.totalUtilized, 0);
-  const totalCapacity = 120 * monthlyData.length; // 120 hours per month
+  const monthlyCapacity = settings.work_hours_per_day * settings.work_days_per_month;
+  const totalCapacity = monthlyCapacity * monthlyData.length;
   const avgUtilization = totalCapacity > 0 ? (totalUtilized / totalCapacity) * 100 : 0;
 
   return (

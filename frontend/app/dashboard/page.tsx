@@ -5,7 +5,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/Card";
 import Button from "@/components/Button";
 import Modal from "@/components/Modal";
-import { projectAPI, Booking, dashboardAPI } from "@/lib/api";
+import { projectAPI, Booking, dashboardAPI, settingsAPI, Settings } from "@/lib/api";
 import { formatMonth, processEmployeeScheduleWithBookings } from "@/lib/utils";
 import StatsCard from "@/components/StatsCard";
 import { SkeletonDashboardCharts } from "@/components/Skeleton";
@@ -69,7 +69,22 @@ export default function DashboardPage() {
   const [selectedProject, setSelectedProject] = useState<any>(null);
   const [projectBookings, setProjectBookings] = useState<Booking[]>([]);
   const [isProjectModalOpen, setIsProjectModalOpen] = useState(false);
+  const [settings, setSettings] = useState<Settings>({ work_hours_per_day: 6, work_days_per_month: 20, months_in_year: 12 });
   const { user } = useAuth();
+
+  // Fetch business rules settings
+  useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        const fetchedSettings = await settingsAPI.getSettings();
+        setSettings(fetchedSettings);
+      } catch (error) {
+        console.error('Error fetching settings:', error);
+        // Keep default values if fetch fails
+      }
+    };
+    fetchSettings();
+  }, []);
 
   useEffect(() => {
     fetchDashboardData();
@@ -561,7 +576,9 @@ export default function DashboardPage() {
                       (sum: number, s: any) => sum + (s.project_booked_hours || 0),
                       0
                     );
-                    const totalCapacity = empSchedule.length * 120; // 120 hours per month
+                    // Use business rules from backend instead of hardcoded values
+                    const monthlyCapacity = settings.work_hours_per_day * settings.work_days_per_month;
+                    const totalCapacity = empSchedule.length * monthlyCapacity;
                     // Utilization should use total utilized (booked + reserved)
                     const totalUtilized = empSchedule.reduce(
                       (sum: number, s: any) => sum + (s.booked_hours || 0),

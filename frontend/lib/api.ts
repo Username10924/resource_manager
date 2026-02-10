@@ -251,3 +251,19 @@ export type Reservation = {
   created_at: string;
   updated_at: string;
 };
+
+export type Settings = {
+  work_hours_per_day: number;
+  work_days_per_month: number;
+  months_in_year: number;
+};
+
+// Settings API
+export const settingsAPI = {
+  getSettings: (): Promise<Settings> => fetchAPI("/settings"),
+  updateSettings: (data: Partial<Settings>) =>
+    fetchAPI("/settings", {
+      method: "PUT",
+      body: JSON.stringify(data),
+    }),
+};
