@@ -26,15 +26,17 @@ export default function ResourcesPage() {
 
   const loadData = async () => {
     try {
-      const [employeesData, statsData] = await Promise.all([
-        employeeAPI.getAll(),
-        dashboardAPI.getResourceStats(user?.id),
-      ]);
+      const statsData = await dashboardAPI.getResourceStats(user?.id);
       
-      // Filter employees to only show those under current line manager
-      const filteredEmployees = user?.id 
-        ? employeesData.filter((emp: Employee) => emp.line_manager_id === user.id)
-        : employeesData;
+      // Extract employees from statsData (which includes schedule data)
+      let employeesWithSchedule: any[] = [];
+      if (statsData && statsData.departments) {
+        Object.values(statsData.departments).forEach((dept: any) => {
+          if (dept.employees) {
+            employeesWithSchedule.push(...dept.employees);
+          }
+        });
+      }
       
       // Fetch bookings separately with error handling
       let bookings: any[] = [];
@@ -45,7 +47,7 @@ export default function ResourcesPage() {
       }
       
       // Process employees with correct monthly booking calculations
-      const processedEmployees = filteredEmployees.map((emp: any) =>
+      const processedEmployees = employeesWithSchedule.map((emp: any) =>
         processEmployeeScheduleWithBookings(emp, bookings)
       );
       

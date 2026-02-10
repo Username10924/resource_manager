@@ -3,7 +3,8 @@ import Modal from './Modal';
 import { Card, CardContent, CardHeader, CardTitle } from './Card';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, Cell } from 'recharts';
 import { FaUser, FaBriefcase, FaEnvelope, FaBuilding, FaChartBar, FaClock, FaProjectDiagram, FaChevronRight } from 'react-icons/fa';
-import { employeeAPI } from '@/lib/api';
+import { employeeAPI, projectAPI } from '@/lib/api';
+import { processEmployeeScheduleWithBookings, calculateMonthlyBookingHours } from '@/lib/utils';
 
 interface EmployeeStatsModalProps {
   isOpen: boolean;
@@ -33,14 +34,32 @@ export default function EmployeeStatsModal({ isOpen, onClose, employee, size = '
   const [selectedMonth, setSelectedMonth] = useState<{ month: number; year: number; monthName: string } | null>(null);
   const [projectBookings, setProjectBookings] = useState<ProjectBooking[]>([]);
   const [loadingProjects, setLoadingProjects] = useState(false);
+  const [processedEmployee, setProcessedEmployee] = useState<any>(employee);
+
+  // Fetch bookings and process employee schedule when modal opens
+  useEffect(() => {
+    if (isOpen && employee) {
+      const fetchAndProcessBookings = async () => {
+        try {
+          const bookings = await projectAPI.getAllBookings();
+          const processed = processEmployeeScheduleWithBookings(employee, bookings);
+          setProcessedEmployee(processed);
+        } catch (error) {
+          console.error('Error fetching bookings for employee stats:', error);
+          setProcessedEmployee(employee);
+        }
+      };
+      fetchAndProcessBookings();
+    }
+  }, [isOpen, employee]);
 
   if (!employee) return null;
 
 const getMonthlyData = () => {
-  if (!employee.schedule) return [];
+  if (!processedEmployee.schedule) return [];
   const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
   
-  return employee.schedule.map((sched: any) => {
+  return processedEmployee.schedule.map((sched: any) => {
     const totalCapacity = 6 * 20; // 6 hours/day * 20 workdays = 120 hours
     const projectBooked = sched.project_booked_hours || 0;
     const reserved = sched.reserved_hours || 0;
@@ -63,52 +82,6 @@ const getMonthlyData = () => {
   });
 };
 
-  // Helper function to calculate working days between two dates (excluding weekends)
-  const calculateWorkingDays = (startDate: Date, endDate: Date): number => {
-    let count = 0;
-    const current = new Date(startDate);
-    
-    while (current <= endDate) {
-      const dayOfWeek = current.getDay();
-      if (dayOfWeek !== 0 && dayOfWeek !== 6) {
-        count++;
-      }
-      current.setDate(current.getDate() + 1);
-    }
-    
-    return count;
-  };
-
-  // Helper function to calculate hours for a specific month from a booking
-  const calculateMonthlyBookingHours = (booking: ProjectBooking, targetMonth: number, targetYear: number): number => {
-    const bookingStart = new Date(booking.start_date);
-    const bookingEnd = new Date(booking.end_date);
-    
-    // Calculate total working days in the booking period
-    const totalWorkingDays = calculateWorkingDays(bookingStart, bookingEnd);
-    
-    if (totalWorkingDays === 0) return 0;
-    
-    // Calculate hours per day
-    const hoursPerDay = booking.booked_hours / totalWorkingDays;
-    
-    // Determine the overlap period for the target month
-    const monthStart = new Date(targetYear, targetMonth - 1, 1);
-    const monthEnd = new Date(targetYear, targetMonth, 0); // Last day of month
-    
-    const overlapStart = bookingStart > monthStart ? bookingStart : monthStart;
-    const overlapEnd = bookingEnd < monthEnd ? bookingEnd : monthEnd;
-    
-    // If no overlap, return 0
-    if (overlapStart > overlapEnd) return 0;
-    
-    // Calculate working days in the overlap period
-    const overlapWorkingDays = calculateWorkingDays(overlapStart, overlapEnd);
-    
-    // Return hours allocated to this month
-    return hoursPerDay * overlapWorkingDays;
-  };
-
   const loadProjectBookings = async (month: number, year: number, monthName: string) => {
     setLoadingProjects(true);
     setSelectedMonth({ month, year, monthName });
@@ -117,7 +90,13 @@ const getMonthlyData = () => {
       // Calculate actual monthly hours for each booking
       const bookingsWithMonthlyHours = bookings.map((booking: ProjectBooking) => ({
         ...booking,
-        monthly_hours: calculateMonthlyBookingHours(booking, month, year)
+        monthly_hours: calculateMonthlyBookingHours(
+          booking.start_date,
+          booking.end_date,
+          booking.booked_hours,
+          month,
+          year
+        )
       }));
       setProjectBookings(bookingsWithMonthlyHours as any);
     } catch (error) {
