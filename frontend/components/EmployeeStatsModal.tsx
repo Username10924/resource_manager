@@ -3,8 +3,8 @@ import Modal from './Modal';
 import { Card, CardContent, CardHeader, CardTitle } from './Card';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, Cell } from 'recharts';
 import { FaUser, FaBriefcase, FaEnvelope, FaBuilding, FaChartBar, FaClock, FaProjectDiagram, FaChevronRight } from 'react-icons/fa';
-import { employeeAPI, projectAPI } from '@/lib/api';
-import { processEmployeeScheduleWithBookings, calculateMonthlyBookingHours } from '@/lib/utils';
+import { employeeAPI } from '@/lib/api';
+import { calculateMonthlyBookingHours } from '@/lib/utils';
 
 interface EmployeeStatsModalProps {
   isOpen: boolean;
@@ -34,32 +34,14 @@ export default function EmployeeStatsModal({ isOpen, onClose, employee, size = '
   const [selectedMonth, setSelectedMonth] = useState<{ month: number; year: number; monthName: string } | null>(null);
   const [projectBookings, setProjectBookings] = useState<ProjectBooking[]>([]);
   const [loadingProjects, setLoadingProjects] = useState(false);
-  const [processedEmployee, setProcessedEmployee] = useState<any>(employee);
-
-  // Fetch bookings and process employee schedule when modal opens
-  useEffect(() => {
-    if (isOpen && employee) {
-      const fetchAndProcessBookings = async () => {
-        try {
-          const bookings = await projectAPI.getAllBookings();
-          const processed = processEmployeeScheduleWithBookings(employee, bookings);
-          setProcessedEmployee(processed);
-        } catch (error) {
-          console.error('Error fetching bookings for employee stats:', error);
-          setProcessedEmployee(employee);
-        }
-      };
-      fetchAndProcessBookings();
-    }
-  }, [isOpen, employee]);
 
   if (!employee) return null;
 
 const getMonthlyData = () => {
-  if (!processedEmployee.schedule) return [];
+  if (!employee.schedule) return [];
   const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
   
-  return processedEmployee.schedule.map((sched: any) => {
+  return employee.schedule.map((sched: any) => {
     const totalCapacity = 6 * 20; // 6 hours/day * 20 workdays = 120 hours
     const projectBooked = sched.project_booked_hours || 0;
     const reserved = sched.reserved_hours || 0;
