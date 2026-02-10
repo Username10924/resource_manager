@@ -27,21 +27,19 @@ class EmployeeReservation:
             raise ValueError(f"Reserved hours per day must be between 0 and {max_hours}")
         
         # Check for overlapping reservations
+        # Use strict inequalities to allow adjacent date ranges
+        # Two ranges overlap if: start1 < end2 AND end1 > start2
         overlap_query = '''
             SELECT id FROM employee_reservations
             WHERE employee_id = ? 
                 AND status = 'active'
-                AND (
-                    (start_date <= ? AND end_date >= ?)
-                    OR (start_date <= ? AND end_date >= ?)
-                    OR (start_date >= ? AND end_date <= ?)
-                )
+                AND start_date < ?
+                AND end_date > ?
         '''
         existing = db.fetch_one(overlap_query, (
             employee_id,
-            start_date, start_date,
-            end_date, end_date,
-            start_date, end_date
+            end_date,
+            start_date
         ))
         
         if existing:
@@ -85,22 +83,20 @@ class EmployeeReservation:
     def get_active_reservations_for_date_range(employee_id: int, start_date: date, 
                                                 end_date: date) -> List['EmployeeReservation']:
         """Get active reservations that overlap with a given date range"""
+        # Use strict inequalities to allow adjacent date ranges
+        # Two ranges overlap if: start1 < end2 AND end1 > start2
         query = '''
             SELECT * FROM employee_reservations
             WHERE employee_id = ? 
                 AND status = 'active'
-                AND (
-                    (start_date <= ? AND end_date >= ?)
-                    OR (start_date <= ? AND end_date >= ?)
-                    OR (start_date >= ? AND end_date <= ?)
-                )
+                AND start_date < ?
+                AND end_date > ?
             ORDER BY start_date
         '''
         rows = db.fetch_all(query, (
             employee_id,
-            start_date, start_date,
-            end_date, end_date,
-            start_date, end_date
+            end_date,
+            start_date
         ))
         return [EmployeeReservation(**row) for row in rows]
     
