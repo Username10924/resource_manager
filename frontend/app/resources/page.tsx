@@ -92,7 +92,31 @@ export default function ResourcesPage() {
             <Card>
               <CardContent className="py-6">
                 <div className="text-xs font-medium text-gray-500 uppercase tracking-wide">Available Hours This Month</div>
-                <div className="mt-3 text-4xl font-bold bg-gradient-to-r from-gray-600 to-gray-500 bg-clip-text text-transparent">{stats.total_available_hours || 0}</div>
+                <div className="mt-3 text-4xl font-bold bg-gradient-to-r from-gray-600 to-gray-500 bg-clip-text text-transparent">
+                  {(() => {
+                    // Calculate actual available hours for current month from all employees
+                    const now = new Date();
+                    const currentMonth = now.getMonth() + 1;
+                    const currentYear = now.getFullYear();
+                    let totalAvailable = 0;
+                    
+                    employees.forEach((emp: Employee) => {
+                      const empSchedule = (emp as any).schedule || [];
+                      const currentMonthSchedule = empSchedule.find(
+                        (s: any) => s.month === currentMonth && s.year === currentYear
+                      );
+                      
+                      if (currentMonthSchedule) {
+                        const capacity = currentMonthSchedule.available_hours_per_month || 0;
+                        const projectBooked = currentMonthSchedule.project_booked_hours || 0;
+                        const reserved = currentMonthSchedule.reserved_hours || 0;
+                        totalAvailable += Math.max(0, capacity - projectBooked - reserved);
+                      }
+                    });
+                    
+                    return totalAvailable;
+                  })()}
+                </div>
               </CardContent>
             </Card>
           </div>

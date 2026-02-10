@@ -45,13 +45,14 @@ const getMonthlyData = () => {
     const projectBooked = sched.project_booked_hours || 0;
     const reserved = sched.reserved_hours || 0;
     const totalUtilized = sched.booked_hours || (projectBooked + reserved);
-    // FIX: calculate actual available hours by subtracting booked and reserved hours
-    const actualAvailable = Math.max(0, sched.available_hours_per_month - projectBooked - reserved);
+    // Calculate actual available hours (capacity minus utilized)
+    const capacity = sched.available_hours_per_month || totalCapacity;
+    const actualAvailable = Math.max(0, capacity - projectBooked - reserved);
     return {
       month: monthNames[sched.month - 1],
       monthNum: sched.month,
       year: sched.year,
-      available: actualAvailable,  // Changed from sched.available_hours_per_month
+      available: actualAvailable,
       booked: projectBooked,
       reserved: reserved,
       totalUtilized: totalUtilized,

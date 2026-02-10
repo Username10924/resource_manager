@@ -115,7 +115,7 @@ export default function DashboardPage() {
     return Object.entries(resourceData.monthly_summary).map(([month, data]) => ({
       month: monthNames[parseInt(month) - 1],
       available: data.total_available,
-      utilized: data.total_booked, // This includes both booked AND reserved hours
+      utilized: data.total_booked, // Note: This is total utilized (booked + reserved)
       utilization: data.utilization_rate,
     }));
   };
@@ -237,10 +237,20 @@ export default function DashboardPage() {
               trend={{ value: 14, isPositive: true }}
             />
             <StatsCard
-              title="TOTAL HOURS"
+              title="HOURS BOOKED"
               value={(() => {
-                const months = Object.values(resourceData.monthly_summary);
-                return months.reduce((sum, m) => sum + m.total_available, 0).toLocaleString();
+                // Calculate total project booked hours from all employees
+                let totalProjectBooked = 0;
+                Object.values(resourceData.departments).forEach((dept: any) => {
+                  dept.employees.forEach((emp: any) => {
+                    if (emp.schedule) {
+                      emp.schedule.forEach((s: any) => {
+                        totalProjectBooked += s.project_booked_hours || 0;
+                      });
+                    }
+                  });
+                });
+                return totalProjectBooked.toLocaleString();
               })()}
               trend={{ value: 36, isPositive: true }}
             />
@@ -507,16 +517,28 @@ export default function DashboardPage() {
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
                   {data.employees.map((emp: any) => {
                     const empSchedule = emp.schedule || [];
+                    // Calculate actual available hours (remaining after bookings and reservations)
                     const totalAvailable = empSchedule.reduce(
-                      (sum: number, s: any) => sum + (s.available_hours_per_month || 0),
+                      (sum: number, s: any) => {
+                        const capacity = s.available_hours_per_month || 0;
+                        const projectBooked = s.project_booked_hours || 0;
+                        const reserved = s.reserved_hours || 0;
+                        return sum + Math.max(0, capacity - projectBooked - reserved);
+                      },
                       0
                     );
+                    // Use project_booked_hours for displaying booked hours
                     const totalBooked = empSchedule.reduce(
-                      (sum: number, s: any) => sum + (s.booked_hours || 0),
+                      (sum: number, s: any) => sum + (s.project_booked_hours || 0),
                       0
                     );
                     const totalCapacity = empSchedule.length * 120; // 120 hours per month
-                    const utilization = totalCapacity > 0 ? (totalBooked / totalCapacity) * 100 : 0;
+                    // Utilization should use total utilized (booked + reserved)
+                    const totalUtilized = empSchedule.reduce(
+                      (sum: number, s: any) => sum + (s.booked_hours || 0),
+                      0
+                    );
+                    const utilization = totalCapacity > 0 ? (totalUtilized / totalCapacity) * 100 : 0;
 
                     return (
                       <button
