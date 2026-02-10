@@ -162,7 +162,8 @@ export const projectAPI = {
 
 // Dashboard API
 export const dashboardAPI = {
-  getResourceStats: () => fetchAPI("/dashboard/resources"),
+  getResourceStats: (managerId?: number) => 
+    fetchAPI(`/dashboard/resources${managerId ? `?manager_id=${managerId}` : ''}`),
   getProjectStats: () => fetchAPI("/dashboard/projects"),
 };
 

@@ -12,6 +12,7 @@ import toast from 'react-hot-toast';
 import { SkeletonResourcesPage, SkeletonModal, SkeletonScheduleHistory } from '@/components/Skeleton';
 
 export default function ResourcesPage() {
+  const { user } = useAuth();
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [stats, setStats] = useState<any>(null);
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
@@ -27,9 +28,13 @@ export default function ResourcesPage() {
     try {
       const [employeesData, statsData] = await Promise.all([
         employeeAPI.getAll(),
-        dashboardAPI.getResourceStats(),
+        dashboardAPI.getResourceStats(user?.id),
       ]);
-      setEmployees(employeesData);
+      // Filter employees to only show those under current line manager
+      const filteredEmployees = user?.id 
+        ? employeesData.filter(emp => emp.line_manager_id === user.id)
+        : employeesData;
+      setEmployees(filteredEmployees);
       setStats(statsData);
     } catch (error) {
       console.error('Error loading data:', error);
