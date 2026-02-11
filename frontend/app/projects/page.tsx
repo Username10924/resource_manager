@@ -1310,7 +1310,7 @@ function BookingModal({
   };
 
   const [bookingData, setBookingData] = useState({
-    hours: 0,
+    hoursPerDay: 0,
     ...getDefaultDates(),
   });
   const [loading, setLoading] = useState(true);
@@ -1320,7 +1320,7 @@ function BookingModal({
       loadEmployees();
       // Reset to default dates when modal opens
       setBookingData({
-        hours: 0,
+        hoursPerDay: 0,
         ...getDefaultDates(),
       });
       setSelectedEmployee(null);
@@ -1390,6 +1390,9 @@ function BookingModal({
 
   const workingDays = calculateWorkingDays(bookingData.startDate, bookingData.endDate);
 
+  // Calculate total hours from hours per day
+  const totalHours = workingDays * (bookingData.hoursPerDay || 0);
+
   // Calculate max hours based on availability data (accounting for existing bookings/reservations)
   const maxHoursFromAvailability = employeeAvailability?.availability?.available_hours ?? null;
   const totalMaxHours = workingDays * 6; // 6 hours per working day (theoretical max)
@@ -1397,6 +1400,9 @@ function BookingModal({
     maxHoursFromAvailability !== null
       ? Math.min(totalMaxHours, maxHoursFromAvailability)
       : totalMaxHours;
+  
+  // Calculate max hours per day
+  const maxHoursPerDay = workingDays > 0 ? maxHours / workingDays : 6;
 
   // Get utilized hours info for display
   const utilizedHours = employeeAvailability?.availability?.total_utilized_hours ?? 0;
@@ -1417,8 +1423,8 @@ function BookingModal({
       return;
     }
 
-    if (bookingData.hours <= 0) {
-      alert("Please enter valid hours (greater than 0)");
+    if (bookingData.hoursPerDay <= 0) {
+      alert("Please enter valid hours per day (greater than 0)");
       return;
     }
 
@@ -1427,23 +1433,23 @@ function BookingModal({
       return;
     }
 
-    if (bookingData.hours > maxHours) {
+    if (totalHours > maxHours) {
       if (utilizedHours > 0) {
         alert(
-          `Cannot book ${bookingData.hours} hours. Employee only has ${maxHours} hours available in this period.\n\nAlready utilized: ${utilizedHours} hours (${bookedHours} booked + ${reservedHours} reserved)\nMaximum capacity: ${totalMaxHours} hours (${workingDays} working days × 6 hrs/day)`
+          `Cannot book ${totalHours} hours (${bookingData.hoursPerDay} hrs/day × ${workingDays} days). Employee only has ${maxHours} hours available in this period.\n\nAlready utilized: ${utilizedHours} hours (${bookedHours} booked + ${reservedHours} reserved)\nMaximum capacity: ${totalMaxHours} hours (${workingDays} working days × 6 hrs/day)`
         );
       } else {
         alert(
-          `Cannot book ${bookingData.hours} hours. Maximum ${maxHours} hours for ${workingDays} working days (6hrs/day).`
+          `Cannot book ${totalHours} hours (${bookingData.hoursPerDay} hrs/day × ${workingDays} days). Maximum ${maxHours} hours for ${workingDays} working days (6hrs/day).`
         );
       }
       return;
     }
 
     // Double-check availability if we have data
-    if (maxHoursFromAvailability !== null && bookingData.hours > maxHoursFromAvailability) {
+    if (maxHoursFromAvailability !== null && totalHours > maxHoursFromAvailability) {
       alert(
-        `Cannot book ${bookingData.hours} hours. Employee only has ${maxHoursFromAvailability} hours available after accounting for existing bookings and reservations.`
+        `Cannot book ${totalHours} hours (${bookingData.hoursPerDay} hrs/day × ${workingDays} days). Employee only has ${maxHoursFromAvailability} hours available after accounting for existing bookings and reservations.`
       );
       return;
     }
@@ -1453,7 +1459,7 @@ function BookingModal({
         employee_id: selectedEmployee.id,
         start_date: bookingData.startDate,
         end_date: bookingData.endDate,
-        booked_hours: bookingData.hours,
+        booked_hours: totalHours,
       };
 
       console.log("Creating booking with payload:", bookingPayload);
@@ -1463,7 +1469,7 @@ function BookingModal({
       onBook();
       onClose();
       setSelectedEmployee(null);
-      setBookingData({ hours: 0, ...getDefaultDates() });
+      setBookingData({ hoursPerDay: 0, ...getDefaultDates() });
     } catch (error: any) {
       console.error("Error creating booking:", error);
       console.error("Error details:", { message: error.message, stack: error.stack });
@@ -1741,28 +1747,43 @@ function BookingModal({
 
                   <Input
                     type="number"
-                    label="Hours to Book"
-                    value={bookingData.hours}
+                    label="Hours per Day"
+                    value={bookingData.hoursPerDay}
                     onChange={(e) =>
-                      setBookingData({ ...bookingData, hours: parseInt(e.target.value) || 0 })
+                      setBookingData({ ...bookingData, hoursPerDay: parseFloat(e.target.value) || 0 })
                     }
                     min="0"
-                    max={maxHours}
+                    max="6"
+                    step="0.5"
                   />
 
-                  {bookingData.hours > 0 && workingDays > 0 && bookingData.hours <= maxHours && (
-                    <div className="rounded-lg border border-green-200 bg-green-50 p-3">
-                      <div className="text-sm text-green-900">
-                        Average: {(bookingData.hours / workingDays).toFixed(1)} hrs/day
+                  {bookingData.hoursPerDay > 0 && workingDays > 0 && (
+                    <div className="rounded-lg border border-gray-200 bg-gray-50 p-3 space-y-2">
+                      <div className="text-sm text-gray-900">
+                        <span className="font-medium">Working Days:</span> <span className="font-bold">{workingDays}</span> days
                       </div>
-                      <div className="text-xs text-green-700 mt-1">
-                        Remaining capacity after booking:{" "}
-                        {(maxHours - bookingData.hours).toFixed(1)} hours
+                      <div className="text-sm text-gray-900">
+                        <span className="font-medium">Total Hours:</span> <span className="font-bold">{totalHours.toFixed(1)}</span> hrs
+                      </div>
+                      <div className="text-xs text-gray-700 mt-1">
+                        ({bookingData.hoursPerDay} hrs/day × {workingDays} working days)
                       </div>
                     </div>
                   )}
 
-                  {bookingData.hours > maxHours && (
+                  {totalHours > 0 && totalHours <= maxHours && workingDays > 0 && (
+                    <div className="rounded-lg border border-green-200 bg-green-50 p-3">
+                      <div className="text-sm text-green-900">
+                        ✓ Within capacity
+                      </div>
+                      <div className="text-xs text-green-700 mt-1">
+                        Remaining capacity after booking:{" "}
+                        {(maxHours - totalHours).toFixed(1)} hours
+                      </div>
+                    </div>
+                  )}
+
+                  {totalHours > maxHours && (
                     <div className="rounded-lg border border-red-300 bg-red-50 p-3">
                       <div className="flex items-center gap-2 text-sm font-semibold text-red-900">
                         <svg
@@ -1781,7 +1802,7 @@ function BookingModal({
                         Exceeds available hours!
                       </div>
                       <div className="text-xs text-red-800 mt-1">
-                        Requested {bookingData.hours} hours but only {maxHours} hours available.
+                        Requested {totalHours.toFixed(1)} hours ({bookingData.hoursPerDay} hrs/day × {workingDays} days) but only {maxHours} hours available.
                         {utilizedHours > 0 && (
                           <span> ({utilizedHours} hours already utilized)</span>
                         )}
@@ -1796,10 +1817,10 @@ function BookingModal({
                     <Button
                       onClick={handleBooking}
                       disabled={
-                        bookingData.hours > maxHours || bookingData.hours <= 0 || maxHours <= 0
+                        totalHours > maxHours || bookingData.hoursPerDay <= 0 || maxHours <= 0
                       }
                       className={
-                        bookingData.hours > maxHours || maxHours <= 0
+                        totalHours > maxHours || maxHours <= 0
                           ? "opacity-50 cursor-not-allowed"
                           : ""
                       }

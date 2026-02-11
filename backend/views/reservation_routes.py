@@ -5,6 +5,7 @@ from datetime import date
 
 from models.reservation import EmployeeReservation
 from models.employee import Employee
+from controllers.settings_controller import SettingsController
 
 router = APIRouter(prefix="/api/employees/{employee_id}/reservations", tags=["reservations"])
 
