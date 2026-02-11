@@ -36,11 +36,11 @@ app.add_middleware(
     expose_headers=["*"],
 )
 
-# Include routers with authentication dependency
-app.include_router(employee_routes.router, dependencies=[Depends(get_current_user)])
-app.include_router(project_routes.router, dependencies=[Depends(get_current_user)])
-app.include_router(reservation_routes.router, dependencies=[Depends(get_current_user)])
-app.include_router(settings_routes.router, dependencies=[Depends(get_current_user)])
+# Include routers - authentication is handled at route level
+app.include_router(employee_routes.router)
+app.include_router(project_routes.router)
+app.include_router(reservation_routes.router)
+app.include_router(settings_routes.router)
 app.include_router(settings_routes.public_router)  # Public password verification
 
 # Public routes - no authentication required
