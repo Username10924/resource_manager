@@ -60,8 +60,8 @@ export const employeeAPI = {
       body: JSON.stringify(data),
     }),
   update: (id: number, data: any) =>
-    fetchAPI(`/employees/${id}`, {
-      method: "PUT",
+    fetchAPI(`/employees/${id}/update`, {
+      method: "POST",
       body: JSON.stringify(data),
     }),
   delete: (id: number) =>

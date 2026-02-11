@@ -128,6 +128,28 @@ async def update_employee(employee_id: int, employee_data: EmployeeUpdate, curre
         raise HTTPException(status_code=400, detail=result['error'])
     return result
 
+@router.post("/{employee_id}/update", response_model=Dict[str, Any])
+async def update_employee_post(employee_id: int, employee_data: EmployeeUpdate, current_user: User = Depends(get_current_user)):
+    """Update employee details (POST workaround for PUT blocking)"""
+    from models.employee import Employee
+    
+    # Get employee first to check line manager
+    employee = Employee.get_by_id(employee_id)
+    if not employee:
+        raise HTTPException(status_code=404, detail="Employee not found")
+    
+    # Line managers can only update their own employees
+    if current_user.role == 'line_manager' and employee.line_manager_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Access denied: You can only update your own employees")
+    
+    # Convert to dict and remove None values
+    update_data = {k: v for k, v in employee_data.dict().items() if v is not None}
+    
+    result = EmployeeController.update_employee(employee_id, update_data)
+    if 'error' in result:
+        raise HTTPException(status_code=400, detail=result['error'])
+    return result
+
 @router.put("/{employee_id}/schedule", response_model=Dict[str, Any])
 async def update_employee_schedule(employee_id: int, schedule: ScheduleUpdate, current_user: User = Depends(get_current_user)):
     """Update employee schedule"""
