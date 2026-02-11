@@ -1297,6 +1297,7 @@ function BookingModal({
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
   const [employeeAvailability, setEmployeeAvailability] = useState<any>(null);
   const [loadingAvailability, setLoadingAvailability] = useState(false);
+  const [searchFilter, setSearchFilter] = useState("");
 
   // Initialize with default dates
   const getDefaultDates = () => {
@@ -1325,6 +1326,7 @@ function BookingModal({
       });
       setSelectedEmployee(null);
       setEmployeeAvailability(null);
+      setSearchFilter("");
     }
   }, [isOpen]);
 
@@ -1507,8 +1509,42 @@ function BookingModal({
             {/* Employee Selection */}
             <div>
               <h4 className="mb-3 text-sm font-semibold text-gray-900">Select Team Member</h4>
+              
+              {/* Search Filter */}
+              <div className="mb-3">
+                <div className="relative">
+                  <input
+                    type="text"
+                    placeholder="Search team members..."
+                    value={searchFilter}
+                    onChange={(e) => setSearchFilter(e.target.value)}
+                    className="w-full px-3 py-2 pl-9 text-sm bg-white border border-gray-300 rounded-lg shadow-sm hover:border-gray-400 focus:outline-none focus:border-gray-400 focus:ring-2 focus:ring-gray-200 transition-all duration-200"
+                  />
+                  <svg
+                    className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                    />
+                  </svg>
+                </div>
+              </div>
+              
               <div className="space-y-2 max-h-96 overflow-y-auto">
-                {employees.map((employee) => (
+                {employees
+                  .filter((employee) =>
+                    employee.full_name.toLowerCase().includes(searchFilter.toLowerCase()) ||
+                    employee.department.toLowerCase().includes(searchFilter.toLowerCase()) ||
+                    employee.position.toLowerCase().includes(searchFilter.toLowerCase())
+                  )
+                  .sort((a, b) => a.full_name.localeCompare(b.full_name))
+                  .map((employee) => (
                   <button
                     key={employee.id}
                     onClick={() => setSelectedEmployee(employee)}
