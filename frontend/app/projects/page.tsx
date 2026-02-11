@@ -1311,7 +1311,7 @@ function BookingModal({
   };
 
   const [bookingData, setBookingData] = useState({
-    hoursPerDay: 0,
+    hoursPerDay: '' as any,
     ...getDefaultDates(),
   });
   const [loading, setLoading] = useState(true);
@@ -1321,7 +1321,7 @@ function BookingModal({
       loadEmployees();
       // Reset to default dates when modal opens
       setBookingData({
-        hoursPerDay: 0,
+        hoursPerDay: '' as any,
         ...getDefaultDates(),
       });
       setSelectedEmployee(null);
@@ -1791,6 +1791,7 @@ function BookingModal({
                     min="0"
                     max="6"
                     step="0.5"
+                    placeholder="Enter hours per day"
                   />
 
                   {bookingData.hoursPerDay > 0 && workingDays > 0 && (

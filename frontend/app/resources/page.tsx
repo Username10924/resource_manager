@@ -277,12 +277,12 @@ function ScheduleModal({
   const [reservationForm, setReservationForm] = useState<{
     start_date: string;
     end_date: string;
-    reserved_hours_per_day: number;
+    reserved_hours_per_day: number | '';
     reason: string;
   }>({
     start_date: today,
     end_date: nextMonth,
-    reserved_hours_per_day: 0,
+    reserved_hours_per_day: '',
     reason: '',
   });
   const [loading, setLoading] = useState(true);
@@ -306,7 +306,7 @@ function ScheduleModal({
       setReservationForm({
         start_date: today,
         end_date: nextMonth,
-        reserved_hours_per_day: 0,
+        reserved_hours_per_day: '',
         reason: '',
       });
       setLoading(true);
@@ -381,7 +381,7 @@ function ScheduleModal({
       setReservationForm({
         start_date: today,
         end_date: nextMonth,
-        reserved_hours_per_day: 0,
+        reserved_hours_per_day: '',
         reason: '',
       });
     } catch (error: any) {
@@ -442,6 +442,7 @@ function ScheduleModal({
                 min="0"
                 max={settings.work_hours_per_day.toString()}
                 step="0.5"
+                placeholder="Enter hours per day"
               />
               <Input
                 type="text"
