@@ -4,8 +4,11 @@ if (!process.env.NEXT_PUBLIC_BACKEND_URL) {
   console.warn("NEXT_PUBLIC_BACKEND_URL is not set, using default backend URL");
 }
 
-// Helper function for API calls
+// Helper function for API calls with automatic retry logic
 async function fetchAPI(endpoint: string, options: RequestInit = {}) {
+  const MAX_RETRIES = 3;
+  const RETRY_DELAY = 1000; // 1 second delay between retries
+
   // Get access token from localStorage for authentication
   const accessToken = typeof window !== "undefined" ? localStorage.getItem("access_token") : null;
 
@@ -19,35 +22,76 @@ async function fetchAPI(endpoint: string, options: RequestInit = {}) {
     },
   };
 
-  // Log the request for debugging
-  console.log("API Request:", { url, method: config.method || "GET", body: options.body });
+  // Retry loop
+  for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      // Log the request for debugging
+      console.log("API Request:", { 
+        url, 
+        method: config.method || "GET", 
+        body: options.body, 
+        attempt: attempt > 1 ? `${attempt}/${MAX_RETRIES}` : undefined 
+      });
 
-  const response = await fetch(url, config);
+      const response = await fetch(url, config);
 
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({ detail: "An error occurred" }));
-    // FastAPI returns errors in 'detail' field, but also support 'message' for compatibility
-    let errorMessage: string;
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({ detail: "An error occurred" }));
+        // FastAPI returns errors in 'detail' field, but also support 'message' for compatibility
+        let errorMessage: string;
 
-    if (typeof error.detail === "string") {
-      errorMessage = error.detail;
-    } else if (Array.isArray(error.detail)) {
-      // Handle validation errors which might be an array
-      errorMessage = error.detail
-        .map((e: any) => (typeof e === "string" ? e : e.msg || JSON.stringify(e)))
-        .join(", ");
-    } else if (typeof error.detail === "object") {
-      errorMessage = JSON.stringify(error.detail);
-    } else if (error.message) {
-      errorMessage = error.message;
-    } else {
-      errorMessage = `API Error: ${response.status}`;
+        if (typeof error.detail === "string") {
+          errorMessage = error.detail;
+        } else if (Array.isArray(error.detail)) {
+          // Handle validation errors which might be an array
+          errorMessage = error.detail
+            .map((e: any) => (typeof e === "string" ? e : e.msg || JSON.stringify(e)))
+            .join(", ");
+        } else if (typeof error.detail === "object") {
+          errorMessage = JSON.stringify(error.detail);
+        } else if (error.message) {
+          errorMessage = error.message;
+        } else {
+          errorMessage = `API Error: ${response.status}`;
+        }
+
+        const apiError: any = new Error(errorMessage);
+        apiError.status = response.status;
+        
+        // Don't retry client errors (4xx) - they won't be fixed by retrying
+        if (response.status >= 400 && response.status < 500) {
+          throw apiError;
+        }
+        
+        // Retry server errors (5xx)
+        throw apiError;
+      }
+
+      return response.json();
+    } catch (error: any) {
+      const isLastAttempt = attempt === MAX_RETRIES;
+      
+      // Don't retry client errors (4xx)
+      const isClientError = error.status >= 400 && error.status < 500;
+      
+      // If this is the last attempt or it's a client error, throw it
+      if (isLastAttempt || isClientError) {
+        if (!isClientError) {
+          console.error(`API call failed after ${MAX_RETRIES} attempts:`, error);
+        }
+        throw error;
+      }
+
+      // Log retry attempt
+      console.warn(`API call failed (attempt ${attempt}/${MAX_RETRIES}), retrying in ${RETRY_DELAY}ms...`, error);
+      
+      // Wait before retrying
+      await new Promise(resolve => setTimeout(resolve, RETRY_DELAY));
     }
-
-    throw new Error(errorMessage);
   }
 
-  return response.json();
+  // This should never be reached, but TypeScript needs it
+  throw new Error("Unexpected error in retry logic");
 }
 
 // Employee API
@@ -135,6 +179,8 @@ export const projectAPI = {
       body: JSON.stringify(data),
     }),
   uploadAttachment: async (projectId: number, file: File) => {
+    const MAX_RETRIES = 3;
+    const RETRY_DELAY = 1000;
     const accessToken = typeof window !== "undefined" ? localStorage.getItem("access_token") : null;
     const userStr = typeof window !== "undefined" ? localStorage.getItem("user") : null;
     const user = userStr ? JSON.parse(userStr) : null;
@@ -142,21 +188,48 @@ export const projectAPI = {
     const formData = new FormData();
     formData.append("file", file);
 
-    const response = await fetch(`${API_BASE_URL}/projects/${projectId}/attachments`, {
-      method: "POST",
-      headers: {
-        ...(accessToken && { Authorization: `Bearer ${accessToken}` }),
-        ...(user?.username && { "X-Username": user.username }),
-      },
-      body: formData,
-    });
+    for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+      try {
+        const response = await fetch(`${API_BASE_URL}/projects/${projectId}/attachments`, {
+          method: "POST",
+          headers: {
+            ...(accessToken && { Authorization: `Bearer ${accessToken}` }),
+            ...(user?.username && { "X-Username": user.username }),
+          },
+          body: formData,
+        });
 
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({ detail: "Upload failed" }));
-      throw new Error(error.detail || error.message || "Upload failed");
+        if (!response.ok) {
+          const error = await response.json().catch(() => ({ detail: "Upload failed" }));
+          const uploadError: any = new Error(error.detail || error.message || "Upload failed");
+          uploadError.status = response.status;
+          
+          // Don't retry client errors (4xx)
+          if (response.status >= 400 && response.status < 500) {
+            throw uploadError;
+          }
+          
+          throw uploadError;
+        }
+
+        return response.json();
+      } catch (error: any) {
+        const isLastAttempt = attempt === MAX_RETRIES;
+        const isClientError = error.status >= 400 && error.status < 500;
+        
+        if (isLastAttempt || isClientError) {
+          if (!isClientError) {
+            console.error(`File upload failed after ${MAX_RETRIES} attempts:`, error);
+          }
+          throw error;
+        }
+
+        console.warn(`File upload failed (attempt ${attempt}/${MAX_RETRIES}), retrying in ${RETRY_DELAY}ms...`, error);
+        await new Promise(resolve => setTimeout(resolve, RETRY_DELAY));
+      }
     }
 
-    return response.json();
+    throw new Error("Unexpected error in retry logic");
   },
 };
 
