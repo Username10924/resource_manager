@@ -23,6 +23,8 @@ export function VisualScheduleTimeline({
   rowLabel,
   rowSublabel,
   items,
+  cellWidth,
+  leftColumnWidth,
 }: {
   windowStart: string;
   windowEnd: string;
@@ -32,9 +34,11 @@ export function VisualScheduleTimeline({
   rowLabel: string;
   rowSublabel?: string;
   items: VisualScheduleItem[];
+  cellWidth?: number;
+  leftColumnWidth?: number;
 }) {
-  const CELL_WIDTH = 36;
-  const LEFT_COL_WIDTH = 240;
+  const CELL_WIDTH = cellWidth ?? 36;
+  const LEFT_COL_WIDTH = leftColumnWidth ?? 240;
 
   const [pendingStart, setPendingStart] = useState<string | null>(null);
 

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import {
   projectAPI,
   employeeAPI,
@@ -21,6 +22,7 @@ import { VisualScheduleTimeline } from "@/components/VisualScheduleTimeline";
 import type { VisualScheduleItem } from "@/components/VisualScheduleTimeline";
 
 export default function ProjectsPage() {
+  const router = useRouter();
   const [projects, setProjects] = useState<Project[]>([]);
   const [stats, setStats] = useState<any>(null);
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
@@ -123,8 +125,7 @@ export default function ProjectsPage() {
   };
 
   const openBookingModal = (project: Project) => {
-    setSelectedProject(project);
-    setIsBookingModalOpen(true);
+    router.push(`/projects/${project.id}/book`);
   };
 
   const openEditModal = (project: Project) => {

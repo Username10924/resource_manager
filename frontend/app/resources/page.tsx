@@ -1,6 +1,8 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { employeeAPI, dashboardAPI, Employee, Schedule, Reservation, projectAPI, settingsAPI, Settings } from '@/lib/api';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/Card';
 import Button from '@/components/Button';
@@ -15,6 +17,7 @@ import type { VisualScheduleItem } from '@/components/VisualScheduleTimeline';
 
 export default function ResourcesPage() {
   const { user } = useAuth();
+  const router = useRouter();
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [stats, setStats] = useState<any>(null);
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
@@ -202,7 +205,7 @@ export default function ResourcesPage() {
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => openScheduleModal(employee)}
+                            onClick={() => router.push(`/resources/${employee.id}/schedule`)}
                           >
                             Manage Schedule
                           </Button>
