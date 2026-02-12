@@ -342,6 +342,8 @@ export default function ProjectBookingPage() {
               leftColumnWidth={320}
               minBodyHeight={520}
               contextMenuItems={contextMenuItems}
+              stickyScrollbar
+              wheelToHorizontal
             />
           </div>
         )}

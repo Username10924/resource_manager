@@ -34,6 +34,8 @@ export function VisualScheduleTimeline({
   leftColumnWidth,
   minBodyHeight,
   contextMenuItems,
+  stickyScrollbar,
+  wheelToHorizontal,
 }: {
   windowStart: string;
   windowEnd: string;
@@ -47,6 +49,8 @@ export function VisualScheduleTimeline({
   leftColumnWidth?: number;
   minBodyHeight?: number;
   contextMenuItems?: VisualScheduleContextMenuItem[];
+  stickyScrollbar?: boolean;
+  wheelToHorizontal?: boolean;
 }) {
   const CELL_WIDTH = cellWidth ?? 36;
   const LEFT_COL_WIDTH = leftColumnWidth ?? 240;
@@ -60,6 +64,9 @@ export function VisualScheduleTimeline({
   );
 
   const rootRef = useRef<HTMLDivElement | null>(null);
+  const mainScrollRef = useRef<HTMLDivElement | null>(null);
+  const barScrollRef = useRef<HTMLDivElement | null>(null);
+  const syncingScrollRef = useRef(false);
 
   const days = useMemo(() => {
     const start = parseISODate(windowStart);
@@ -200,10 +207,38 @@ export function VisualScheduleTimeline({
   const timelineHeight = 12 + laneCount * 26;
   const bodyHeight = Math.max(timelineHeight, MIN_BODY_HEIGHT);
 
+  const timelineWidth = days.length * CELL_WIDTH;
+
   const gridTemplateColumns = useMemo(
     () => `${LEFT_COL_WIDTH}px repeat(${days.length}, ${CELL_WIDTH}px)`,
     [days.length]
   );
+
+  const syncScroll = (source: HTMLDivElement | null, target: HTMLDivElement | null) => {
+    if (!source || !target) return;
+    if (syncingScrollRef.current) return;
+    syncingScrollRef.current = true;
+    target.scrollLeft = source.scrollLeft;
+    requestAnimationFrame(() => {
+      syncingScrollRef.current = false;
+    });
+  };
+
+  const handleWheel: React.WheelEventHandler<HTMLDivElement> = (e) => {
+    if (!wheelToHorizontal) return;
+    const el = mainScrollRef.current;
+    if (!el) return;
+
+    // If user is already horizontal-scrolling (trackpad), don't override.
+    if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) return;
+
+    // Convert vertical wheel into horizontal scroll for fast month navigation.
+    if (e.deltaY !== 0) {
+      el.scrollLeft += e.deltaY;
+      syncScroll(el, barScrollRef.current);
+      e.preventDefault();
+    }
+  };
 
   const handleDayClick = (dateKey: string) => {
     if (!pendingStart) {
@@ -278,8 +313,13 @@ export function VisualScheduleTimeline({
   };
 
   return (
-    <div ref={rootRef} className="rounded-lg border border-gray-200 bg-white">
-      <div className="overflow-x-auto">
+    <div ref={rootRef} className="rounded-lg border border-gray-200 bg-white flex flex-col">
+      <div
+        ref={mainScrollRef}
+        className="overflow-x-auto"
+        onScroll={() => syncScroll(mainScrollRef.current, barScrollRef.current)}
+        onWheel={handleWheel}
+      >
         <div
           className="grid border-b border-gray-200 bg-gray-50"
           style={{ gridTemplateColumns }}
@@ -344,7 +384,7 @@ export function VisualScheduleTimeline({
 
           <div
             className="relative"
-            style={{ width: days.length * CELL_WIDTH, minHeight: bodyHeight }}
+            style={{ width: timelineWidth, minHeight: bodyHeight }}
           >
             <div className="absolute inset-0 grid" style={{ gridTemplateColumns: `repeat(${days.length}, ${CELL_WIDTH}px)` }}>
               {days.map((d) => {
@@ -416,6 +456,18 @@ export function VisualScheduleTimeline({
           </div>
         </div>
       </div>
+
+      {stickyScrollbar ? (
+        <div className="sticky bottom-0 border-t border-gray-200 bg-white">
+          <div
+            ref={barScrollRef}
+            className="overflow-x-auto"
+            onScroll={() => syncScroll(barScrollRef.current, mainScrollRef.current)}
+          >
+            <div style={{ width: LEFT_COL_WIDTH + timelineWidth, height: 14 }} />
+          </div>
+        </div>
+      ) : null}
 
       {contextMenu.open && selection && (contextMenuItems?.length || 0) > 0 ? (
         <div
