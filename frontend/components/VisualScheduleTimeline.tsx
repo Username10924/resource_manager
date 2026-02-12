@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 type ItemKind = 'booking' | 'reservation';
 
@@ -14,6 +14,13 @@ export type VisualScheduleItem = {
   status?: string;
 };
 
+export type VisualScheduleContextMenuItem = {
+  id: string;
+  label: string;
+  disabled?: boolean;
+  onSelect: () => void;
+};
+
 export function VisualScheduleTimeline({
   windowStart,
   windowEnd,
@@ -25,6 +32,8 @@ export function VisualScheduleTimeline({
   items,
   cellWidth,
   leftColumnWidth,
+  minBodyHeight,
+  contextMenuItems,
 }: {
   windowStart: string;
   windowEnd: string;
@@ -36,11 +45,20 @@ export function VisualScheduleTimeline({
   items: VisualScheduleItem[];
   cellWidth?: number;
   leftColumnWidth?: number;
+  minBodyHeight?: number;
+  contextMenuItems?: VisualScheduleContextMenuItem[];
 }) {
   const CELL_WIDTH = cellWidth ?? 36;
   const LEFT_COL_WIDTH = leftColumnWidth ?? 240;
+  const MIN_BODY_HEIGHT = minBodyHeight ?? 0;
 
   const [pendingStart, setPendingStart] = useState<string | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [contextMenu, setContextMenu] = useState<{ open: boolean; x: number; y: number }>(
+    { open: false, x: 0, y: 0 }
+  );
+
+  const rootRef = useRef<HTMLDivElement | null>(null);
 
   const days = useMemo(() => {
     const start = parseISODate(windowStart);
@@ -115,6 +133,7 @@ export function VisualScheduleTimeline({
 
   const laneCount = Math.max(1, laneLayout.length);
   const timelineHeight = 12 + laneCount * 26;
+  const bodyHeight = Math.max(timelineHeight, MIN_BODY_HEIGHT);
 
   const gridTemplateColumns = useMemo(
     () => `${LEFT_COL_WIDTH}px repeat(${days.length}, ${CELL_WIDTH}px)`,
@@ -135,8 +154,64 @@ export function VisualScheduleTimeline({
     onSelectionChange(normalized.start, normalized.end);
   };
 
+  const handleDragStart = (dateKey: string) => {
+    setIsDragging(true);
+    setPendingStart(dateKey);
+    onSelectionChange(dateKey, dateKey);
+  };
+
+  const handleDragOver = (dateKey: string) => {
+    if (!isDragging || !pendingStart) return;
+    const normalized = normalizeRange(pendingStart, dateKey);
+    onSelectionChange(normalized.start, normalized.end);
+  };
+
+  const handleDragEnd = (dateKey?: string) => {
+    if (!isDragging) return;
+    setIsDragging(false);
+
+    if (!pendingStart) return;
+    if (dateKey) {
+      const normalized = normalizeRange(pendingStart, dateKey);
+      onSelectionChange(normalized.start, normalized.end);
+    }
+    setPendingStart(null);
+  };
+
+  useEffect(() => {
+    const onMouseUp = () => handleDragEnd();
+    window.addEventListener('mouseup', onMouseUp);
+    return () => window.removeEventListener('mouseup', onMouseUp);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isDragging, pendingStart]);
+
+  useEffect(() => {
+    if (!contextMenu.open) return;
+
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setContextMenu((c) => ({ ...c, open: false }));
+    };
+    const onMouseDown = (e: MouseEvent) => {
+      const el = rootRef.current;
+      if (!el) return;
+      if (e.target instanceof Node && el.contains(e.target)) return;
+      setContextMenu((c) => ({ ...c, open: false }));
+    };
+
+    window.addEventListener('keydown', onKeyDown);
+    window.addEventListener('mousedown', onMouseDown);
+    return () => {
+      window.removeEventListener('keydown', onKeyDown);
+      window.removeEventListener('mousedown', onMouseDown);
+    };
+  }, [contextMenu.open]);
+
+  const openContextMenu = (x: number, y: number) => {
+    setContextMenu({ open: true, x, y });
+  };
+
   return (
-    <div className="rounded-lg border border-gray-200 bg-white">
+    <div ref={rootRef} className="rounded-lg border border-gray-200 bg-white">
       <div className="overflow-x-auto">
         <div
           className="grid border-b border-gray-200 bg-gray-50"
@@ -170,12 +245,12 @@ export function VisualScheduleTimeline({
         <div className="grid" style={{ gridTemplateColumns }}>
           <div
             className="sticky left-0 z-10 border-r border-gray-200 bg-white px-4 py-3"
-            style={{ minHeight: timelineHeight }}
+            style={{ minHeight: bodyHeight }}
           />
 
           <div
             className="relative"
-            style={{ width: days.length * CELL_WIDTH, minHeight: timelineHeight }}
+            style={{ width: days.length * CELL_WIDTH, minHeight: bodyHeight }}
           >
             <div className="absolute inset-0 grid" style={{ gridTemplateColumns: `repeat(${days.length}, ${CELL_WIDTH}px)` }}>
               {days.map((d) => {
@@ -187,15 +262,26 @@ export function VisualScheduleTimeline({
                   compareISODate(key, selection.end) <= 0;
 
                 return (
-                  <button
-                    type="button"
+                  <div
                     key={key}
                     onClick={() => handleDayClick(key)}
-                    className={`h-full border-r border-gray-200 transition-colors ${
+                    onMouseDown={(e) => {
+                      if (e.button === 2) return;
+                      handleDragStart(key);
+                    }}
+                    onMouseEnter={() => handleDragOver(key)}
+                    onMouseUp={() => handleDragEnd(key)}
+                    onContextMenu={(e) => {
+                      e.preventDefault();
+                      if (!selection) return;
+                      openContextMenu(e.clientX, e.clientY);
+                    }}
+                    className={`h-full border-r border-gray-200 transition-colors cursor-crosshair select-none ${
                       isWeekend ? 'bg-gray-50' : 'bg-white'
                     } ${isSelected ? 'bg-gray-100' : 'hover:bg-gray-50'} ${
                       pendingStart === key ? 'ring-2 ring-gray-400 ring-inset' : ''
                     }`}
+                    role="button"
                     aria-label={`Select ${key}`}
                   />
                 );
@@ -227,6 +313,38 @@ export function VisualScheduleTimeline({
           </div>
         </div>
       </div>
+
+      {contextMenu.open && selection && (contextMenuItems?.length || 0) > 0 ? (
+        <div
+          className="fixed z-50 min-w-56 overflow-hidden rounded-lg border border-gray-200 bg-white shadow-lg"
+          style={{ left: contextMenu.x, top: contextMenu.y }}
+          onContextMenu={(e) => e.preventDefault()}
+        >
+          <div className="px-3 py-2 border-b border-gray-100">
+            <div className="text-xs font-semibold text-gray-900">{selection.start} → {selection.end}</div>
+          </div>
+          <div className="py-1">
+            {contextMenuItems!.map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                disabled={item.disabled}
+                onClick={() => {
+                  setContextMenu((c) => ({ ...c, open: false }));
+                  item.onSelect();
+                }}
+                className={`w-full px-3 py-2 text-left text-sm transition-colors ${
+                  item.disabled
+                    ? 'text-gray-400 cursor-not-allowed'
+                    : 'text-gray-700 hover:bg-gray-50'
+                }`}
+              >
+                {item.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      ) : null}
 
       <div className="flex flex-wrap items-center gap-3 px-4 py-3 text-xs text-gray-600">
         <div className="flex items-center gap-2">

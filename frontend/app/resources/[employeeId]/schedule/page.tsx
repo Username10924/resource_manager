@@ -149,6 +149,24 @@ export default function EmployeeSchedulePage() {
     }
   };
 
+  const contextMenuItems = useMemo(() => {
+    const hasValidHours = typeof reservationForm.reserved_hours_per_day === 'number' && reservationForm.reserved_hours_per_day > 0;
+
+    return [
+      {
+        id: 'create-reservation',
+        label: 'Create reservation for selected range',
+        disabled: saving || !hasValidHours || workingDays <= 0,
+        onSelect: handleCreateReservation,
+      },
+      {
+        id: 'clear',
+        label: 'Clear selection',
+        onSelect: () => setReservationForm((p) => ({ ...p, start_date: todayISO, end_date: todayISO })),
+      },
+    ];
+  }, [handleCreateReservation, reservationForm.reserved_hours_per_day, saving, todayISO, workingDays]);
+
   const handleDeleteReservation = async (reservationId: number) => {
     if (!employee) return;
 
@@ -167,14 +185,13 @@ export default function EmployeeSchedulePage() {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="h-[calc(100vh-6rem)] min-h-[650px] flex flex-col gap-4">
+      <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
-            Schedule
-          </h1>
-          <p className="mt-2 text-sm text-gray-600">Visual schedule for reservations and project bookings</p>
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">Schedule</h1>
+          <p className="mt-2 text-sm text-gray-600">Click-drag to highlight a range, then right-click for actions</p>
         </div>
+
         <div className="flex items-center gap-3">
           <Button variant="secondary" onClick={() => router.push('/resources')}>Back</Button>
         </div>
@@ -183,12 +200,44 @@ export default function EmployeeSchedulePage() {
       {loading || !employee ? (
         <SkeletonModal />
       ) : (
-        <>
-          <Card>
-            <CardHeader>
-              <CardTitle>{employee.full_name}</CardTitle>
-            </CardHeader>
-            <CardContent>
+        <div className="flex flex-col gap-3 flex-1 min-h-0">
+          <div className="rounded-lg border border-gray-200 bg-white p-3">
+            <div className="grid grid-cols-1 gap-3 lg:grid-cols-4">
+              <div className="lg:col-span-2">
+                <div className="text-sm font-semibold text-gray-900">{employee.full_name}</div>
+                <div className="mt-0.5 text-xs text-gray-600">{employee.position} • {employee.department}</div>
+                <div className="mt-2 text-xs text-gray-500">Selected: {reservationForm.start_date} → {reservationForm.end_date}</div>
+              </div>
+              <Input
+                type="number"
+                label="Reserved Hours (hrs/day)"
+                value={reservationForm.reserved_hours_per_day}
+                onChange={(e) =>
+                  setReservationForm((p) => ({
+                    ...p,
+                    reserved_hours_per_day: parseFloat(e.target.value) || 0,
+                  }))
+                }
+                min="0"
+                max={settings.work_hours_per_day.toString()}
+                step="0.5"
+                placeholder="e.g., 6"
+              />
+              <Input
+                type="text"
+                label="Reason (optional)"
+                value={reservationForm.reason}
+                onChange={(e) => setReservationForm((p) => ({ ...p, reason: e.target.value }))}
+                placeholder="Vacation, training..."
+              />
+            </div>
+            <div className="mt-2 text-xs text-gray-600">
+              Working days: <span className="font-semibold">{workingDays}</span> • Total reserved: <span className="font-semibold">{totalReservedHours.toFixed(1)}h</span> • Available/day: <span className="font-semibold">{availableHoursPerDay.toFixed(1)}h</span>
+            </div>
+          </div>
+
+          <div className="flex-1 min-h-0">
+            <div className="h-full">
               <VisualScheduleTimeline
                 windowStart={timelineWindow.start}
                 windowEnd={timelineWindow.end}
@@ -200,122 +249,14 @@ export default function EmployeeSchedulePage() {
                 rowLabel={employee.full_name}
                 rowSublabel={`${employee.position} • ${employee.department}`}
                 items={timelineItems}
-                cellWidth={44}
-                leftColumnWidth={280}
+                cellWidth={56}
+                leftColumnWidth={320}
+                minBodyHeight={520}
+                contextMenuItems={contextMenuItems}
               />
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Create Reservation</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <Input
-                  type="date"
-                  label="Start Date"
-                  value={reservationForm.start_date}
-                  onChange={(e) => setReservationForm((p) => ({ ...p, start_date: e.target.value }))}
-                />
-                <Input
-                  type="date"
-                  label="End Date"
-                  value={reservationForm.end_date}
-                  onChange={(e) => setReservationForm((p) => ({ ...p, end_date: e.target.value }))}
-                />
-              </div>
-
-              <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <Input
-                  type="number"
-                  label="Reserved Hours (hrs/day)"
-                  value={reservationForm.reserved_hours_per_day}
-                  onChange={(e) =>
-                    setReservationForm((p) => ({
-                      ...p,
-                      reserved_hours_per_day: parseFloat(e.target.value) || 0,
-                    }))
-                  }
-                  min="0"
-                  max={settings.work_hours_per_day.toString()}
-                  step="0.5"
-                  placeholder="Enter hours per day"
-                />
-                <Input
-                  type="text"
-                  label="Reason (optional)"
-                  value={reservationForm.reason}
-                  onChange={(e) => setReservationForm((p) => ({ ...p, reason: e.target.value }))}
-                  placeholder="e.g., Vacation, Training"
-                />
-              </div>
-
-              <div className="mt-4 rounded-lg bg-gray-50 p-4 space-y-2">
-                <div className="text-sm text-gray-900">
-                  <span className="font-medium">Working Days:</span>{' '}
-                  <span className="font-bold">{workingDays}</span> days
-                </div>
-                <div className="text-sm text-gray-900">
-                  <span className="font-medium">Total Reserved Hours:</span>{' '}
-                  <span className="font-bold">{totalReservedHours.toFixed(1)}</span> hrs
-                </div>
-                <div className="text-sm text-gray-900">
-                  <span className="font-medium">Available Hours per Day:</span>{' '}
-                  <span className="font-bold">{availableHoursPerDay.toFixed(1)}</span> hrs
-                </div>
-                <div className="text-xs text-gray-700 mt-1">(Weekends are excluded)</div>
-              </div>
-
-              <div className="mt-4 flex justify-end">
-                <Button onClick={handleCreateReservation} disabled={saving}>
-                  {saving ? 'Creating...' : 'Create Reservation'}
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Active Reservations</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {reservations.filter((r) => r.status === 'active').length === 0 ? (
-                <div className="text-sm text-gray-600">No active reservations.</div>
-              ) : (
-                <div className="space-y-2">
-                  {reservations
-                    .filter((r) => r.status === 'active')
-                    .map((reservation) => (
-                      <div
-                        key={reservation.id}
-                        className="flex items-center justify-between rounded-lg border border-gray-200 bg-white p-3"
-                      >
-                        <div className="flex-1">
-                          <div className="text-sm font-medium text-gray-900">
-                            {new Date(reservation.start_date + 'T00:00:00').toLocaleDateString()} -{' '}
-                            {new Date(reservation.end_date + 'T00:00:00').toLocaleDateString()}
-                          </div>
-                          <div className="mt-1 text-xs text-gray-600">
-                            Reserved: {reservation.reserved_hours_per_day}h/day
-                            {reservation.reason ? ` • ${reservation.reason}` : ''}
-                          </div>
-                        </div>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleDeleteReservation(reservation.id)}
-                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                        >
-                          Delete
-                        </Button>
-                      </div>
-                    ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
