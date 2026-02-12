@@ -279,12 +279,10 @@ export default function DashboardPage() {
             <StatsCard
               title="TOTAL EMPLOYEES"
               value={resourceData.total_employees}
-              trend={{ value: 36, isPositive: true }}
             />
             <StatsCard
               title="DEPARTMENTS"
               value={Object.keys(resourceData.departments).length}
-              trend={{ value: 14, isPositive: true }}
             />
             <StatsCard
               title="HOURS BOOKED"
@@ -322,7 +320,6 @@ export default function DashboardPage() {
                 });
                 return Math.round(totalProjectBooked).toLocaleString();
               })()}
-              trend={{ value: 36, isPositive: true }}
             />
             <StatsCard
               title="AVG UTILIZATION"
@@ -332,7 +329,6 @@ export default function DashboardPage() {
                   months.reduce((sum, m) => sum + m.utilization_rate, 0) / months.length;
                 return Math.min(100, Math.max(0, avgUtil)).toFixed(1);
               })()}%`}
-              trend={{ value: 36, isPositive: true }}
             />
           </div>
 
@@ -432,22 +428,18 @@ export default function DashboardPage() {
             <StatsCard
               title="TOTAL PROJECTS"
               value={projectData.total_projects}
-              trend={{ value: 36, isPositive: true }}
             />
             <StatsCard
               title="ACTIVE PROJECTS"
               value={projectData.status_distribution.active || 0}
-              trend={{ value: 14, isPositive: true }}
             />
             <StatsCard
               title="COMPLETED"
               value={projectData.status_distribution.completed || 0}
-              trend={{ value: 36, isPositive: true }}
             />
             <StatsCard
               title="AVG PROGRESS"
               value={`${projectData.average_progress.toFixed(1)}%`}
-              trend={{ value: 36, isPositive: true }}
             />
           </div>
 
@@ -553,12 +545,10 @@ export default function DashboardPage() {
             <StatsCard
               title="TOTAL EMPLOYEES"
               value={resourceData.total_employees}
-              trend={{ value: 36, isPositive: true }}
             />
             <StatsCard
               title="DEPARTMENTS"
               value={Object.keys(resourceData.departments).length}
-              trend={{ value: 14, isPositive: true }}
             />
             <StatsCard
               title="AVG UTILIZATION"
@@ -568,7 +558,6 @@ export default function DashboardPage() {
                   months.reduce((sum, m) => sum + m.utilization_rate, 0) / months.length;
                 return avgUtil.toFixed(1);
               })()}%`}
-              trend={{ value: 36, isPositive: true }}
             />
           </div>
 

@@ -6,10 +6,6 @@ interface StatsCardProps {
   value: string | number;
   description?: string;
   icon?: ReactNode;
-  trend?: {
-    value: number;
-    isPositive: boolean;
-  };
   color?: 'blue' | 'green' | 'purple' | 'orange' | 'red' | 'indigo';
 }
 
@@ -27,7 +23,6 @@ export default function StatsCard({
   value, 
   description, 
   icon, 
-  trend,
   color = 'blue' 
 }: StatsCardProps) {
   return (
@@ -36,11 +31,6 @@ export default function StatsCard({
         <div className="flex flex-col gap-2">
           <div className="flex items-center justify-between">
             <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">{title}</p>
-            {trend && (
-              <span className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-600">
-                ↑ {Math.abs(trend.value)}%
-              </span>
-            )}
           </div>
           <div className="flex items-baseline gap-2">
             <p className="text-2xl font-bold text-gray-900">{value}</p>
