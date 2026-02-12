@@ -10,6 +10,8 @@ import { formatMonth, getMonthsList, processEmployeeScheduleWithBookings } from 
 import { useAuth } from '@/contexts/AuthContext';
 import toast from 'react-hot-toast';
 import { SkeletonResourcesPage, SkeletonModal, SkeletonScheduleHistory } from '@/components/Skeleton';
+import { VisualScheduleTimeline } from '@/components/VisualScheduleTimeline';
+import type { VisualScheduleItem } from '@/components/VisualScheduleTimeline';
 
 export default function ResourcesPage() {
   const { user } = useAuth();
@@ -270,9 +272,16 @@ function ScheduleModal({
   onUpdate: () => void;
 }) {
   const [reservations, setReservations] = useState<Reservation[]>([]);
+  const [bookings, setBookings] = useState<any[]>([]);
   const [settings, setSettings] = useState<Settings>({ work_hours_per_day: 6, work_days_per_month: 20, months_in_year: 12 });
   const today = new Date().toISOString().split('T')[0];
   const nextMonth = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+
+  const [timelineWindow, setTimelineWindow] = useState<{ start: string; end: string }>(() => {
+    const start = startOfWeekISO(new Date());
+    const end = addDaysISO(start, 55);
+    return { start, end };
+  });
   
   const [reservationForm, setReservationForm] = useState<{
     start_date: string;
@@ -310,17 +319,23 @@ function ScheduleModal({
         reason: '',
       });
       setLoading(true);
-      loadReservations();
+      const windowStart = startOfWeekISO(new Date());
+      setTimelineWindow({ start: windowStart, end: addDaysISO(windowStart, 55) });
+      loadScheduleData();
     }
   }, [isOpen, employee.id]);
 
-  const loadReservations = async () => {
+  const loadScheduleData = async () => {
     try {
-      const data = await employeeAPI.getReservations(employee.id, false);
-      setReservations(data);
+      const [reservationData, bookingData] = await Promise.all([
+        employeeAPI.getReservations(employee.id, false),
+        projectAPI.getEmployeeBookings(employee.id),
+      ]);
+      setReservations(reservationData);
+      setBookings(Array.isArray(bookingData) ? bookingData : []);
     } catch (error) {
-      console.error('Error loading reservations:', error);
-      toast.error('Failed to load reservations. Please try again.');
+      console.error('Error loading schedule data:', error);
+      toast.error('Failed to load reservations/bookings. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -374,7 +389,7 @@ function ScheduleModal({
     setSaving(true);
     try {
       await employeeAPI.createReservation(employee.id, reservationForm);
-      await loadReservations();
+      await loadScheduleData();
       onUpdate();
       toast.success('Reservation created successfully!');
       // Reset form
@@ -400,13 +415,33 @@ function ScheduleModal({
     try {
       await employeeAPI.deleteReservation(employee.id, reservationId);
       toast.success('Reservation deleted successfully');
-      await loadReservations();
+      await loadScheduleData();
       onUpdate();
     } catch (error: any) {
       console.error('Error deleting reservation:', error);
       toast.error(error.message || 'Failed to delete reservation');
     }
   };
+
+  const timelineItems: VisualScheduleItem[] = [
+    ...bookings.map((b: any) => ({
+      id: b.id,
+      kind: 'booking' as const,
+      start_date: b.start_date,
+      end_date: b.end_date,
+      label: b.project_name || 'Booked',
+      sublabel: b.project_code,
+    })),
+    ...reservations.map((r: any) => ({
+      id: r.id,
+      kind: 'reservation' as const,
+      start_date: r.start_date,
+      end_date: r.end_date,
+      label: r.reason || 'Reserved',
+      sublabel: r.status === 'active' ? `${r.reserved_hours_per_day}h/day` : r.status,
+      status: r.status,
+    })),
+  ];
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={`Manage Reservations - ${employee.full_name}`} size="lg">
@@ -417,6 +452,21 @@ function ScheduleModal({
           {/* Create New Reservation */}
           <div className="rounded-lg border border-gray-200 p-4">
             <h4 className="mb-4 text-sm font-semibold text-gray-900">Create New Reservation</h4>
+
+            <div className="mb-4">
+              <VisualScheduleTimeline
+                windowStart={timelineWindow.start}
+                windowEnd={timelineWindow.end}
+                selectionStart={reservationForm.start_date}
+                selectionEnd={reservationForm.end_date}
+                onSelectionChange={(start, end) =>
+                  setReservationForm((prev) => ({ ...prev, start_date: start, end_date: end }))
+                }
+                rowLabel={employee.full_name}
+                rowSublabel={`${employee.position} • ${employee.department}`}
+                items={timelineItems}
+              />
+            </div>
             
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <Input
@@ -804,4 +854,37 @@ function EditEmployeeModal({
       </form>
     </Modal>
   );
+}
+
+function startOfWeekISO(date: Date): string {
+  const d = new Date(date);
+  d.setHours(0, 0, 0, 0);
+  const day = d.getDay();
+  const diffToMonday = (day + 6) % 7;
+  d.setDate(d.getDate() - diffToMonday);
+  return formatISODateLocal(d);
+}
+
+function addDaysISO(isoDate: string, days: number): string {
+  const parsed = parseISODateLocal(isoDate);
+  const d = parsed ? new Date(parsed) : new Date();
+  d.setDate(d.getDate() + days);
+  return formatISODateLocal(d);
+}
+
+function parseISODateLocal(value: string): Date | null {
+  if (!value || typeof value !== 'string') return null;
+  const [y, m, d] = value.split('-').map((n) => parseInt(n, 10));
+  if (!y || !m || !d) return null;
+  const date = new Date(y, m - 1, d);
+  if (Number.isNaN(date.getTime())) return null;
+  date.setHours(0, 0, 0, 0);
+  return date;
+}
+
+function formatISODateLocal(date: Date): string {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
 }

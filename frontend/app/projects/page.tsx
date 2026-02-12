@@ -17,6 +17,8 @@ import Modal from "@/components/Modal";
 import Input from "@/components/Input";
 import { formatMonth, getMonthsList } from "@/lib/utils";
 import { SkeletonProjectsPage, Skeleton } from "@/components/Skeleton";
+import { VisualScheduleTimeline } from "@/components/VisualScheduleTimeline";
+import type { VisualScheduleItem } from "@/components/VisualScheduleTimeline";
 
 export default function ProjectsPage() {
   const [projects, setProjects] = useState<Project[]>([]);
@@ -1298,6 +1300,7 @@ function BookingModal({
   const [employeeAvailability, setEmployeeAvailability] = useState<any>(null);
   const [loadingAvailability, setLoadingAvailability] = useState(false);
   const [searchFilter, setSearchFilter] = useState("");
+  const [timelineItems, setTimelineItems] = useState<VisualScheduleItem[]>([]);
 
   // Initialize with default dates
   const getDefaultDates = () => {
@@ -1316,6 +1319,11 @@ function BookingModal({
   });
   const [loading, setLoading] = useState(true);
 
+  const timelineWindow = (() => {
+    const start = startOfWeekISO(bookingData.startDate ? new Date(bookingData.startDate + 'T00:00:00') : new Date());
+    return { start, end: addDaysISO(start, 55) };
+  })();
+
   useEffect(() => {
     if (isOpen) {
       loadEmployees();
@@ -1327,8 +1335,48 @@ function BookingModal({
       setSelectedEmployee(null);
       setEmployeeAvailability(null);
       setSearchFilter("");
+      setTimelineItems([]);
     }
   }, [isOpen]);
+
+  useEffect(() => {
+    const loadTimeline = async () => {
+      if (!selectedEmployee) return;
+
+      try {
+        const [bookings, reservations] = await Promise.all([
+          projectAPI.getEmployeeBookings(selectedEmployee.id),
+          employeeAPI.getReservations(selectedEmployee.id, false),
+        ]);
+
+        const bookingItems: VisualScheduleItem[] = (Array.isArray(bookings) ? bookings : []).map((b: any) => ({
+          id: b.id,
+          kind: 'booking',
+          start_date: b.start_date,
+          end_date: b.end_date,
+          label: b.project_name || 'Booked',
+          sublabel: b.project_code,
+        }));
+
+        const reservationItems: VisualScheduleItem[] = (Array.isArray(reservations) ? reservations : []).map((r: any) => ({
+          id: r.id,
+          kind: 'reservation',
+          start_date: r.start_date,
+          end_date: r.end_date,
+          label: r.reason || 'Reserved',
+          sublabel: r.status === 'active' ? `${r.reserved_hours_per_day}h/day` : r.status,
+          status: r.status,
+        }));
+
+        setTimelineItems([...bookingItems, ...reservationItems]);
+      } catch (error) {
+        console.error('Error loading timeline data:', error);
+        setTimelineItems([]);
+      }
+    };
+
+    loadTimeline();
+  }, [selectedEmployee]);
 
   // Load employee availability when employee or dates change
   useEffect(() => {
@@ -1577,6 +1625,17 @@ function BookingModal({
                       {selectedEmployee.position} • {selectedEmployee.department}
                     </div>
                   </div>
+
+                  <VisualScheduleTimeline
+                    windowStart={timelineWindow.start}
+                    windowEnd={timelineWindow.end}
+                    selectionStart={bookingData.startDate}
+                    selectionEnd={bookingData.endDate}
+                    onSelectionChange={(start, end) => setBookingData({ ...bookingData, startDate: start, endDate: end })}
+                    rowLabel={selectedEmployee.full_name}
+                    rowSublabel={`${selectedEmployee.position} • ${selectedEmployee.department}`}
+                    items={timelineItems}
+                  />
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -2095,4 +2154,37 @@ function ProjectDetailsModal({
       </div>
     </Modal>
   );
+}
+
+function startOfWeekISO(date: Date): string {
+  const d = new Date(date);
+  d.setHours(0, 0, 0, 0);
+  const day = d.getDay();
+  const diffToMonday = (day + 6) % 7;
+  d.setDate(d.getDate() - diffToMonday);
+  return formatISODateLocal(d);
+}
+
+function addDaysISO(isoDate: string, days: number): string {
+  const parsed = parseISODateLocal(isoDate);
+  const d = parsed ? new Date(parsed) : new Date();
+  d.setDate(d.getDate() + days);
+  return formatISODateLocal(d);
+}
+
+function parseISODateLocal(value: string): Date | null {
+  if (!value || typeof value !== 'string') return null;
+  const [y, m, d] = value.split('-').map((n) => parseInt(n, 10));
+  if (!y || !m || !d) return null;
+  const date = new Date(y, m - 1, d);
+  if (Number.isNaN(date.getTime())) return null;
+  date.setHours(0, 0, 0, 0);
+  return date;
+}
+
+function formatISODateLocal(date: Date): string {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
 }
