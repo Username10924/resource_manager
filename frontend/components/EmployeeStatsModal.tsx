@@ -3,8 +3,8 @@ import Modal from './Modal';
 import { Card, CardContent, CardHeader, CardTitle } from './Card';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, Cell } from 'recharts';
 import { FaUser, FaBriefcase, FaEnvelope, FaBuilding, FaChartBar, FaClock, FaProjectDiagram, FaChevronRight } from 'react-icons/fa';
-import { employeeAPI, settingsAPI, Settings } from '@/lib/api';
-import { calculateMonthlyBookingHours } from '@/lib/utils';
+import { employeeAPI, settingsAPI, type Reservation, Settings } from '@/lib/api';
+import { calculateMonthlyBookingHours, calculateWorkingDays } from '@/lib/utils';
 
 interface EmployeeStatsModalProps {
   isOpen: boolean;
@@ -30,107 +30,241 @@ interface ProjectBooking {
   }>;
 }
 
-export default function EmployeeStatsModal({ isOpen, onClose, employee, size = '5xl' }: EmployeeStatsModalProps) {
-  const [selectedMonth, setSelectedMonth] = useState<{ month: number; year: number; monthName: string } | null>(null);
-  const [projectBookings, setProjectBookings] = useState<ProjectBooking[]>([]);
-  const [loadingProjects, setLoadingProjects] = useState(false);
-  const [settings, setSettings] = useState<Settings>({ work_hours_per_day: 6, work_days_per_month: 20, months_in_year: 12 });
+type MonthlyReservation = Reservation & {
+  monthly_hours: number;
+  overlap_working_days: number;
+};
 
-  // Fetch business rules settings when modal opens
-  useEffect(() => {
-    const fetchSettings = async () => {
-      try {
-        const fetchedSettings = await settingsAPI.getSettings();
-        setSettings(fetchedSettings);
-      } catch (error) {
-        console.error('Error fetching settings:', error);
-        // Keep default values if fetch fails
-      }
-    };
-    
-    if (isOpen) {
-      fetchSettings();
-    }
-  }, [isOpen]);
+function parseDateOnlyToLocal(value: string): Date {
+  // Backend emits YYYY-MM-DD (date-only). Parse as local midnight to avoid timezone shifts.
+  const [y, m, d] = value.split('-').map((n) => parseInt(n, 10));
+  const date = new Date(y, (m || 1) - 1, d || 1);
+  date.setHours(0, 0, 0, 0);
+  return date;
+}
 
-  if (!employee) return null;
+function overlapsMonth(startDate: string, endDate: string, month: number, year: number): boolean {
+  const start = parseDateOnlyToLocal(startDate);
+        {/* Month Details */}
+  const monthStart = new Date(year, month - 1, 1);
+  const monthEnd = new Date(year, month, 0);
+  monthStart.setHours(0, 0, 0, 0);
+  monthEnd.setHours(0, 0, 0, 0);
+  return start <= monthEnd && end >= monthStart;
+}
+                  Details - {selectedMonth.monthName} {selectedMonth.year}
+function calculateMonthlyReservationHours(reservation: Reservation, month: number, year: number): { hours: number; workingDays: number } {
+  const resStart = parseDateOnlyToLocal(reservation.start_date);
+  const resEnd = parseDateOnlyToLocal(reservation.end_date);
 
-  const formatHours = (value: number) => {
-    if (!Number.isFinite(value)) return '0h';
-    const rounded = Math.round(value * 10) / 10;
-    return `${rounded.toLocaleString(undefined, { maximumFractionDigits: 1 })}h`;
-  };
+  const monthStart = new Date(year, month - 1, 1);
+  const monthEnd = new Date(year, month, 0);
+  monthStart.setHours(0, 0, 0, 0);
+  monthEnd.setHours(0, 0, 0, 0);
 
-  const clampPercent = (value: number) => {
-    if (!Number.isFinite(value)) return 0;
-    return Math.max(0, Math.min(100, value));
-  };
+  const overlapStart = resStart > monthStart ? resStart : monthStart;
+              <div className="space-y-6">
+                <div>
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="text-sm font-semibold text-gray-700">Projects</h3>
+                    {loadingProjects ? <span className="text-xs text-gray-500">Loading...</span> : null}
+                  </div>
+                  {loadingProjects ? (
+                    <div className="py-4 text-center text-gray-500">Loading project details...</div>
+                  ) : projectBookings.length === 0 ? (
+                    <div className="py-4 text-center text-gray-500">No projects assigned for this month</div>
+                  ) : (
+                    <div className="space-y-4">
+                      {projectBookings.map((booking: ProjectBooking) => (
+                        <div key={booking.id} className="border rounded-lg p-4 hover:shadow-md transition-shadow bg-white">
+                          <div className="flex items-start justify-between mb-3">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-3 mb-2">
+                                <span className="font-semibold text-gray-700 text-lg">{booking.project_code}</span>
+                                <span
+                                  className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                                    booking.project_status === 'active'
+                                      ? 'bg-green-100 text-green-800'
+                                      : booking.project_status === 'completed'
+                                      ? 'bg-gray-100 text-gray-800'
+                                      : 'bg-gray-100 text-gray-800'
+                                  }`}
+                                >
+                                  {booking.project_status}
+                                </span>
+                              </div>
+                              <h4 className="text-gray-900 font-medium mb-1">{booking.project_name}</h4>
+                              <div className="text-xs text-gray-500 flex items-center gap-1 mt-2">
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                </svg>
+                                {new Date(booking.start_date).toLocaleDateString()} - {new Date(booking.end_date).toLocaleDateString()}
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <div className="text-2xl font-bold text-gray-900">{(booking as any).monthly_hours?.toFixed(1) || booking.booked_hours}h</div>
+                              <div className="text-xs text-gray-500">this month</div>
+                              {booking.booked_hours !== (booking as any).monthly_hours && (
+                                <div className="text-xs text-gray-400 mt-1">{booking.booked_hours}h total</div>
+                              )}
+                            </div>
+                          </div>
 
-  const getMonthlyData = () => {
-    if (!employee.schedule) return [];
-    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    const now = new Date();
-    const nowYear = now.getFullYear();
-    const nowMonth = now.getMonth() + 1;
-    
-    // Use business rules from backend instead of hardcoded values
-    const totalCapacity = settings.work_hours_per_day * settings.work_days_per_month;
-    
-    return employee.schedule.map((sched: any) => {
-      const projectBooked = sched.project_booked_hours || 0;
-      const reserved = sched.reserved_hours || 0;
-      const totalUtilized = sched.booked_hours || (projectBooked + reserved);
-      // Calculate actual available hours (capacity minus utilized)
-      const capacity = sched.available_hours_per_month || totalCapacity;
-      const actualAvailable = Math.max(0, capacity - projectBooked - reserved);
+                          {booking.attachments && booking.attachments.length > 0 && (
+                            <div className="mt-3 pt-3 border-t border-gray-100">
+                              <div className="text-xs font-medium text-gray-600 mb-2 flex items-center gap-1">
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                                </svg>
+                                Attachments ({booking.attachments.length})
+                              </div>
+                              <div className="flex flex-wrap gap-2">
+                                {booking.attachments.map((attachment, idx: number) => (
+                                  <a
+                                    key={idx}
+                                    href={`https://resource-manager-kg4d.onrender.com/${attachment.path}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gray-50 hover:bg-gray-100 text-gray-700 rounded-md text-xs font-medium transition-colors border border-gray-200"
+                                  >
+                                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 01.293-.707l5.414-5.414a1 1 0 01.707-.293H17a2 2 0 012 2v14a2 2 0 01-2 2z" />
+                                    </svg>
+                                    {attachment.filename}
+                                  </a>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      ))}
 
-      const isPastMonth =
-        typeof sched.year === 'number' && typeof sched.month === 'number'
-          ? sched.year < nowYear || (sched.year === nowYear && sched.month < nowMonth)
-          : false;
+                      <div className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-lg p-4 border-2 border-gray-200">
+                        <div className="flex items-center justify-between">
+                          <span className="text-gray-700 font-semibold text-lg">Total Project Hours for {selectedMonth?.monthName}</span>
+                          <span className="text-2xl font-bold text-gray-700">
+                            {projectBookings.reduce((sum, b) => sum + ((b as any).monthly_hours || b.booked_hours), 0).toFixed(1)}h
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
 
-      return {
-        month: monthNames[sched.month - 1],
-        monthNum: sched.month,
-        year: sched.year,
-        // Don't count past-month availability in totals (it's no longer usable).
-        available: isPastMonth ? 0 : actualAvailable,
-        booked: projectBooked,
-        reserved: reserved,
-        totalUtilized: totalUtilized,
-        utilization: clampPercent(totalCapacity > 0 ? (totalUtilized / totalCapacity) * 100 : 0),
-      };
-    });
+                <div className="border-t border-gray-100 pt-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="text-sm font-semibold text-gray-700">Reservations</h3>
+                    {loadingReservations ? <span className="text-xs text-gray-500">Loading...</span> : null}
+                  </div>
+                  {loadingReservations ? (
+                    <div className="py-4 text-center text-gray-500">Loading reservation details...</div>
+                  ) : monthlyReservations.length === 0 ? (
+                    <div className="py-4 text-center text-gray-500">No reservations for this month</div>
+                  ) : (
+                    <div className="space-y-3">
+                      {monthlyReservations.map((r) => (
+                        <div key={r.id} className="border rounded-lg p-4 bg-white">
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2">
+                                <span className="text-sm font-semibold text-gray-800">{r.reason?.trim() ? r.reason : 'Reserved'}</span>
+                                <span
+                                  className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
+                                    r.status === 'active'
+                                      ? 'bg-blue-100 text-blue-800'
+                                      : r.status === 'cancelled'
+                                      ? 'bg-gray-100 text-gray-700'
+                                      : 'bg-gray-100 text-gray-800'
+                                  }`}
+                                >
+                                  {r.status}
+                                </span>
+                              </div>
+                              <div className="mt-1 text-xs text-gray-500 flex items-center gap-2">
+                                <span>
+                                  {parseDateOnlyToLocal(r.start_date).toLocaleDateString()} - {parseDateOnlyToLocal(r.end_date).toLocaleDateString()}
+                                </span>
+                                <span>•</span>
+                                <span>{r.reserved_hours_per_day}h/day</span>
+                                <span>•</span>
+                                <span>{r.overlap_working_days} working days</span>
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <div className="text-xl font-bold text-gray-900">{r.monthly_hours.toFixed(1)}h</div>
+                              <div className="text-xs text-gray-500">this month</div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+
+                      <div className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-lg p-4 border-2 border-gray-200">
+                        <div className="flex items-center justify-between">
+                          <span className="text-gray-700 font-semibold text-lg">Total Reserved Hours for {selectedMonth?.monthName}</span>
+                          <span className="text-2xl font-bold text-gray-700">
+                            {monthlyReservations
+                              .filter((r) => r.status !== 'cancelled')
+                              .reduce((sum, r) => sum + (r.monthly_hours || 0), 0)
+                              .toFixed(1)}
+                            h
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
   };
 
   const loadProjectBookings = async (month: number, year: number, monthName: string) => {
-    setLoadingProjects(true);
     setSelectedMonth({ month, year, monthName });
-    try {
-      const bookings = await employeeAPI.getProjects(employee.id, month, year);
-      // Calculate actual monthly hours for each booking
+    setLoadingProjects(true);
+    setLoadingReservations(true);
+
+    const [bookingsResult, reservationsResult] = await Promise.allSettled([
+      employeeAPI.getProjects(employee.id, month, year),
+      employeeAPI.getReservations(employee.id, true),
+    ]);
+
+    if (bookingsResult.status === 'fulfilled') {
+      const bookings = bookingsResult.value;
       const bookingsWithMonthlyHours = bookings.map((booking: ProjectBooking) => ({
         ...booking,
-        monthly_hours: calculateMonthlyBookingHours(
-          booking.start_date,
-          booking.end_date,
-          booking.booked_hours,
-          month,
-          year
-        )
+        monthly_hours: calculateMonthlyBookingHours(booking.start_date, booking.end_date, booking.booked_hours, month, year),
       }));
       setProjectBookings(bookingsWithMonthlyHours as any);
-    } catch (error) {
-      console.error('Error loading project bookings:', error);
+    } else {
+      console.error('Error loading project bookings:', bookingsResult.reason);
       setProjectBookings([]);
-    } finally {
-      setLoadingProjects(false);
     }
+    setLoadingProjects(false);
+
+    if (reservationsResult.status === 'fulfilled') {
+      const reservations = Array.isArray(reservationsResult.value) ? (reservationsResult.value as Reservation[]) : [];
+      const filtered = reservations
+        .filter((r) => overlapsMonth(r.start_date, r.end_date, month, year))
+        .map((r) => {
+          const { hours, workingDays } = calculateMonthlyReservationHours(r, month, year);
+          return {
+            ...r,
+            monthly_hours: hours,
+            overlap_working_days: workingDays,
+          };
+        })
+        .sort((a, b) => (a.start_date > b.start_date ? 1 : a.start_date < b.start_date ? -1 : 0));
+
+      setMonthlyReservations(filtered);
+    } else {
+      console.error('Error loading reservations:', reservationsResult.reason);
+      setMonthlyReservations([]);
+    }
+    setLoadingReservations(false);
   };
 
   const handleCloseProjectDetails = () => {
     setSelectedMonth(null);
     setProjectBookings([]);
+    setMonthlyReservations([]);
   };
 
   const getUtilizationColor = (utilization: number) => {
