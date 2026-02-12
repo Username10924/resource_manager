@@ -36,6 +36,20 @@ async function fetchAPI(endpoint: string, options: RequestInit = {}) {
       const response = await fetch(url, config);
 
       if (!response.ok) {
+        // Auto-logout on expired/invalid credentials
+        if (response.status === 401 && typeof window !== 'undefined') {
+          try {
+            localStorage.removeItem('user');
+            localStorage.removeItem('access_token');
+          } catch {
+            // ignore
+          }
+          // Avoid infinite reload loops
+          if (window.location.pathname !== '/') {
+            window.location.href = '/';
+          }
+        }
+
         const error = await response.json().catch(() => ({ detail: "An error occurred" }));
         // FastAPI returns errors in 'detail' field, but also support 'message' for compatibility
         let errorMessage: string;
