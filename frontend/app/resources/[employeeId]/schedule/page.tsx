@@ -60,14 +60,17 @@ export default function EmployeeSchedulePage() {
     const load = async () => {
       setLoading(true);
       try {
-        const [emp, res, bks] = await Promise.all([
+        const yearStart = `${viewYear}-01-01`;
+        const yearEnd = `${viewYear}-12-31`;
+
+        const [emp, allReservations, yearAvailability] = await Promise.all([
           employeeAPI.getById(employeeId),
           employeeAPI.getReservations(employeeId, true),
-          dashboardAPI.getEmployeeBookings(employeeId),
+          employeeAPI.getAvailabilityForDateRange(employeeId, yearStart, yearEnd),
         ]);
         setEmployee(emp);
-        setReservations(Array.isArray(res) ? res : []);
-        setBookings(Array.isArray(bks) ? bks : []);
+        setReservations(Array.isArray(allReservations) ? allReservations : []);
+        setBookings(Array.isArray(yearAvailability?.bookings) ? yearAvailability.bookings : []);
 
         try {
           const fetched = await settingsAPI.getSettings();
@@ -84,7 +87,7 @@ export default function EmployeeSchedulePage() {
     };
 
     load();
-  }, [employeeId, router]);
+  }, [employeeId, router, viewYear]);
 
   const timelineItems: VisualScheduleItem[] = useMemo(
     () => [
@@ -134,12 +137,14 @@ export default function EmployeeSchedulePage() {
       await employeeAPI.createReservation(employee.id, reservationForm);
       toast.success('Reservation created');
 
-      const [res, bks] = await Promise.all([
+      const yearStart = `${viewYear}-01-01`;
+      const yearEnd = `${viewYear}-12-31`;
+      const [allReservations, yearAvailability] = await Promise.all([
         employeeAPI.getReservations(employee.id, true),
-        dashboardAPI.getEmployeeBookings(employee.id),
+        employeeAPI.getAvailabilityForDateRange(employee.id, yearStart, yearEnd),
       ]);
-      setReservations(Array.isArray(res) ? res : []);
-      setBookings(Array.isArray(bks) ? bks : []);
+      setReservations(Array.isArray(allReservations) ? allReservations : []);
+      setBookings(Array.isArray(yearAvailability?.bookings) ? yearAvailability.bookings : []);
 
       setReservationForm({
         start_date: todayISO,
@@ -182,8 +187,14 @@ export default function EmployeeSchedulePage() {
     try {
       await employeeAPI.deleteReservation(employee.id, reservationId);
       toast.success('Reservation deleted');
-      const res = await employeeAPI.getReservations(employee.id, true);
-      setReservations(Array.isArray(res) ? res : []);
+      const yearStart = `${viewYear}-01-01`;
+      const yearEnd = `${viewYear}-12-31`;
+      const [allReservations, yearAvailability] = await Promise.all([
+        employeeAPI.getReservations(employee.id, true),
+        employeeAPI.getAvailabilityForDateRange(employee.id, yearStart, yearEnd),
+      ]);
+      setReservations(Array.isArray(allReservations) ? allReservations : []);
+      setBookings(Array.isArray(yearAvailability?.bookings) ? yearAvailability.bookings : []);
     } catch (e: any) {
       console.error(e);
       toast.error(e?.message || 'Failed to delete reservation');

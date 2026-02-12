@@ -115,10 +115,16 @@ export default function ProjectBookingPage() {
       if (!selectedEmployee) return;
 
       try {
-        const [bookings, reservations] = await Promise.all([
-          dashboardAPI.getEmployeeBookings(selectedEmployee.id),
+        const yearStart = `${viewYear}-01-01`;
+        const yearEnd = `${viewYear}-12-31`;
+
+        const [yearAvailability, allReservations] = await Promise.all([
+          employeeAPI.getAvailabilityForDateRange(selectedEmployee.id, yearStart, yearEnd),
           employeeAPI.getReservations(selectedEmployee.id, true),
         ]);
+
+        const bookings = Array.isArray(yearAvailability?.bookings) ? yearAvailability.bookings : [];
+        const reservations = Array.isArray(allReservations) ? allReservations : [];
 
         const bookingItems: VisualScheduleItem[] = (Array.isArray(bookings) ? bookings : []).map((b: any) => ({
           id: b.id,
@@ -147,7 +153,7 @@ export default function ProjectBookingPage() {
     };
 
     loadTimeline();
-  }, [selectedEmployee]);
+  }, [selectedEmployee, viewYear]);
 
   const calculateWorkingDays = (startDate: string, endDate: string) => {
     if (!startDate || !endDate) return 0;
