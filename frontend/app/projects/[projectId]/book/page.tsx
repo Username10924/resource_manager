@@ -289,7 +289,9 @@ export default function ProjectBookingPage() {
                   </option>
                 ))}
             </select>
-            <div className="mt-2 text-xs text-gray-500">Selected: {bookingData.startDate} → {bookingData.endDate}</div>
+            <div className="mt-2 text-xs text-gray-500 whitespace-nowrap overflow-hidden text-ellipsis font-mono tabular-nums">
+              Selected: {bookingData.startDate} → {bookingData.endDate}
+            </div>
           </div>
 
           <Input

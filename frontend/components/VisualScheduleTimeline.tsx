@@ -54,6 +54,7 @@ export function VisualScheduleTimeline({
 
   const [pendingStart, setPendingStart] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
+  const dragMovedRef = useRef(false);
   const [contextMenu, setContextMenu] = useState<{ open: boolean; x: number; y: number }>(
     { open: false, x: 0, y: 0 }
   );
@@ -156,12 +157,14 @@ export function VisualScheduleTimeline({
 
   const handleDragStart = (dateKey: string) => {
     setIsDragging(true);
+    dragMovedRef.current = false;
     setPendingStart(dateKey);
     onSelectionChange(dateKey, dateKey);
   };
 
   const handleDragOver = (dateKey: string) => {
     if (!isDragging || !pendingStart) return;
+    if (dateKey !== pendingStart) dragMovedRef.current = true;
     const normalized = normalizeRange(pendingStart, dateKey);
     onSelectionChange(normalized.start, normalized.end);
   };
@@ -261,10 +264,12 @@ export function VisualScheduleTimeline({
                   compareISODate(key, selection.start) >= 0 &&
                   compareISODate(key, selection.end) <= 0;
 
+                const isSelectionStart = selection?.start === key;
+                const isSelectionEnd = selection?.end === key;
+
                 return (
                   <div
                     key={key}
-                    onClick={() => handleDayClick(key)}
                     onMouseDown={(e) => {
                       if (e.button === 2) return;
                       handleDragStart(key);
@@ -278,9 +283,9 @@ export function VisualScheduleTimeline({
                     }}
                     className={`h-full border-r border-gray-200 transition-colors cursor-crosshair select-none ${
                       isWeekend ? 'bg-gray-50' : 'bg-white'
-                    } ${isSelected ? 'bg-gray-100' : 'hover:bg-gray-50'} ${
+                    } ${isSelected ? 'bg-gray-200' : 'hover:bg-gray-50'} ${
                       pendingStart === key ? 'ring-2 ring-gray-400 ring-inset' : ''
-                    }`}
+                    } ${isSelectionStart || isSelectionEnd ? 'ring-2 ring-gray-500 ring-inset' : ''}`}
                     role="button"
                     aria-label={`Select ${key}`}
                   />

@@ -206,7 +206,9 @@ export default function EmployeeSchedulePage() {
               <div className="lg:col-span-2">
                 <div className="text-sm font-semibold text-gray-900">{employee.full_name}</div>
                 <div className="mt-0.5 text-xs text-gray-600">{employee.position} • {employee.department}</div>
-                <div className="mt-2 text-xs text-gray-500">Selected: {reservationForm.start_date} → {reservationForm.end_date}</div>
+                <div className="mt-2 text-xs text-gray-500 whitespace-nowrap overflow-hidden text-ellipsis font-mono tabular-nums">
+                  Selected: {reservationForm.start_date} → {reservationForm.end_date}
+                </div>
               </div>
               <Input
                 type="number"
