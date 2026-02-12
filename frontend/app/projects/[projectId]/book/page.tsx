@@ -41,6 +41,11 @@ export default function ProjectBookingPage() {
     ...getDefaultDates(),
   });
 
+  const [range, setRange] = useState(() => ({
+    start: getDefaultDates().startDate,
+    end: getDefaultDates().endDate,
+  }));
+
   const timelineWindow = useMemo(() => {
     const year = new Date().getFullYear();
     return { start: `${year}-01-01`, end: `${year}-12-31` };
@@ -69,6 +74,11 @@ export default function ProjectBookingPage() {
 
     load();
   }, [projectId, router]);
+
+  useEffect(() => {
+    // Keep visible range in sync when booking dates are updated (commit).
+    setRange({ start: bookingData.startDate, end: bookingData.endDate });
+  }, [bookingData.startDate, bookingData.endDate]);
 
   useEffect(() => {
     const loadEmployeeAvailability = async () => {
@@ -100,7 +110,7 @@ export default function ProjectBookingPage() {
       try {
         const [bookings, reservations] = await Promise.all([
           dashboardAPI.getEmployeeBookings(selectedEmployee.id),
-          employeeAPI.getReservations(selectedEmployee.id, false),
+          employeeAPI.getReservations(selectedEmployee.id, true),
         ]);
 
         const bookingItems: VisualScheduleItem[] = (Array.isArray(bookings) ? bookings : []).map((b: any) => ({
@@ -153,7 +163,7 @@ export default function ProjectBookingPage() {
     return workingDays;
   };
 
-  const workingDays = calculateWorkingDays(bookingData.startDate, bookingData.endDate);
+  const workingDays = calculateWorkingDays(range.start, range.end);
   const totalHours = workingDays * (bookingData.hoursPerDay || 0);
 
   const maxHoursFromAvailability = employeeAvailability?.availability?.available_hours ?? null;
@@ -290,7 +300,7 @@ export default function ProjectBookingPage() {
                 ))}
             </select>
             <div className="mt-2 text-xs text-gray-500 whitespace-nowrap overflow-hidden text-ellipsis font-mono tabular-nums">
-              Selected: {bookingData.startDate} → {bookingData.endDate}
+              Selected: {range.start} → {range.end}
             </div>
           </div>
 
@@ -332,9 +342,14 @@ export default function ProjectBookingPage() {
             <VisualScheduleTimeline
               windowStart={timelineWindow.start}
               windowEnd={timelineWindow.end}
-              selectionStart={bookingData.startDate}
-              selectionEnd={bookingData.endDate}
-              onSelectionChange={(start, end) => setBookingData({ ...bookingData, startDate: start, endDate: end })}
+              selectionStart={range.start}
+              selectionEnd={range.end}
+              onSelectionPreview={(start, end) => setRange({ start, end })}
+              onSelectionChange={(start, end) => {
+                setRange({ start, end });
+                setBookingData({ ...bookingData, startDate: start, endDate: end });
+              }}
+              commitSelectionOnMouseUp
               rowLabel={selectedEmployee.full_name}
               rowSublabel={`${selectedEmployee.position} • ${selectedEmployee.department}`}
               items={timelineItems}

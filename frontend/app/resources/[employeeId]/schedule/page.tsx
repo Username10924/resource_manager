@@ -56,7 +56,7 @@ export default function EmployeeSchedulePage() {
       try {
         const [emp, res, bks] = await Promise.all([
           employeeAPI.getById(employeeId),
-          employeeAPI.getReservations(employeeId, false),
+          employeeAPI.getReservations(employeeId, true),
           dashboardAPI.getEmployeeBookings(employeeId),
         ]);
         setEmployee(emp);
@@ -129,7 +129,7 @@ export default function EmployeeSchedulePage() {
       toast.success('Reservation created');
 
       const [res, bks] = await Promise.all([
-        employeeAPI.getReservations(employee.id, false),
+        employeeAPI.getReservations(employee.id, true),
         dashboardAPI.getEmployeeBookings(employee.id),
       ]);
       setReservations(Array.isArray(res) ? res : []);
@@ -176,7 +176,7 @@ export default function EmployeeSchedulePage() {
     try {
       await employeeAPI.deleteReservation(employee.id, reservationId);
       toast.success('Reservation deleted');
-      const res = await employeeAPI.getReservations(employee.id, false);
+      const res = await employeeAPI.getReservations(employee.id, true);
       setReservations(Array.isArray(res) ? res : []);
     } catch (e: any) {
       console.error(e);

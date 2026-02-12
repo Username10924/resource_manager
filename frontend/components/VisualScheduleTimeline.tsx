@@ -27,6 +27,8 @@ export function VisualScheduleTimeline({
   selectionStart,
   selectionEnd,
   onSelectionChange,
+  onSelectionPreview,
+  commitSelectionOnMouseUp,
   rowLabel,
   rowSublabel,
   items,
@@ -42,6 +44,8 @@ export function VisualScheduleTimeline({
   selectionStart: string;
   selectionEnd: string;
   onSelectionChange: (start: string, end: string) => void;
+  onSelectionPreview?: (start: string, end: string) => void;
+  commitSelectionOnMouseUp?: boolean;
   rowLabel: string;
   rowSublabel?: string;
   items: VisualScheduleItem[];
@@ -55,6 +59,7 @@ export function VisualScheduleTimeline({
   const CELL_WIDTH = cellWidth ?? 36;
   const LEFT_COL_WIDTH = leftColumnWidth ?? 240;
   const MIN_BODY_HEIGHT = minBodyHeight ?? 0;
+  const COMMIT_ON_MOUSE_UP = commitSelectionOnMouseUp ?? false;
 
   const [pendingStart, setPendingStart] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -244,33 +249,27 @@ export function VisualScheduleTimeline({
     }
   };
 
-  const handleDayClick = (dateKey: string) => {
-    if (!pendingStart) {
-      setPendingStart(dateKey);
-      onSelectionChange(dateKey, dateKey);
-      return;
-    }
-
-    const start = pendingStart;
-    const end = dateKey;
-    const normalized = normalizeRange(start, end);
-    setPendingStart(null);
-    onSelectionChange(normalized.start, normalized.end);
-  };
-
   const handleDragStart = (dateKey: string) => {
     setIsDragging(true);
     dragMovedRef.current = false;
     setPendingStart(dateKey);
     dragStartKeyRef.current = dateKey;
-    onSelectionChange(dateKey, dateKey);
+    if (COMMIT_ON_MOUSE_UP) {
+      onSelectionPreview?.(dateKey, dateKey);
+    } else {
+      onSelectionChange(dateKey, dateKey);
+    }
   };
 
   const handleDragOver = (dateKey: string) => {
     if (!isDragging || !pendingStart) return;
     if (dateKey !== pendingStart) dragMovedRef.current = true;
     const normalized = normalizeRange(pendingStart, dateKey);
-    onSelectionChange(normalized.start, normalized.end);
+    if (COMMIT_ON_MOUSE_UP) {
+      onSelectionPreview?.(normalized.start, normalized.end);
+    } else {
+      onSelectionChange(normalized.start, normalized.end);
+    }
   };
 
   const handleDragEnd = (dateKey?: string) => {
@@ -278,9 +277,16 @@ export function VisualScheduleTimeline({
     setIsDragging(false);
 
     if (!pendingStart) return;
-    if (dateKey) {
-      const normalized = normalizeRange(pendingStart, dateKey);
-      onSelectionChange(normalized.start, normalized.end);
+
+    const effectiveEndKey =
+      dateKey ?? (lastClientXRef.current !== null ? getDateKeyFromClientX(lastClientXRef.current) : null);
+    if (effectiveEndKey) {
+      const normalized = normalizeRange(pendingStart, effectiveEndKey);
+      if (COMMIT_ON_MOUSE_UP) {
+        onSelectionChange(normalized.start, normalized.end);
+      } else {
+        onSelectionChange(normalized.start, normalized.end);
+      }
     }
     setPendingStart(null);
     dragStartKeyRef.current = null;
@@ -387,6 +393,8 @@ export function VisualScheduleTimeline({
     };
   }, [contextMenu.open]);
 
+  const closeContextMenu = () => setContextMenu((c) => ({ ...c, open: false }));
+
   const openContextMenu = (x: number, y: number) => {
     setContextMenu({ open: true, x, y });
   };
@@ -396,6 +404,11 @@ export function VisualScheduleTimeline({
       <div
         ref={mainScrollRef}
         className="overflow-x-auto"
+        onMouseDownCapture={(e) => {
+          if (!contextMenu.open) return;
+          // Any left click inside the schedule closes the right-click menu.
+          if (e.button === 0) closeContextMenu();
+        }}
         onScroll={() => syncScroll(mainScrollRef.current, barScrollRef.current)}
         onWheel={handleWheel}
       >
@@ -482,6 +495,7 @@ export function VisualScheduleTimeline({
                     key={key}
                     onMouseDown={(e) => {
                       if (e.button === 2) return;
+                      if (contextMenu.open) closeContextMenu();
                       lastClientXRef.current = e.clientX;
                       handleDragStart(key);
                     }}
@@ -497,9 +511,11 @@ export function VisualScheduleTimeline({
                     }}
                     className={`h-full border-r border-gray-200 transition-colors cursor-crosshair select-none ${
                       isWeekend ? 'bg-gray-50' : 'bg-white'
-                    } ${isSelected ? 'bg-gray-200' : 'hover:bg-gray-50'} ${
-                      pendingStart === key ? 'ring-2 ring-gray-400 ring-inset' : ''
-                    } ${isSelectionStart || isSelectionEnd ? 'ring-2 ring-gray-500 ring-inset' : ''}`}
+                    } ${isSelected ? 'bg-gray-100' : 'hover:bg-gray-50'} ${
+                      pendingStart === key ? 'ring-2 ring-gray-400/70 ring-inset' : ''
+                    } ${
+                      isSelectionStart || isSelectionEnd ? 'ring-2 ring-gray-600/50 ring-inset' : ''
+                    }`}
                     role="button"
                     aria-label={`Select ${key}`}
                   />
@@ -509,7 +525,7 @@ export function VisualScheduleTimeline({
 
             {selectionOverlay ? (
               <div
-                className="absolute inset-y-0 pointer-events-none border-2 border-gray-600 rounded-sm"
+                className="absolute inset-y-2 pointer-events-none rounded-md ring-2 ring-gray-700/40 shadow-sm"
                 style={{ left: selectionOverlay.left, width: selectionOverlay.width }}
               />
             ) : null}
@@ -568,7 +584,7 @@ export function VisualScheduleTimeline({
                 type="button"
                 disabled={item.disabled}
                 onClick={() => {
-                  setContextMenu((c) => ({ ...c, open: false }));
+                  closeContextMenu();
                   item.onSelect();
                 }}
                 className={`w-full px-3 py-2 text-left text-sm transition-colors ${
