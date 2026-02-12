@@ -10,6 +10,60 @@ from models.project import Project
 
 router = APIRouter(prefix="/api/projects", tags=["projects"])
 
+# ALL BOOKINGS - Must come BEFORE /{project_id} to avoid route conflict
+@router.get("/all-bookings")
+async def get_all_bookings():
+    """Get all bookings across all projects"""
+    from database import db
+    from fastapi.responses import JSONResponse
+    
+    try:
+        query = '''
+            SELECT 
+                pb.id,
+                pb.project_id,
+                pb.employee_id,
+                pb.start_date,
+                pb.end_date,
+                pb.booked_hours,
+                pb.status,
+                p.name as project_name,
+                p.project_code,
+                e.full_name,
+                e.department,
+                e.position
+            FROM project_bookings pb
+            JOIN projects p ON pb.project_id = p.id
+            JOIN employees e ON pb.employee_id = e.id
+            ORDER BY pb.start_date DESC
+        '''
+        bookings = db.fetch_all(query)
+        
+        # Convert to simple list of dicts with explicit type conversion
+        result = []
+        for row in bookings:
+            result.append({
+                'id': int(row['id']),
+                'project_id': int(row['project_id']),
+                'employee_id': int(row['employee_id']),
+                'start_date': str(row['start_date']),
+                'end_date': str(row['end_date']),
+                'booked_hours': float(row['booked_hours']),
+                'status': str(row['status'] or 'booked'),
+                'project_name': str(row['project_name']),
+                'project_code': str(row['project_code']),
+                'full_name': str(row['full_name']),
+                'department': str(row['department']),
+                'position': str(row['position'])
+            })
+        
+        return JSONResponse(content=result)
+    except Exception as e:
+        print(f"Error in get_all_bookings: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+
 # Pydantic models
 class ProjectCreate(BaseModel):
     project_code: str
@@ -99,60 +153,6 @@ async def delete_project(project_id: int):
     if 'error' in result:
         raise HTTPException(status_code=404, detail=result['error'])
     return result
-
-# ALL BOOKINGS - Must come BEFORE /{project_id}/bookings to avoid route conflict
-@router.get("/all-bookings")
-async def get_all_bookings():
-    """Get all bookings across all projects"""
-    from database import db
-    from fastapi.responses import JSONResponse
-    
-    try:
-        query = '''
-            SELECT 
-                pb.id,
-                pb.project_id,
-                pb.employee_id,
-                pb.start_date,
-                pb.end_date,
-                pb.booked_hours,
-                pb.status,
-                p.name as project_name,
-                p.project_code,
-                e.full_name,
-                e.department,
-                e.position
-            FROM project_bookings pb
-            JOIN projects p ON pb.project_id = p.id
-            JOIN employees e ON pb.employee_id = e.id
-            ORDER BY pb.start_date DESC
-        '''
-        bookings = db.fetch_all(query)
-        
-        # Convert to simple list of dicts with explicit type conversion
-        result = []
-        for row in bookings:
-            result.append({
-                'id': int(row['id']),
-                'project_id': int(row['project_id']),
-                'employee_id': int(row['employee_id']),
-                'start_date': str(row['start_date']),
-                'end_date': str(row['end_date']),
-                'booked_hours': float(row['booked_hours']),
-                'status': str(row['status'] or 'booked'),
-                'project_name': str(row['project_name']),
-                'project_code': str(row['project_code']),
-                'full_name': str(row['full_name']),
-                'department': str(row['department']),
-                'position': str(row['position'])
-            })
-        
-        return JSONResponse(content=result)
-    except Exception as e:
-        print(f"Error in get_all_bookings: {str(e)}")
-        import traceback
-        traceback.print_exc()
-        raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/{project_id}/bookings", response_model=Dict[str, Any])
 async def book_employee(project_id: int, booking: BookingRequest):
