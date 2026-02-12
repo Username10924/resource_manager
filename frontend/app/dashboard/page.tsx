@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/Card";
 import Button from "@/components/Button";
 import Modal from "@/components/Modal";
 import { projectAPI, Booking, dashboardAPI, settingsAPI, Settings } from "@/lib/api";
-import { formatMonth, processEmployeeScheduleWithBookings } from "@/lib/utils";
+import { calculateMonthlyBookingHours, formatMonth, processEmployeeScheduleWithBookings } from "@/lib/utils";
 import StatsCard from "@/components/StatsCard";
 import { SkeletonDashboardCharts } from "@/components/Skeleton";
 import UtilizationChart from "@/components/charts/UtilizationChart";
@@ -283,7 +283,26 @@ export default function DashboardPage() {
             <StatsCard
               title="HOURS BOOKED"
               value={(() => {
-                // Calculate total project booked hours from all employees
+                // Primary source: sum from bookings (works even if schedules are missing/empty)
+                const currentYear = new Date().getFullYear();
+                if (Array.isArray(allBookings) && allBookings.length > 0) {
+                  let total = 0;
+                  for (const booking of allBookings) {
+                    if ((booking?.status || '').toLowerCase() === 'cancelled') continue;
+                    for (let month = 1; month <= 12; month++) {
+                      total += calculateMonthlyBookingHours(
+                        booking.start_date,
+                        booking.end_date,
+                        booking.booked_hours,
+                        month,
+                        currentYear
+                      );
+                    }
+                  }
+                  return Math.round(total).toLocaleString();
+                }
+
+                // Fallback: sum from employee schedules
                 let totalProjectBooked = 0;
                 Object.values(resourceData.departments).forEach((dept: any) => {
                   dept.employees.forEach((emp: any) => {
@@ -294,7 +313,7 @@ export default function DashboardPage() {
                     }
                   });
                 });
-                return totalProjectBooked.toLocaleString();
+                return Math.round(totalProjectBooked).toLocaleString();
               })()}
               trend={{ value: 36, isPositive: true }}
             />
