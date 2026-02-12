@@ -38,11 +38,17 @@ export default function EmployeeSchedulePage() {
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [viewYear, setViewYear] = useState(() => new Date().getFullYear());
 
   const timelineWindow = useMemo(() => {
-    const year = new Date().getFullYear();
-    return { start: `${year}-01-01`, end: `${year}-12-31` };
-  }, []);
+    return { start: `${viewYear}-01-01`, end: `${viewYear}-12-31` };
+  }, [viewYear]);
+
+  useEffect(() => {
+    // Keep selection anchored in the visible year when switching years.
+    const jan1 = `${viewYear}-01-01`;
+    setReservationForm((p) => ({ ...p, start_date: jan1, end_date: jan1 }));
+  }, [viewYear]);
 
   useEffect(() => {
     if (!Number.isFinite(employeeId)) {
@@ -193,6 +199,34 @@ export default function EmployeeSchedulePage() {
         </div>
 
         <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
+            <Button variant="secondary" onClick={() => setViewYear((y) => y - 1)}>
+              ‹
+            </Button>
+            <select
+              value={viewYear}
+              onChange={(e) => setViewYear(parseInt(e.target.value, 10))}
+              className="h-10 px-3 text-sm bg-white border border-gray-300 rounded-lg shadow-sm hover:border-gray-400 focus:outline-none focus:border-gray-400 focus:ring-2 focus:ring-gray-200 transition-all duration-200"
+            >
+              {Array.from({ length: 7 }).map((_, idx) => {
+                const year = new Date().getFullYear() - 3 + idx;
+                return (
+                  <option key={year} value={year}>
+                    {year}
+                  </option>
+                );
+              })}
+            </select>
+            <Button variant="secondary" onClick={() => setViewYear((y) => y + 1)}>
+              ›
+            </Button>
+          </div>
+          <Button
+            variant="secondary"
+            onClick={() => setReservationForm((p) => ({ ...p, start_date: todayISO, end_date: todayISO }))}
+          >
+            Clear Selection
+          </Button>
           <Button variant="secondary" onClick={() => router.push('/resources')}>Back</Button>
         </div>
       </div>

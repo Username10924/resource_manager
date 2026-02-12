@@ -23,6 +23,7 @@ export default function ProjectBookingPage() {
   const [employeeAvailability, setEmployeeAvailability] = useState<any>(null);
   const [loadingAvailability, setLoadingAvailability] = useState(false);
   const [timelineItems, setTimelineItems] = useState<VisualScheduleItem[]>([]);
+  const [viewYear, setViewYear] = useState(() => new Date().getFullYear());
 
   const [searchFilter, setSearchFilter] = useState('');
 
@@ -47,9 +48,15 @@ export default function ProjectBookingPage() {
   }));
 
   const timelineWindow = useMemo(() => {
-    const year = new Date().getFullYear();
-    return { start: `${year}-01-01`, end: `${year}-12-31` };
-  }, []);
+    return { start: `${viewYear}-01-01`, end: `${viewYear}-12-31` };
+  }, [viewYear]);
+
+  useEffect(() => {
+    // When switching years, reset selection to Jan 1 of that year (commit once).
+    const jan1 = `${viewYear}-01-01`;
+    setRange({ start: jan1, end: jan1 });
+    setBookingData((p) => ({ ...p, startDate: jan1, endDate: jan1 }));
+  }, [viewYear]);
 
   const [loading, setLoading] = useState(true);
 
@@ -271,7 +278,40 @@ export default function ProjectBookingPage() {
           <h1 className="text-3xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">Book Resources</h1>
           <p className="mt-2 text-sm text-gray-600">{project.name} • Click-drag to highlight, then right-click for actions</p>
         </div>
-        <Button variant="secondary" onClick={() => router.push('/projects')}>Back</Button>
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
+            <Button variant="secondary" onClick={() => setViewYear((y) => y - 1)}>
+              ‹
+            </Button>
+            <select
+              value={viewYear}
+              onChange={(e) => setViewYear(parseInt(e.target.value, 10))}
+              className="h-10 px-3 text-sm bg-white border border-gray-300 rounded-lg shadow-sm hover:border-gray-400 focus:outline-none focus:border-gray-400 focus:ring-2 focus:ring-gray-200 transition-all duration-200"
+            >
+              {Array.from({ length: 7 }).map((_, idx) => {
+                const year = new Date().getFullYear() - 3 + idx;
+                return (
+                  <option key={year} value={year}>
+                    {year}
+                  </option>
+                );
+              })}
+            </select>
+            <Button variant="secondary" onClick={() => setViewYear((y) => y + 1)}>
+              ›
+            </Button>
+          </div>
+          <Button
+            variant="secondary"
+            onClick={() => {
+              setRange((r) => ({ start: r.start, end: r.start }));
+              setBookingData((p) => ({ ...p, endDate: p.startDate }));
+            }}
+          >
+            Clear Selection
+          </Button>
+          <Button variant="secondary" onClick={() => router.push('/projects')}>Back</Button>
+        </div>
       </div>
 
       <div className="rounded-lg border border-gray-200 bg-white p-3">

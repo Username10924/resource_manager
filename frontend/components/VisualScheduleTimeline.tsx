@@ -78,8 +78,8 @@ export function VisualScheduleTimeline({
   const rafIdRef = useRef<number | null>(null);
 
   const days = useMemo(() => {
-    const start = parseISODate(windowStart);
-    const end = parseISODate(windowEnd);
+    const start = parseISODate(toDateKey(windowStart) ?? windowStart);
+    const end = parseISODate(toDateKey(windowEnd) ?? windowEnd);
     if (!start || !end) return [] as Date[];
 
     const result: Date[] = [];
@@ -142,8 +142,8 @@ export function VisualScheduleTimeline({
   const dayKeys = useMemo(() => days.map((d) => formatISODate(d)), [days]);
 
   const selection = useMemo(() => {
-    const start = parseISODate(selectionStart);
-    const end = parseISODate(selectionEnd);
+    const start = parseISODate(toDateKey(selectionStart) ?? selectionStart);
+    const end = parseISODate(toDateKey(selectionEnd) ?? selectionEnd);
     if (!start || !end) return null;
 
     const normalizedStart = start <= end ? start : end;
@@ -487,9 +487,6 @@ export function VisualScheduleTimeline({
                   compareISODate(key, selection.start) >= 0 &&
                   compareISODate(key, selection.end) <= 0;
 
-                const isSelectionStart = selection?.start === key;
-                const isSelectionEnd = selection?.end === key;
-
                 return (
                   <div
                     key={key}
@@ -511,11 +508,7 @@ export function VisualScheduleTimeline({
                     }}
                     className={`h-full border-r border-gray-200 transition-colors cursor-crosshair select-none ${
                       isWeekend ? 'bg-gray-50' : 'bg-white'
-                    } ${isSelected ? 'bg-gray-100' : 'hover:bg-gray-50'} ${
-                      pendingStart === key ? 'ring-2 ring-gray-400/70 ring-inset' : ''
-                    } ${
-                      isSelectionStart || isSelectionEnd ? 'ring-2 ring-gray-600/50 ring-inset' : ''
-                    }`}
+                    } ${isSelected ? 'bg-gray-100' : 'hover:bg-gray-50'}`}
                     role="button"
                     aria-label={`Select ${key}`}
                   />
@@ -544,7 +537,7 @@ export function VisualScheduleTimeline({
                     key={`${item.kind}-${item.id}`}
                     className={`absolute overflow-hidden whitespace-nowrap text-ellipsis rounded-md border px-2 py-1 text-[11px] ${classes}`}
                     style={{ left, top, width }}
-                    title={`${item.label} (${item.start_date} → ${item.end_date})`}
+                    title={`${item.label} (${toDateKey(item.start_date) ?? item.start_date} → ${toDateKey(item.end_date) ?? item.end_date})`}
                   >
                     <span className="font-semibold">{item.label}</span>
                     {item.sublabel ? <span className="ml-1 opacity-80">• {item.sublabel}</span> : null}
@@ -640,6 +633,16 @@ function parseISODate(value: string): Date | null {
   return new Date(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate());
 }
 
+function toDateKey(value: unknown): string | null {
+  if (!value) return null;
+  if (value instanceof Date) return formatISODate(value);
+  if (typeof value !== 'string') return null;
+
+  // Accept YYYY-MM-DD or timestamps like YYYY-MM-DDTHH:mm:ss / YYYY-MM-DD HH:mm:ss
+  const match = value.match(/\d{4}-\d{2}-\d{2}/);
+  return match ? match[0] : null;
+}
+
 function formatISODate(date: Date): string {
   const y = date.getFullYear();
   const m = String(date.getMonth() + 1).padStart(2, '0');
@@ -658,13 +661,15 @@ function normalizeRange(a: string, b: string) {
 }
 
 function clipToWindow(item: VisualScheduleItem, windowStart: string, windowEnd: string) {
-  const start = item.start_date;
-  const end = item.end_date;
+  const start = toDateKey(item.start_date);
+  const end = toDateKey(item.end_date);
+  const wStart = toDateKey(windowStart) ?? windowStart;
+  const wEnd = toDateKey(windowEnd) ?? windowEnd;
   if (!start || !end) return null;
 
   const normalized = normalizeRange(start, end);
-  const visibleStart = compareISODate(normalized.start, windowStart) < 0 ? windowStart : normalized.start;
-  const visibleEnd = compareISODate(normalized.end, windowEnd) > 0 ? windowEnd : normalized.end;
+  const visibleStart = compareISODate(normalized.start, wStart) < 0 ? wStart : normalized.start;
+  const visibleEnd = compareISODate(normalized.end, wEnd) > 0 ? wEnd : normalized.end;
 
   if (compareISODate(visibleStart, visibleEnd) > 0) return null;
 
