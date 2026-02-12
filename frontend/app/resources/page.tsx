@@ -211,6 +211,7 @@ export default function ResourcesPage() {
                             variant="ghost"
                             size="sm"
                             onClick={() => router.push(`/resources/${employee.id}/schedule`)}
+                            className="text-gray-700 hover:text-gray-900 underline underline-offset-4 hover:bg-gray-50"
                           >
                             Manage Schedule
                           </Button>

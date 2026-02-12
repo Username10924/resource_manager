@@ -19,6 +19,7 @@ export default function ReservationsOverviewPage() {
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [reservations, setReservations] = useState<ReservationRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [deletingKey, setDeletingKey] = useState<string | null>(null);
 
   useEffect(() => {
     const load = async () => {
@@ -52,6 +53,23 @@ export default function ReservationsOverviewPage() {
 
     load();
   }, []);
+
+  const handleDelete = async (employeeId: number, reservationId: number) => {
+    const confirmed = window.confirm('Are you sure you want to delete this reservation?');
+    if (!confirmed) return;
+
+    const key = `${employeeId}-${reservationId}`;
+    setDeletingKey(key);
+    try {
+      await employeeAPI.deleteReservation(employeeId, reservationId);
+      setReservations((prev) => prev.filter((r) => !(r.employee_id === employeeId && r.id === reservationId)));
+    } catch (e: any) {
+      console.error(e);
+      alert(e?.message || 'Failed to delete reservation');
+    } finally {
+      setDeletingKey(null);
+    }
+  };
 
   const sorted = useMemo(() => {
     return reservations
@@ -113,9 +131,24 @@ export default function ReservationsOverviewPage() {
                       </span>
                     </td>
                     <td className="px-6 py-4 text-right">
-                      <Button variant="ghost" size="sm" onClick={() => router.push(`/resources/${r.employee_id}/schedule`)}>
-                        Open Schedule
-                      </Button>
+                      <div className="flex items-center justify-end gap-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => router.push(`/resources/${r.employee_id}/schedule`)}
+                        >
+                          Open Schedule
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDelete(r.employee_id, r.id)}
+                          disabled={deletingKey === `${r.employee_id}-${r.id}`}
+                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                        >
+                          {deletingKey === `${r.employee_id}-${r.id}` ? 'Deleting…' : 'Delete'}
+                        </Button>
+                      </div>
                     </td>
                   </tr>
                 ))}
