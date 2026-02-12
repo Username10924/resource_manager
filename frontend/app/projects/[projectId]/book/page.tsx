@@ -306,9 +306,13 @@ export default function ProjectBookingPage() {
           />
 
           <div className="rounded-lg bg-gray-50 border border-gray-200 p-3">
-            <div className="text-xs text-gray-700">Working days: <span className="font-semibold">{workingDays}</span></div>
-            <div className="text-xs text-gray-700 mt-1">Total hours: <span className="font-semibold">{totalHours.toFixed(1)}h</span></div>
-            <div className={`text-xs mt-1 ${totalHours > maxHours ? 'text-red-700' : 'text-gray-700'}`}>
+            <div className="text-xs text-gray-700 font-mono tabular-nums whitespace-nowrap">
+              Working days: <span className="font-semibold">{workingDays}</span>
+            </div>
+            <div className="text-xs text-gray-700 mt-1 font-mono tabular-nums whitespace-nowrap">
+              Total hours: <span className="font-semibold">{totalHours.toFixed(1)}h</span>
+            </div>
+            <div className={`text-xs mt-1 font-mono tabular-nums whitespace-nowrap ${totalHours > maxHours ? 'text-red-700' : 'text-gray-700'}`}>
               Available to book: <span className="font-semibold">{maxHours}h</span>
             </div>
             {loadingAvailability ? <div className="text-xs text-gray-500 mt-2">Checking availability...</div> : null}

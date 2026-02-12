@@ -132,6 +132,22 @@ export function VisualScheduleTimeline({
     return lanes;
   }, [items, dayKeys, windowStart, windowEnd]);
 
+  const selectionOverlay = useMemo(() => {
+    if (!selection) return null;
+    const startIndexByDay = new Map(dayKeys.map((k, idx) => [k, idx]));
+    const startIdx = startIndexByDay.get(selection.start);
+    const endIdx = startIndexByDay.get(selection.end);
+    if (startIdx === undefined || endIdx === undefined) return null;
+
+    const normalizedStartIdx = Math.min(startIdx, endIdx);
+    const normalizedEndIdx = Math.max(startIdx, endIdx);
+
+    return {
+      left: normalizedStartIdx * CELL_WIDTH,
+      width: (normalizedEndIdx - normalizedStartIdx + 1) * CELL_WIDTH,
+    };
+  }, [selection, dayKeys, CELL_WIDTH]);
+
   const laneCount = Math.max(1, laneLayout.length);
   const timelineHeight = 12 + laneCount * 26;
   const bodyHeight = Math.max(timelineHeight, MIN_BODY_HEIGHT);
@@ -292,6 +308,13 @@ export function VisualScheduleTimeline({
                 );
               })}
             </div>
+
+            {selectionOverlay ? (
+              <div
+                className="absolute inset-y-0 pointer-events-none border-2 border-gray-600 rounded-sm"
+                style={{ left: selectionOverlay.left, width: selectionOverlay.width }}
+              />
+            ) : null}
 
             {/* Bars */}
             {laneLayout.map((lane, laneIndex) =>

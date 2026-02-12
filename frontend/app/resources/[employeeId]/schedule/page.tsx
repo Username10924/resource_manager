@@ -233,8 +233,10 @@ export default function EmployeeSchedulePage() {
                 placeholder="Vacation, training..."
               />
             </div>
-            <div className="mt-2 text-xs text-gray-600">
-              Working days: <span className="font-semibold">{workingDays}</span> • Total reserved: <span className="font-semibold">{totalReservedHours.toFixed(1)}h</span> • Available/day: <span className="font-semibold">{availableHoursPerDay.toFixed(1)}h</span>
+            <div className="mt-2 text-xs text-gray-600 whitespace-nowrap overflow-hidden text-ellipsis font-mono tabular-nums">
+              Working days: <span className="font-semibold">{workingDays}</span> • Total reserved:{' '}
+              <span className="font-semibold">{totalReservedHours.toFixed(1)}h</span> • Available/day:{' '}
+              <span className="font-semibold">{availableHoursPerDay.toFixed(1)}h</span>
             </div>
           </div>
 
