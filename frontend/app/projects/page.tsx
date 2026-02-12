@@ -1345,7 +1345,7 @@ function BookingModal({
 
       try {
         const [bookings, reservations] = await Promise.all([
-          projectAPI.getEmployeeBookings(selectedEmployee.id),
+          dashboardAPI.getEmployeeBookings(selectedEmployee.id),
           employeeAPI.getReservations(selectedEmployee.id, false),
         ]);
 

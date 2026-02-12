@@ -329,7 +329,7 @@ function ScheduleModal({
     try {
       const [reservationData, bookingData] = await Promise.all([
         employeeAPI.getReservations(employee.id, false),
-        projectAPI.getEmployeeBookings(employee.id),
+        dashboardAPI.getEmployeeBookings(employee.id),
       ]);
       setReservations(reservationData);
       setBookings(Array.isArray(bookingData) ? bookingData : []);
