@@ -257,8 +257,6 @@ export default function EmployeeSchedulePage() {
                 leftColumnWidth={320}
                 minBodyHeight={520}
                 contextMenuItems={contextMenuItems}
-                stickyScrollbar
-                wheelToHorizontal
               />
             </div>
           </div>

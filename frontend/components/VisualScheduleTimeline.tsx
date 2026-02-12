@@ -68,6 +68,10 @@ export function VisualScheduleTimeline({
   const barScrollRef = useRef<HTMLDivElement | null>(null);
   const syncingScrollRef = useRef(false);
 
+  const dragStartKeyRef = useRef<string | null>(null);
+  const lastClientXRef = useRef<number | null>(null);
+  const rafIdRef = useRef<number | null>(null);
+
   const days = useMemo(() => {
     const start = parseISODate(windowStart);
     const end = parseISODate(windowEnd);
@@ -258,6 +262,7 @@ export function VisualScheduleTimeline({
     setIsDragging(true);
     dragMovedRef.current = false;
     setPendingStart(dateKey);
+    dragStartKeyRef.current = dateKey;
     onSelectionChange(dateKey, dateKey);
   };
 
@@ -278,14 +283,88 @@ export function VisualScheduleTimeline({
       onSelectionChange(normalized.start, normalized.end);
     }
     setPendingStart(null);
+    dragStartKeyRef.current = null;
+    lastClientXRef.current = null;
+    if (rafIdRef.current) {
+      cancelAnimationFrame(rafIdRef.current);
+      rafIdRef.current = null;
+    }
+  };
+
+  const getDateKeyFromClientX = (clientX: number): string | null => {
+    const scroller = mainScrollRef.current;
+    if (!scroller) return null;
+
+    const rect = scroller.getBoundingClientRect();
+    const xInViewport = clientX - rect.left;
+    // Convert to scroll-content coordinates.
+    const xInContent = scroller.scrollLeft + xInViewport;
+    const xInDays = xInContent - LEFT_COL_WIDTH;
+    const index = Math.floor(xInDays / CELL_WIDTH);
+    if (Number.isNaN(index)) return null;
+    const clamped = Math.max(0, Math.min(dayKeys.length - 1, index));
+    return dayKeys[clamped] ?? null;
+  };
+
+  const updateDragSelectionAndAutoScroll = () => {
+    rafIdRef.current = null;
+    if (!isDragging) return;
+    const scroller = mainScrollRef.current;
+    const startKey = dragStartKeyRef.current;
+    const clientX = lastClientXRef.current;
+    if (!scroller || !startKey || clientX === null) return;
+
+    const rect = scroller.getBoundingClientRect();
+    const edgeThreshold = 48;
+    const maxStep = 28;
+    let delta = 0;
+
+    if (clientX > rect.right - edgeThreshold) {
+      const t = Math.min(1, (clientX - (rect.right - edgeThreshold)) / edgeThreshold);
+      delta = Math.ceil(4 + t * maxStep);
+    } else if (clientX < rect.left + edgeThreshold) {
+      const t = Math.min(1, ((rect.left + edgeThreshold) - clientX) / edgeThreshold);
+      delta = -Math.ceil(4 + t * maxStep);
+    }
+
+    if (delta !== 0) {
+      scroller.scrollLeft += delta;
+      syncScroll(scroller, barScrollRef.current);
+    }
+
+    const currentKey = getDateKeyFromClientX(clientX);
+    if (currentKey) {
+      const normalized = normalizeRange(startKey, currentKey);
+      onSelectionChange(normalized.start, normalized.end);
+    }
+
+    rafIdRef.current = requestAnimationFrame(updateDragSelectionAndAutoScroll);
   };
 
   useEffect(() => {
-    const onMouseUp = () => handleDragEnd();
+    if (!isDragging) return;
+
+    const onMouseMove = (e: MouseEvent) => {
+      lastClientXRef.current = e.clientX;
+      if (!rafIdRef.current) {
+        rafIdRef.current = requestAnimationFrame(updateDragSelectionAndAutoScroll);
+      }
+    };
+
+    const onMouseUp = () => {
+      handleDragEnd();
+    };
+
+    window.addEventListener('mousemove', onMouseMove);
     window.addEventListener('mouseup', onMouseUp);
-    return () => window.removeEventListener('mouseup', onMouseUp);
+    return () => {
+      window.removeEventListener('mousemove', onMouseMove);
+      window.removeEventListener('mouseup', onMouseUp);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isDragging, pendingStart]);
+  }, [isDragging]);
+
+  // (mouseup handled in the drag effect above)
 
   useEffect(() => {
     if (!contextMenu.open) return;
@@ -403,9 +482,13 @@ export function VisualScheduleTimeline({
                     key={key}
                     onMouseDown={(e) => {
                       if (e.button === 2) return;
+                      lastClientXRef.current = e.clientX;
                       handleDragStart(key);
                     }}
-                    onMouseEnter={() => handleDragOver(key)}
+                    onMouseEnter={() => {
+                      if (!isDragging) return;
+                      handleDragOver(key);
+                    }}
                     onMouseUp={() => handleDragEnd(key)}
                     onContextMenu={(e) => {
                       e.preventDefault();
