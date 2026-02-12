@@ -69,6 +69,9 @@ export default function EmployeeStatsModal({ isOpen, onClose, employee, size = '
   const getMonthlyData = () => {
     if (!employee.schedule) return [];
     const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const now = new Date();
+    const nowYear = now.getFullYear();
+    const nowMonth = now.getMonth() + 1;
     
     // Use business rules from backend instead of hardcoded values
     const totalCapacity = settings.work_hours_per_day * settings.work_days_per_month;
@@ -80,11 +83,18 @@ export default function EmployeeStatsModal({ isOpen, onClose, employee, size = '
       // Calculate actual available hours (capacity minus utilized)
       const capacity = sched.available_hours_per_month || totalCapacity;
       const actualAvailable = Math.max(0, capacity - projectBooked - reserved);
+
+      const isPastMonth =
+        typeof sched.year === 'number' && typeof sched.month === 'number'
+          ? sched.year < nowYear || (sched.year === nowYear && sched.month < nowMonth)
+          : false;
+
       return {
         month: monthNames[sched.month - 1],
         monthNum: sched.month,
         year: sched.year,
-        available: actualAvailable,
+        // Don't count past-month availability in totals (it's no longer usable).
+        available: isPastMonth ? 0 : actualAvailable,
         booked: projectBooked,
         reserved: reserved,
         totalUtilized: totalUtilized,
@@ -225,6 +235,12 @@ export default function EmployeeStatsModal({ isOpen, onClose, employee, size = '
                     backgroundColor: 'white', 
                     border: '1px solid #e5e7eb',
                     borderRadius: '8px',
+                  }}
+                  formatter={(value: any, name: any) => {
+                    const num = typeof value === 'number' ? value : Number(value);
+                    if (!Number.isFinite(num)) return ['0h', name];
+                    const rounded = Math.round(num * 10) / 10;
+                    return [`${rounded.toLocaleString(undefined, { maximumFractionDigits: 1 })}h`, name];
                   }}
                 />
                 <Legend />

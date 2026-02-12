@@ -587,9 +587,18 @@ export default function DashboardPage() {
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
                   {data.employees.map((emp: any) => {
                     const empSchedule = emp.schedule || [];
+                    const now = new Date();
+                    const nowYear = now.getFullYear();
+                    const nowMonth = now.getMonth() + 1;
                     // Calculate actual available hours (remaining after bookings and reservations)
                     const totalAvailable = empSchedule.reduce(
                       (sum: number, s: any) => {
+                        const isPastMonth =
+                          typeof s.year === 'number' && typeof s.month === 'number'
+                            ? s.year < nowYear || (s.year === nowYear && s.month < nowMonth)
+                            : false;
+                        if (isPastMonth) return sum;
+
                         const capacity = s.available_hours_per_month || 0;
                         const projectBooked = s.project_booked_hours || 0;
                         const reserved = s.reserved_hours || 0;
