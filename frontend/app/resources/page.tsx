@@ -364,7 +364,8 @@ function ScheduleModal({
     
     while (currentDate <= end) {
       const dayOfWeek = currentDate.getDay();
-      if (dayOfWeek !== 0 && dayOfWeek !== 6) {
+      // Weekend: Friday (5) and Saturday (6). Sunday is a workday.
+      if (dayOfWeek !== 5 && dayOfWeek !== 6) {
         count++;
       }
       currentDate.setDate(currentDate.getDate() + 1);

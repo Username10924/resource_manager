@@ -75,6 +75,54 @@ export function VisualScheduleTimeline({
     return result;
   }, [windowStart, windowEnd]);
 
+  const monthSegments = useMemo(() => {
+    if (days.length === 0) return [] as Array<{ key: string; label: string; count: number }>;
+
+    const startYear = days[0].getFullYear();
+    const endYear = days[days.length - 1].getFullYear();
+    const includeYear = startYear !== endYear;
+
+    const segs: Array<{ key: string; label: string; count: number }> = [];
+    let currentKey = `${days[0].getFullYear()}-${days[0].getMonth()}`;
+    let currentCount = 0;
+
+    for (const d of days) {
+      const key = `${d.getFullYear()}-${d.getMonth()}`;
+      if (key !== currentKey) {
+        const [yStr, mStr] = currentKey.split('-');
+        const y = Number(yStr);
+        const m = Number(mStr);
+        const labelDate = new Date(y, m, 1);
+        segs.push({
+          key: currentKey,
+          label: labelDate.toLocaleDateString(undefined, {
+            month: 'short',
+            ...(includeYear ? { year: 'numeric' } : null),
+          } as Intl.DateTimeFormatOptions),
+          count: currentCount,
+        });
+        currentKey = key;
+        currentCount = 0;
+      }
+      currentCount += 1;
+    }
+
+    const [yStr, mStr] = currentKey.split('-');
+    const y = Number(yStr);
+    const m = Number(mStr);
+    const labelDate = new Date(y, m, 1);
+    segs.push({
+      key: currentKey,
+      label: labelDate.toLocaleDateString(undefined, {
+        month: 'short',
+        ...(includeYear ? { year: 'numeric' } : null),
+      } as Intl.DateTimeFormatOptions),
+      count: currentCount,
+    });
+
+    return segs;
+  }, [days]);
+
   const dayKeys = useMemo(() => days.map((d) => formatISODate(d)), [days]);
 
   const selection = useMemo(() => {
@@ -236,29 +284,56 @@ export function VisualScheduleTimeline({
           className="grid border-b border-gray-200 bg-gray-50"
           style={{ gridTemplateColumns }}
         >
-          <div className="sticky left-0 z-10 border-r border-gray-200 bg-gray-50 px-4 py-3">
+          <div className="sticky left-0 z-10 border-r border-gray-200 bg-gray-50 px-4 py-3" style={{ gridRow: 'span 2' }}>
             <div className="text-sm font-semibold text-gray-900">{rowLabel}</div>
             {rowSublabel ? <div className="mt-0.5 text-xs text-gray-600">{rowSublabel}</div> : null}
             <div className="mt-2 text-[11px] text-gray-500">Click a start day, then an end day</div>
           </div>
 
-          {days.map((d) => {
-            const key = formatISODate(d);
-            const isWeekend = d.getDay() === 0 || d.getDay() === 6;
-            return (
+          <div
+            className="grid border-b border-gray-200"
+            style={{
+              gridColumn: '2 / -1',
+              gridTemplateColumns: `repeat(${days.length}, ${CELL_WIDTH}px)`,
+            }}
+          >
+            {monthSegments.map((seg) => (
               <div
-                key={key}
-                className={`border-r border-gray-200 px-1 py-2 text-center ${
-                  isWeekend ? 'bg-gray-100/50' : ''
-                }`}
+                key={seg.key}
+                className="px-2 py-1 text-[11px] font-semibold text-gray-700 border-r border-gray-200"
+                style={{ gridColumn: `span ${seg.count}` }}
+                title={seg.label}
               >
-                <div className="text-[10px] font-medium text-gray-500">
-                  {d.toLocaleDateString(undefined, { weekday: 'short' })}
-                </div>
-                <div className="text-xs font-semibold text-gray-700">{d.getDate()}</div>
+                {seg.label}
               </div>
-            );
-          })}
+            ))}
+          </div>
+
+          <div
+            className="grid"
+            style={{
+              gridColumn: '2 / -1',
+              gridTemplateColumns: `repeat(${days.length}, ${CELL_WIDTH}px)`,
+            }}
+          >
+            {days.map((d) => {
+              const key = formatISODate(d);
+              const isWeekend = d.getDay() === 5 || d.getDay() === 6; // Friday/Saturday
+              return (
+                <div
+                  key={key}
+                  className={`border-r border-gray-200 px-1 py-2 text-center ${
+                    isWeekend ? 'bg-gray-100/50' : ''
+                  }`}
+                >
+                  <div className="text-[10px] font-medium text-gray-500">
+                    {d.toLocaleDateString(undefined, { weekday: 'short' })}
+                  </div>
+                  <div className="text-xs font-semibold text-gray-700">{d.getDate()}</div>
+                </div>
+              );
+            })}
+          </div>
         </div>
 
         <div className="grid" style={{ gridTemplateColumns }}>
@@ -274,7 +349,7 @@ export function VisualScheduleTimeline({
             <div className="absolute inset-0 grid" style={{ gridTemplateColumns: `repeat(${days.length}, ${CELL_WIDTH}px)` }}>
               {days.map((d) => {
                 const key = formatISODate(d);
-                const isWeekend = d.getDay() === 0 || d.getDay() === 6;
+                const isWeekend = d.getDay() === 5 || d.getDay() === 6; // Friday/Saturday
                 const isSelected =
                   selection &&
                   compareISODate(key, selection.start) >= 0 &&

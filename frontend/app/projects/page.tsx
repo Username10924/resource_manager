@@ -1430,7 +1430,8 @@ function BookingModal({
     while (current <= end) {
       const dayOfWeek = current.getDay();
       // Count weekdays (Monday = 1 to Friday = 5)
-      if (dayOfWeek !== 0 && dayOfWeek !== 6) {
+      // Weekend: Friday (5) and Saturday (6). Sunday is a workday.
+      if (dayOfWeek !== 5 && dayOfWeek !== 6) {
         workingDays++;
       }
       current.setDate(current.getDate() + 1);

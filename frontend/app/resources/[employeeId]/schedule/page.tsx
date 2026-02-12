@@ -40,8 +40,8 @@ export default function EmployeeSchedulePage() {
   const [saving, setSaving] = useState(false);
 
   const timelineWindow = useMemo(() => {
-    const start = startOfWeekISO(new Date());
-    return { start, end: addDaysISO(start, 83) };
+    const year = new Date().getFullYear();
+    return { start: `${year}-01-01`, end: `${year}-12-31` };
   }, []);
 
   useEffect(() => {
@@ -253,7 +253,7 @@ export default function EmployeeSchedulePage() {
                 rowLabel={employee.full_name}
                 rowSublabel={`${employee.position} • ${employee.department}`}
                 items={timelineItems}
-                cellWidth={56}
+                cellWidth={28}
                 leftColumnWidth={320}
                 minBodyHeight={520}
                 contextMenuItems={contextMenuItems}
@@ -280,7 +280,8 @@ function calculateWorkingDays(startDate: string, endDate: string): number {
   const current = new Date(start);
   while (current <= end) {
     const day = current.getDay();
-    if (day !== 0 && day !== 6) count++;
+    // Weekend: Friday (5) and Saturday (6). Sunday is a workday.
+    if (day !== 5 && day !== 6) count++;
     current.setDate(current.getDate() + 1);
   }
 

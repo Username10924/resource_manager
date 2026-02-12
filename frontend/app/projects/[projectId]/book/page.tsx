@@ -42,10 +42,9 @@ export default function ProjectBookingPage() {
   });
 
   const timelineWindow = useMemo(() => {
-    const base = bookingData.startDate ? new Date(bookingData.startDate + 'T00:00:00') : new Date();
-    const start = startOfWeekISO(base);
-    return { start, end: addDaysISO(start, 83) };
-  }, [bookingData.startDate]);
+    const year = new Date().getFullYear();
+    return { start: `${year}-01-01`, end: `${year}-12-31` };
+  }, []);
 
   const [loading, setLoading] = useState(true);
 
@@ -146,7 +145,8 @@ export default function ProjectBookingPage() {
 
     while (current <= end) {
       const dayOfWeek = current.getDay();
-      if (dayOfWeek !== 0 && dayOfWeek !== 6) workingDays++;
+      // Weekend: Friday (5) and Saturday (6). Sunday is a workday.
+      if (dayOfWeek !== 5 && dayOfWeek !== 6) workingDays++;
       current.setDate(current.getDate() + 1);
     }
 
@@ -315,7 +315,9 @@ export default function ProjectBookingPage() {
             <div className={`text-xs mt-1 font-mono tabular-nums whitespace-nowrap ${totalHours > maxHours ? 'text-red-700' : 'text-gray-700'}`}>
               Available to book: <span className="font-semibold">{maxHours}h</span>
             </div>
-            {loadingAvailability ? <div className="text-xs text-gray-500 mt-2">Checking availability...</div> : null}
+            <div className="text-xs text-gray-500 mt-2 h-4">
+              {loadingAvailability ? 'Checking availability...' : <span className="invisible">Checking availability...</span>}
+            </div>
           </div>
         </div>
       </div>
@@ -336,7 +338,7 @@ export default function ProjectBookingPage() {
               rowLabel={selectedEmployee.full_name}
               rowSublabel={`${selectedEmployee.position} • ${selectedEmployee.department}`}
               items={timelineItems}
-              cellWidth={56}
+              cellWidth={28}
               leftColumnWidth={320}
               minBodyHeight={520}
               contextMenuItems={contextMenuItems}

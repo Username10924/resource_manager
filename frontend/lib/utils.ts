@@ -53,7 +53,8 @@ export function calculateWorkingDays(startDate: Date, endDate: Date): number {
   
   while (current <= endDate) {
     const dayOfWeek = current.getDay();
-    if (dayOfWeek !== 0 && dayOfWeek !== 6) {
+    // Weekend: Friday (5) and Saturday (6). Sunday is a workday.
+    if (dayOfWeek !== 5 && dayOfWeek !== 6) {
       count++;
     }
     current.setDate(current.getDate() + 1);
