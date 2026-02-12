@@ -72,6 +72,12 @@ export default function DashboardPage() {
   const [settings, setSettings] = useState<Settings>({ work_hours_per_day: 6, work_days_per_month: 20, months_in_year: 12 });
   const { user } = useAuth();
 
+  const formatHours = (value: number) => {
+    if (!Number.isFinite(value)) return '0h';
+    const rounded = Math.round(value * 10) / 10;
+    return `${rounded.toLocaleString(undefined, { maximumFractionDigits: 1 })}h`;
+  };
+
   // Fetch business rules settings
   useEffect(() => {
     const fetchSettings = async () => {
@@ -160,7 +166,7 @@ export default function DashboardPage() {
       month: monthNames[parseInt(month) - 1],
       available: data.total_available,
       utilized: data.total_booked, // Note: This is total utilized (booked + reserved)
-      utilization: data.utilization_rate,
+      utilization: Math.min(100, Math.max(0, data.utilization_rate)),
     }));
   };
 
@@ -168,7 +174,7 @@ export default function DashboardPage() {
     if (!resourceData) return [];
     return Object.entries(resourceData.monthly_summary).map(([month, data]) => ({
       month: monthNames[parseInt(month) - 1],
-      utilization: data.utilization_rate,
+      utilization: Math.min(100, Math.max(0, data.utilization_rate)),
     }));
   };
 
@@ -324,7 +330,7 @@ export default function DashboardPage() {
                 const months = Object.values(resourceData.monthly_summary);
                 const avgUtil =
                   months.reduce((sum, m) => sum + m.utilization_rate, 0) / months.length;
-                return avgUtil.toFixed(1);
+                return Math.min(100, Math.max(0, avgUtil)).toFixed(1);
               })()}%`}
               trend={{ value: 36, isPositive: true }}
             />
@@ -605,6 +611,7 @@ export default function DashboardPage() {
                       0
                     );
                     const utilization = totalCapacity > 0 ? (totalUtilized / totalCapacity) * 100 : 0;
+                    const utilizationCapped = Math.min(100, Math.max(0, utilization));
 
                     return (
                       <button
@@ -633,7 +640,7 @@ export default function DashboardPage() {
                           <div className="flex justify-between text-sm">
                             <span className="text-gray-500">Utilization</span>
                             <span className="font-semibold text-gray-900">
-                              {utilization.toFixed(1)}%
+                              {utilizationCapped.toFixed(1)}%
                             </span>
                           </div>
                           <div className="h-2 w-full rounded-full bg-gray-100">
@@ -651,8 +658,8 @@ export default function DashboardPage() {
                             />
                           </div>
                           <div className="flex justify-between text-xs text-gray-500">
-                            <span>{totalBooked}h booked</span>
-                            <span>{totalAvailable}h available</span>
+                            <span>{formatHours(totalBooked)} booked</span>
+                            <span>{formatHours(totalAvailable)} available</span>
                           </div>
                         </div>
 

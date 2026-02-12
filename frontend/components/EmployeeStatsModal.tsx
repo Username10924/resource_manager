@@ -55,6 +55,17 @@ export default function EmployeeStatsModal({ isOpen, onClose, employee, size = '
 
   if (!employee) return null;
 
+  const formatHours = (value: number) => {
+    if (!Number.isFinite(value)) return '0h';
+    const rounded = Math.round(value * 10) / 10;
+    return `${rounded.toLocaleString(undefined, { maximumFractionDigits: 1 })}h`;
+  };
+
+  const clampPercent = (value: number) => {
+    if (!Number.isFinite(value)) return 0;
+    return Math.max(0, Math.min(100, value));
+  };
+
   const getMonthlyData = () => {
     if (!employee.schedule) return [];
     const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -77,9 +88,7 @@ export default function EmployeeStatsModal({ isOpen, onClose, employee, size = '
         booked: projectBooked,
         reserved: reserved,
         totalUtilized: totalUtilized,
-        utilization: totalCapacity > 0 
-          ? (totalUtilized / totalCapacity) * 100 
-          : 0,
+        utilization: clampPercent(totalCapacity > 0 ? (totalUtilized / totalCapacity) * 100 : 0),
       };
     });
   };
@@ -128,7 +137,7 @@ export default function EmployeeStatsModal({ isOpen, onClose, employee, size = '
   const totalUtilized = monthlyData.reduce((sum: number, m: any) => sum + m.totalUtilized, 0);
   const monthlyCapacity = settings.work_hours_per_day * settings.work_days_per_month;
   const totalCapacity = monthlyCapacity * monthlyData.length;
-  const avgUtilization = totalCapacity > 0 ? (totalUtilized / totalCapacity) * 100 : 0;
+  const avgUtilization = clampPercent(totalCapacity > 0 ? (totalUtilized / totalCapacity) * 100 : 0);
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Employee Statistics" size={size}>
@@ -163,7 +172,7 @@ export default function EmployeeStatsModal({ isOpen, onClose, employee, size = '
             <CardContent className="pt-4">
               <div className="text-center">
                 <div className="text-sm font-medium text-gray-600">Total Available</div>
-                <div className="mt-1 text-2xl font-bold text-gray-600">{totalAvailable}h</div>
+                <div className="mt-1 text-2xl font-bold text-gray-600">{formatHours(totalAvailable)}</div>
               </div>
             </CardContent>
           </Card>
@@ -171,7 +180,7 @@ export default function EmployeeStatsModal({ isOpen, onClose, employee, size = '
             <CardContent className="pt-4">
               <div className="text-center">
                 <div className="text-sm font-medium text-gray-600">Project Booked</div>
-                <div className="mt-1 text-2xl font-bold text-green-600">{totalBooked}h</div>
+                <div className="mt-1 text-2xl font-bold text-green-600">{formatHours(totalBooked)}</div>
               </div>
             </CardContent>
           </Card>
@@ -179,7 +188,7 @@ export default function EmployeeStatsModal({ isOpen, onClose, employee, size = '
             <CardContent className="pt-4">
               <div className="text-center">
                 <div className="text-sm font-medium text-gray-600">Reserved Hours</div>
-                <div className="mt-1 text-2xl font-bold text-blue-600">{totalReserved}h</div>
+                <div className="mt-1 text-2xl font-bold text-blue-600">{formatHours(totalReserved)}</div>
               </div>
             </CardContent>
           </Card>
@@ -290,9 +299,9 @@ export default function EmployeeStatsModal({ isOpen, onClose, employee, size = '
                       onClick={() => loadProjectBookings(data.monthNum, data.year, data.month)}
                     >
                       <td className="px-4 py-2 font-medium text-gray-900">{data.month}</td>
-                      <td className="px-4 py-2 text-right text-gray-600">{data.available}h</td>
-                      <td className="px-4 py-2 text-right text-gray-600">{data.booked}h</td>
-                      <td className="px-4 py-2 text-right text-gray-600">{data.reserved}h</td>
+                      <td className="px-4 py-2 text-right text-gray-600">{formatHours(data.available)}</td>
+                      <td className="px-4 py-2 text-right text-gray-600">{formatHours(data.booked)}</td>
+                      <td className="px-4 py-2 text-right text-gray-600">{formatHours(data.reserved)}</td>
                       <td className="px-4 py-2 text-right">
                         <span 
                           className="inline-flex items-center rounded-full px-2 py-1 text-xs font-medium"
