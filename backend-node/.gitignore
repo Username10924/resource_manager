@@ -1,0 +1,7 @@
+node_modules/
+database/*.db
+uploads/projects/*
+!uploads/projects/.gitkeep
+config.json
+.env
+*.log
