@@ -48,6 +48,9 @@ export function cn(...classes: (string | boolean | undefined | null)[]): string 
 
 // Helper function to calculate working days between two dates (excluding weekends)
 export function calculateWorkingDays(startDate: Date, endDate: Date): number {
+  if (!(startDate instanceof Date) || Number.isNaN(startDate.getTime())) return 0;
+  if (!(endDate instanceof Date) || Number.isNaN(endDate.getTime())) return 0;
+
   let count = 0;
   const current = new Date(startDate);
   
@@ -63,6 +66,32 @@ export function calculateWorkingDays(startDate: Date, endDate: Date): number {
   return count;
 }
 
+function toDateKey(value: unknown): string | null {
+  if (!value) return null;
+  if (value instanceof Date && !Number.isNaN(value.getTime())) {
+    const y = value.getFullYear();
+    const m = String(value.getMonth() + 1).padStart(2, '0');
+    const d = String(value.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  }
+  if (typeof value !== 'string') return null;
+
+  // Accept YYYY-MM-DD and timestamps like YYYY-MM-DDTHH:mm:ss or YYYY-MM-DD HH:mm:ss
+  const match = value.match(/\d{4}-\d{2}-\d{2}/);
+  return match ? match[0] : null;
+}
+
+function parseDateInput(value: unknown): Date | null {
+  const key = toDateKey(value);
+  if (!key) return null;
+  const [y, m, d] = key.split('-').map((n) => parseInt(n, 10));
+  if (!y || !m || !d) return null;
+  const date = new Date(y, m - 1, d);
+  if (Number.isNaN(date.getTime())) return null;
+  date.setHours(0, 0, 0, 0);
+  return date;
+}
+
 // Calculate hours allocated to a specific month from a booking
 export function calculateMonthlyBookingHours(
   bookingStartDate: string,
@@ -71,8 +100,9 @@ export function calculateMonthlyBookingHours(
   targetMonth: number,
   targetYear: number
 ): number {
-  const bookingStart = new Date(bookingStartDate);
-  const bookingEnd = new Date(bookingEndDate);
+  const bookingStart = parseDateInput(bookingStartDate);
+  const bookingEnd = parseDateInput(bookingEndDate);
+  if (!bookingStart || !bookingEnd) return 0;
   
   // Calculate total working days in booking period
   const totalWorkingDays = calculateWorkingDays(bookingStart, bookingEnd);

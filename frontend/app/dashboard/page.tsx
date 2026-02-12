@@ -289,6 +289,7 @@ export default function DashboardPage() {
                   let total = 0;
                   for (const booking of allBookings) {
                     if ((booking?.status || '').toLowerCase() === 'cancelled') continue;
+                    if (typeof booking?.booked_hours !== 'number') continue;
                     for (let month = 1; month <= 12; month++) {
                       total += calculateMonthlyBookingHours(
                         booking.start_date,
