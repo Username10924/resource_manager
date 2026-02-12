@@ -316,6 +316,9 @@ export default function ProjectBookingPage() {
           >
             Clear Selection
           </Button>
+          <Button onClick={handleBooking}>
+            Create Booking
+          </Button>
           <Button variant="secondary" onClick={() => router.push('/projects')}>Back</Button>
         </div>
       </div>

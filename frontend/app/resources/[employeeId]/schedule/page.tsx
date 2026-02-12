@@ -36,6 +36,10 @@ export default function EmployeeSchedulePage() {
     reason: '',
   });
 
+  const [range, setRange] = useState(() => ({ start: todayISO, end: nextMonthISO }));
+  const [selectionAvailability, setSelectionAvailability] = useState<any>(null);
+  const [loadingAvailability, setLoadingAvailability] = useState(false);
+
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [viewYear, setViewYear] = useState(() => new Date().getFullYear());
@@ -89,6 +93,35 @@ export default function EmployeeSchedulePage() {
     load();
   }, [employeeId, router, viewYear]);
 
+  useEffect(() => {
+    // Keep visible range in sync when committed reservation dates update.
+    setRange({ start: reservationForm.start_date, end: reservationForm.end_date });
+  }, [reservationForm.start_date, reservationForm.end_date]);
+
+  useEffect(() => {
+    const loadAvailability = async () => {
+      if (!Number.isFinite(employeeId)) return;
+      if (!reservationForm.start_date || !reservationForm.end_date) return;
+
+      setLoadingAvailability(true);
+      try {
+        const data = await employeeAPI.getAvailabilityForDateRange(
+          employeeId,
+          reservationForm.start_date,
+          reservationForm.end_date
+        );
+        setSelectionAvailability(data);
+      } catch (e) {
+        console.error(e);
+        setSelectionAvailability(null);
+      } finally {
+        setLoadingAvailability(false);
+      }
+    };
+
+    loadAvailability();
+  }, [employeeId, reservationForm.start_date, reservationForm.end_date]);
+
   const timelineItems: VisualScheduleItem[] = useMemo(
     () => [
       ...bookings.map((b: any) => ({
@@ -112,15 +145,24 @@ export default function EmployeeSchedulePage() {
     [bookings, reservations]
   );
 
-  const workingDays = useMemo(
-    () => calculateWorkingDays(reservationForm.start_date, reservationForm.end_date),
-    [reservationForm.start_date, reservationForm.end_date]
-  );
-  const totalReservedHours = workingDays * (reservationForm.reserved_hours_per_day || 0);
-  const availableHoursPerDay = settings.work_hours_per_day - (reservationForm.reserved_hours_per_day || 0);
+  const workingDays = selectionAvailability?.availability?.working_days ?? calculateWorkingDays(reservationForm.start_date, reservationForm.end_date);
+  const maxHoursTotal = selectionAvailability?.availability?.max_hours_total ?? null;
+  const utilizedHours = selectionAvailability?.availability?.total_utilized_hours ?? 0;
+  const bookedHours = selectionAvailability?.availability?.total_booked_hours ?? 0;
+  const reservedHours = selectionAvailability?.availability?.total_reserved_hours ?? 0;
+  const availableHours = selectionAvailability?.availability?.available_hours ?? null;
+
+  const requestedTotalHours = workingDays * (reservationForm.reserved_hours_per_day || 0);
+  const remainingAfterRequest =
+    availableHours !== null ? Math.max(0, availableHours - requestedTotalHours) : null;
 
   const handleCreateReservation = async () => {
     if (!employee) return;
+
+    if (typeof reservationForm.reserved_hours_per_day !== 'number' || reservationForm.reserved_hours_per_day <= 0) {
+      toast.error('Please enter reserved hours per day');
+      return;
+    }
 
     if (!reservationForm.start_date || !reservationForm.end_date) {
       toast.error('Please select both start and end dates');
@@ -146,6 +188,17 @@ export default function EmployeeSchedulePage() {
       setReservations(Array.isArray(allReservations) ? allReservations : []);
       setBookings(Array.isArray(yearAvailability?.bookings) ? yearAvailability.bookings : []);
 
+      try {
+        const updatedRangeAvailability = await employeeAPI.getAvailabilityForDateRange(
+          employee.id,
+          reservationForm.start_date,
+          reservationForm.end_date
+        );
+        setSelectionAvailability(updatedRangeAvailability);
+      } catch {
+        // ignore
+      }
+
       setReservationForm({
         start_date: todayISO,
         end_date: nextMonthISO,
@@ -162,12 +215,13 @@ export default function EmployeeSchedulePage() {
 
   const contextMenuItems = useMemo(() => {
     const hasValidHours = typeof reservationForm.reserved_hours_per_day === 'number' && reservationForm.reserved_hours_per_day > 0;
+    const withinCapacity = availableHours === null ? true : requestedTotalHours <= availableHours;
 
     return [
       {
         id: 'create-reservation',
         label: 'Create reservation for selected range',
-        disabled: saving || !hasValidHours || workingDays <= 0,
+        disabled: saving || !hasValidHours || workingDays <= 0 || !withinCapacity,
         onSelect: handleCreateReservation,
       },
       {
@@ -176,7 +230,7 @@ export default function EmployeeSchedulePage() {
         onSelect: () => setReservationForm((p) => ({ ...p, start_date: todayISO, end_date: todayISO })),
       },
     ];
-  }, [handleCreateReservation, reservationForm.reserved_hours_per_day, saving, todayISO, workingDays]);
+  }, [availableHours, handleCreateReservation, requestedTotalHours, reservationForm.reserved_hours_per_day, saving, todayISO, workingDays]);
 
   const handleDeleteReservation = async (reservationId: number) => {
     if (!employee) return;
@@ -238,6 +292,9 @@ export default function EmployeeSchedulePage() {
           >
             Clear Selection
           </Button>
+          <Button onClick={handleCreateReservation} disabled={saving}>
+            {saving ? 'Creating…' : 'Create Reservation'}
+          </Button>
           <Button variant="secondary" onClick={() => router.push('/resources')}>Back</Button>
         </div>
       </div>
@@ -252,7 +309,7 @@ export default function EmployeeSchedulePage() {
                 <div className="text-sm font-semibold text-gray-900">{employee.full_name}</div>
                 <div className="mt-0.5 text-xs text-gray-600">{employee.position} • {employee.department}</div>
                 <div className="mt-2 text-xs text-gray-500 whitespace-nowrap overflow-hidden text-ellipsis font-mono tabular-nums">
-                  Selected: {reservationForm.start_date} → {reservationForm.end_date}
+                  Selected: {range.start} → {range.end}
                 </div>
               </div>
               <Input
@@ -279,9 +336,27 @@ export default function EmployeeSchedulePage() {
               />
             </div>
             <div className="mt-2 text-xs text-gray-600 whitespace-nowrap overflow-hidden text-ellipsis font-mono tabular-nums">
-              Working days: <span className="font-semibold">{workingDays}</span> • Total reserved:{' '}
-              <span className="font-semibold">{totalReservedHours.toFixed(1)}h</span> • Available/day:{' '}
-              <span className="font-semibold">{availableHoursPerDay.toFixed(1)}h</span>
+              Working days: <span className="font-semibold">{workingDays}</span>
+              {maxHoursTotal !== null ? (
+                <>
+                  {' '}• Max: <span className="font-semibold">{maxHoursTotal}h</span>
+                </>
+              ) : null}
+              {' '}• Utilized: <span className="font-semibold">{utilizedHours}h</span>
+              {bookedHours > 0 ? <> (Booked {bookedHours}h)</> : null}
+              {reservedHours > 0 ? <> (Reserved {reservedHours}h)</> : null}
+              {availableHours !== null ? (
+                <>
+                  {' '}• Available: <span className="font-semibold">{availableHours}h</span>
+                </>
+              ) : null}
+              {' '}• Request: <span className="font-semibold">{requestedTotalHours.toFixed(1)}h</span>
+              {remainingAfterRequest !== null ? (
+                <>
+                  {' '}• Remaining: <span className="font-semibold">{remainingAfterRequest.toFixed(1)}h</span>
+                </>
+              ) : null}
+              <span className="ml-2 text-gray-500">{loadingAvailability ? 'Checking availability…' : ''}</span>
             </div>
           </div>
 
@@ -290,11 +365,14 @@ export default function EmployeeSchedulePage() {
               <VisualScheduleTimeline
                 windowStart={timelineWindow.start}
                 windowEnd={timelineWindow.end}
-                selectionStart={reservationForm.start_date}
-                selectionEnd={reservationForm.end_date}
-                onSelectionChange={(start, end) =>
-                  setReservationForm((prev) => ({ ...prev, start_date: start, end_date: end }))
-                }
+                selectionStart={range.start}
+                selectionEnd={range.end}
+                onSelectionPreview={(start, end) => setRange({ start, end })}
+                onSelectionChange={(start, end) => {
+                  setRange({ start, end });
+                  setReservationForm((prev) => ({ ...prev, start_date: start, end_date: end }));
+                }}
+                commitSelectionOnMouseUp
                 rowLabel={employee.full_name}
                 rowSublabel={`${employee.position} • ${employee.department}`}
                 items={timelineItems}

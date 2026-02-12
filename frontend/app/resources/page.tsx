@@ -109,9 +109,14 @@ export default function ResourcesPage() {
                 Manage employee schedules and availability
               </p>
             </div>
-            <Button onClick={() => setIsAddEmployeeModalOpen(true)}>
-              Add Employee
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button variant="secondary" onClick={() => router.push('/resources/reservations')}>
+                Manage Reservations
+              </Button>
+              <Button onClick={() => setIsAddEmployeeModalOpen(true)}>
+                Add Employee
+              </Button>
+            </div>
           </div>
         </div>
 
