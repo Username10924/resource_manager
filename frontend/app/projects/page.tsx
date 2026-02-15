@@ -976,6 +976,8 @@ function EditProjectModal({
     status: project.status,
     progress: project.progress,
     solution_architect_id: (project as any).solution_architect_id || 0,
+    start_date: (project as any).start_date || "",
+    end_date: (project as any).end_date || "",
   });
 
   useEffect(() => {
@@ -988,6 +990,8 @@ function EditProjectModal({
         status: project.status,
         progress: project.progress,
         solution_architect_id: (project as any).solution_architect_id || 0,
+        start_date: (project as any).start_date || "",
+        end_date: (project as any).end_date || "",
       });
       setAttachments([]);
     }
@@ -1004,9 +1008,21 @@ function EditProjectModal({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (formData.start_date && formData.end_date && formData.end_date < formData.start_date) {
+      alert("Project end date must be after or equal to start date");
+      return;
+    }
+
     try {
-      console.log("[EDIT] Updating project with formData:", formData);
-      await projectAPI.update(project.id, formData);
+      const payload = {
+        ...formData,
+        start_date: formData.start_date || null,
+        end_date: formData.end_date || null,
+      };
+
+      console.log("[EDIT] Updating project with formData:", payload);
+      await projectAPI.update(project.id, payload);
 
       // Upload new attachments if any
       if (attachments.length > 0) {
@@ -1105,6 +1121,22 @@ function EditProjectModal({
             value={formData.description}
             onChange={(e) => setFormData({ ...formData, description: e.target.value })}
             required
+          />
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <Input
+            label="Start Date"
+            type="date"
+            value={formData.start_date}
+            onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
+          />
+
+          <Input
+            label="End Date"
+            type="date"
+            value={formData.end_date}
+            onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
           />
         </div>
 

@@ -18,6 +18,8 @@ export default function ProjectBookingPage() {
   const projectId = Number(params.projectId);
 
   const [project, setProject] = useState<Project | null>(null);
+  const projectStartDate = project?.start_date || null;
+  const projectEndDate = project?.end_date || null;
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
 
@@ -58,9 +60,10 @@ export default function ProjectBookingPage() {
     const yearEnd = `${viewYear}-12-31`;
     const todayIso = formatISODateLocal(new Date());
     const start = todayIso < yearStart ? yearStart : todayIso > yearEnd ? yearEnd : todayIso;
-    setRange({ start, end: start });
-    setBookingData((p) => ({ ...p, startDate: start, endDate: start }));
-  }, [viewYear]);
+    const bounded = clampRangeToBounds(start, start, projectStartDate, projectEndDate);
+    setRange(bounded);
+    setBookingData((p) => ({ ...p, startDate: bounded.start, endDate: bounded.end }));
+  }, [viewYear, projectStartDate, projectEndDate]);
 
   const [loading, setLoading] = useState(true);
 
@@ -76,6 +79,9 @@ export default function ProjectBookingPage() {
         const [proj, emps] = await Promise.all([projectAPI.getById(projectId), employeeAPI.getAll()]);
         setProject(proj);
         setEmployees(Array.isArray(emps) ? emps : []);
+        const defaults = getDefaultDatesWithinBounds(proj.start_date || null, proj.end_date || null);
+        setRange({ start: defaults.startDate, end: defaults.endDate });
+        setBookingData((prev) => ({ ...prev, startDate: defaults.startDate, endDate: defaults.endDate }));
       } catch (e) {
         console.error(e);
       } finally {
@@ -215,6 +221,16 @@ export default function ProjectBookingPage() {
       return;
     }
 
+    if (projectStartDate && bookingData.startDate < projectStartDate) {
+      alert(`Booking start date cannot be before project start date (${formatDisplayDate(projectStartDate)})`);
+      return;
+    }
+
+    if (projectEndDate && bookingData.endDate > projectEndDate) {
+      alert(`Booking end date cannot be after project end date (${formatDisplayDate(projectEndDate)})`);
+      return;
+    }
+
     if (totalHours > maxHours) {
       if (utilizedHours > 0) {
         alert(
@@ -327,6 +343,19 @@ export default function ProjectBookingPage() {
         </div>
       </div>
 
+      <div className="rounded-xl border border-gray-200 bg-gradient-to-r from-gray-50 to-white p-4">
+        <div className="flex flex-wrap items-center gap-3">
+          <span className="text-xs font-semibold uppercase tracking-wide text-gray-500">Project Timeline</span>
+          <span className="inline-flex items-center rounded-full border border-gray-200 bg-white px-3 py-1 text-sm font-medium text-gray-700">
+            Start: {formatDisplayDate(projectStartDate)}
+          </span>
+          <span className="inline-flex items-center rounded-full border border-gray-200 bg-white px-3 py-1 text-sm font-medium text-gray-700">
+            End: {formatDisplayDate(projectEndDate)}
+          </span>
+        </div>
+        <p className="mt-2 text-xs text-gray-500">Bookings are only allowed within this project date range.</p>
+      </div>
+
       <div className="rounded-lg border border-gray-200 bg-white p-3">
         <div className="grid grid-cols-1 gap-3 lg:grid-cols-4">
           <div className="lg:col-span-2">
@@ -362,8 +391,9 @@ export default function ProjectBookingPage() {
               onChange={(start, end) => {
                 const normalizedStart = start <= end ? start : end;
                 const normalizedEnd = start <= end ? end : start;
-                setRange({ start: normalizedStart, end: normalizedEnd });
-                setBookingData((prev) => ({ ...prev, startDate: normalizedStart, endDate: normalizedEnd }));
+                const bounded = clampRangeToBounds(normalizedStart, normalizedEnd, projectStartDate, projectEndDate);
+                setRange(bounded);
+                setBookingData((prev) => ({ ...prev, startDate: bounded.start, endDate: bounded.end }));
               }}
             />
           </div>
@@ -408,10 +438,14 @@ export default function ProjectBookingPage() {
               windowEnd={timelineWindow.end}
               selectionStart={range.start}
               selectionEnd={range.end}
-              onSelectionPreview={(start, end) => setRange({ start, end })}
+              onSelectionPreview={(start, end) => {
+                const bounded = clampRangeToBounds(start, end, projectStartDate, projectEndDate);
+                setRange(bounded);
+              }}
               onSelectionChange={(start, end) => {
-                setRange({ start, end });
-                setBookingData({ ...bookingData, startDate: start, endDate: end });
+                const bounded = clampRangeToBounds(start, end, projectStartDate, projectEndDate);
+                setRange(bounded);
+                setBookingData({ ...bookingData, startDate: bounded.start, endDate: bounded.end });
               }}
               commitSelectionOnMouseUp
               rowLabel={selectedEmployee.full_name}
@@ -460,4 +494,46 @@ function formatISODateLocal(date: Date): string {
   const m = String(date.getMonth() + 1).padStart(2, '0');
   const d = String(date.getDate()).padStart(2, '0');
   return `${y}-${m}-${d}`;
+}
+
+function getDefaultDatesWithinBounds(minDate: string | null, maxDate: string | null): {
+  startDate: string;
+  endDate: string;
+} {
+  const today = new Date();
+  const oneMonthLater = new Date(today);
+  oneMonthLater.setMonth(oneMonthLater.getMonth() + 1);
+
+  const defaultStart = formatISODateLocal(today);
+  const defaultEnd = formatISODateLocal(oneMonthLater);
+  const bounded = clampRangeToBounds(defaultStart, defaultEnd, minDate, maxDate);
+
+  return { startDate: bounded.start, endDate: bounded.end };
+}
+
+function clampRangeToBounds(
+  start: string,
+  end: string,
+  minDate: string | null,
+  maxDate: string | null
+): { start: string; end: string } {
+  const boundedStart = clampDateToBounds(start, minDate, maxDate);
+  const boundedEnd = clampDateToBounds(end, minDate, maxDate);
+
+  if (boundedStart <= boundedEnd) {
+    return { start: boundedStart, end: boundedEnd };
+  }
+
+  return { start: boundedEnd, end: boundedStart };
+}
+
+function clampDateToBounds(date: string, minDate: string | null, maxDate: string | null): string {
+  if (minDate && date < minDate) return minDate;
+  if (maxDate && date > maxDate) return maxDate;
+  return date;
+}
+
+function formatDisplayDate(value: string | null): string {
+  if (!value) return 'Not set';
+  return new Date(value + 'T00:00:00').toLocaleDateString();
 }

@@ -297,6 +297,8 @@ export type Project = {
   description: string;
   status: string;
   progress: number;
+  start_date: string | null;
+  end_date: string | null;
   attachments: Array<{ filename: string; path: string; uploaded_at: string }> | null;
   created_by: number;
   created_at: string;
