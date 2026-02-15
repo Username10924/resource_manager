@@ -306,6 +306,11 @@ export default function ProjectsPage() {
                       <p className="mt-2 text-sm text-gray-600 line-clamp-2">
                         {project.description}
                       </p>
+                      {(project as any).business_unit && (
+                        <p className="mt-2 text-xs text-gray-500">
+                          Business Unit: <span className="font-medium text-gray-700">{(project as any).business_unit}</span>
+                        </p>
+                      )}
                     </div>
                     <span
                       className={`ml-3 rounded-full px-3 py-1 text-xs font-medium ${getStatusColor(
@@ -572,6 +577,7 @@ function CreateProjectModal({
   const [formData, setFormData] = useState({
     project_code: "",
     name: "",
+    business_unit: "",
     description: "",
     solution_architect_id: 0, // Will be set to first employee
     start_date: "",
@@ -718,6 +724,7 @@ function CreateProjectModal({
       setFormData({
         project_code: "",
         name: "",
+        business_unit: "",
         description: "",
         solution_architect_id: 0,
         start_date: "",
@@ -753,6 +760,12 @@ function CreateProjectModal({
           value={formData.name}
           onChange={(e) => setFormData({ ...formData, name: e.target.value })}
           required
+        />
+
+        <Input
+          label="Business Unit"
+          value={formData.business_unit}
+          onChange={(e) => setFormData({ ...formData, business_unit: e.target.value })}
         />
 
         <div>
@@ -997,6 +1010,7 @@ function EditProjectModal({
   const [isDragging, setIsDragging] = useState(false);
   const [formData, setFormData] = useState({
     name: project.name,
+    business_unit: (project as any).business_unit || "",
     description: project.description,
     status: project.status,
     progress: project.progress,
@@ -1011,6 +1025,7 @@ function EditProjectModal({
       // Reset state when modal opens
       setFormData({
         name: project.name,
+        business_unit: (project as any).business_unit || "",
         description: project.description,
         status: project.status,
         progress: project.progress,
@@ -1137,6 +1152,12 @@ function EditProjectModal({
           value={formData.name}
           onChange={(e) => setFormData({ ...formData, name: e.target.value })}
           required
+        />
+
+        <Input
+          label="Business Unit"
+          value={formData.business_unit}
+          onChange={(e) => setFormData({ ...formData, business_unit: e.target.value })}
         />
 
         <div>
@@ -2087,6 +2108,13 @@ function ProjectDetailsModal({
             <h3 className="text-sm font-semibold text-gray-700 mb-2">Description</h3>
             <p className="text-sm text-gray-600">{project.description}</p>
           </div>
+
+          {(project as any).business_unit && (
+            <div>
+              <h3 className="text-sm font-semibold text-gray-700 mb-2">Business Unit</h3>
+              <p className="text-sm text-gray-600">{(project as any).business_unit}</p>
+            </div>
+          )}
 
           <div className="grid grid-cols-2 gap-4">
             <div>

@@ -68,6 +68,7 @@ async def get_all_bookings():
 class ProjectCreate(BaseModel):
     project_code: str
     name: str
+    business_unit: Optional[str] = None
     description: str
     solution_architect_id: int
     start_date: Optional[date] = None
@@ -75,6 +76,7 @@ class ProjectCreate(BaseModel):
 
 class ProjectUpdate(BaseModel):
     name: Optional[str] = None
+    business_unit: Optional[str] = None
     description: Optional[str] = None
     status: Optional[str] = None
     progress: Optional[int] = None

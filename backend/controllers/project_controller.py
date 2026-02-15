@@ -31,6 +31,7 @@ class ProjectController:
             name=project_data['name'],
             description=project_data['description'],
             solution_architect_id=project_data['solution_architect_id'],
+            business_unit=project_data.get('business_unit'),
             start_date=project_data.get('start_date'),
             end_date=project_data.get('end_date'),
             attachments=project_data.get('attachments', [])

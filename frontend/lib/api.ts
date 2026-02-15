@@ -294,6 +294,7 @@ export type Schedule = {
 export type Project = {
   id: number;
   name: string;
+  business_unit: string | null;
   description: string;
   status: string;
   progress: number;

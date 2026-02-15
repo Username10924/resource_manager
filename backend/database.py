@@ -97,6 +97,7 @@ class Database:
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 project_code TEXT UNIQUE NOT NULL,
                 name TEXT NOT NULL,
+                business_unit TEXT,
                 description TEXT,
                 status TEXT DEFAULT 'planned' CHECK(status IN ('planned', 'active', 'on_hold', 'completed', 'cancelled')),
                 progress INTEGER DEFAULT 0 CHECK(progress BETWEEN 0 AND 100),
@@ -189,6 +190,15 @@ class Database:
             
             self.conn.commit()
             print("Migration completed successfully!")
+
+        # Add business_unit to projects table if missing
+        cursor.execute('PRAGMA table_info(projects)')
+        project_columns = [row[1] for row in cursor.fetchall()]
+        if 'business_unit' not in project_columns:
+            print("Migrating projects table to add business_unit column...")
+            cursor.execute('ALTER TABLE projects ADD COLUMN business_unit TEXT')
+            self.conn.commit()
+            print("Projects migration completed successfully!")
     
     # query helpers
     def execute(self, query: str, params: Tuple = ()) -> sqlite3.Cursor:

@@ -8,6 +8,7 @@ class Project:
         self.id = kwargs.get('id')
         self.project_code = kwargs.get('project_code')
         self.name = kwargs.get('name')
+        self.business_unit = kwargs.get('business_unit')
         self.description = kwargs.get('description')
         self.status = kwargs.get('status', 'planned')
         self.progress = kwargs.get('progress', 0)
@@ -19,16 +20,16 @@ class Project:
         self.updated_at = kwargs.get('updated_at')
     
     @staticmethod
-    def create(project_code: str, name: str, description: str, 
-               solution_architect_id: int, start_date: date = None, 
+    def create(project_code: str, name: str, description: str,
+               solution_architect_id: int, business_unit: str = None, start_date: date = None,
                end_date: date = None, attachments: List[str] = None) -> 'Project':
         attachments_json = json.dumps(attachments or [])
         query = '''
-            INSERT INTO projects (project_code, name, description, solution_architect_id, 
+            INSERT INTO projects (project_code, name, business_unit, description, solution_architect_id, 
                                  start_date, end_date, attachments)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         '''
-        cursor = db.execute(query, (project_code, name, description, solution_architect_id,
+        cursor = db.execute(query, (project_code, name, business_unit, description, solution_architect_id,
                                    start_date, end_date, attachments_json))
         db.commit()
         return Project.get_by_id(cursor.lastrowid)
@@ -83,6 +84,9 @@ class Project:
         if 'description' in kwargs:
             updates.append('description = ?')
             params.append(kwargs['description'])
+        if 'business_unit' in kwargs:
+            updates.append('business_unit = ?')
+            params.append(kwargs['business_unit'])
         if 'status' in kwargs:
             updates.append('status = ?')
             params.append(kwargs['status'])
@@ -224,6 +228,7 @@ class Project:
             'id': self.id,
             'project_code': self.project_code,
             'name': self.name,
+            'business_unit': self.business_unit,
             'description': self.description,
             'status': self.status,
             'progress': self.progress,
