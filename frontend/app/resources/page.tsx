@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/Card';
 import Button from '@/components/Button';
 import Modal from '@/components/Modal';
 import Input from '@/components/Input';
-import { formatMonth, getMonthsList, processEmployeeScheduleWithBookings } from '@/lib/utils';
+import { formatMonth, getMonthsList, processEmployeeScheduleWithBookings, formatRangeDuration } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
 import toast from 'react-hot-toast';
 import { SkeletonResourcesPage, SkeletonModal, SkeletonScheduleHistory } from '@/components/Skeleton';
@@ -491,6 +491,12 @@ function ScheduleModal({
                 value={reservationForm.end_date}
                 onChange={(e) => handleInputChange('end_date', e.target.value)}
               />
+            </div>
+            <div className="mt-2 text-xs text-gray-500">
+              Duration:{' '}
+              <span className="font-medium text-gray-600">
+                {formatRangeDuration(reservationForm.start_date, reservationForm.end_date)}
+              </span>
             </div>
 
             <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">

@@ -16,7 +16,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/Card";
 import Button from "@/components/Button";
 import Modal from "@/components/Modal";
 import Input from "@/components/Input";
-import { formatMonth, getMonthsList } from "@/lib/utils";
+import { formatMonth, getMonthsList, formatRangeDuration } from "@/lib/utils";
 import { SkeletonProjectsPage, Skeleton } from "@/components/Skeleton";
 import { VisualScheduleTimeline } from "@/components/VisualScheduleTimeline";
 import type { VisualScheduleItem } from "@/components/VisualScheduleTimeline";
@@ -881,6 +881,14 @@ function CreateProjectModal({
             onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
           />
         </div>
+        {formData.start_date && formData.end_date && (
+          <div className="-mt-2 text-xs text-gray-500">
+            Duration:{" "}
+            <span className="font-medium text-gray-600">
+              {formatRangeDuration(formData.start_date, formData.end_date)}
+            </span>
+          </div>
+        )}
 
         {/* File Attachments */}
         <div>
@@ -1186,6 +1194,14 @@ function EditProjectModal({
             onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
           />
         </div>
+        {formData.start_date && formData.end_date && (
+          <div className="-mt-2 text-xs text-gray-500">
+            Duration:{" "}
+            <span className="font-medium text-gray-600">
+              {formatRangeDuration(formData.start_date, formData.end_date)}
+            </span>
+          </div>
+        )}
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -1763,6 +1779,12 @@ function BookingModal({
                       min={bookingData.startDate}
                       className="w-full px-3 py-2 text-sm bg-white border border-gray-300 rounded-lg shadow-sm hover:border-gray-400 focus:outline-none focus:border-gray-400 focus:ring-2 focus:ring-gray-200 transition-all duration-200"
                     />
+                  </div>
+                  <div className="text-xs text-gray-500 -mt-2">
+                    Duration:{" "}
+                    <span className="font-medium text-gray-600">
+                      {formatRangeDuration(bookingData.startDate, bookingData.endDate)}
+                    </span>
                   </div>
 
                   {/* Employee Availability Section */}

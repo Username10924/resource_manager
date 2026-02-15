@@ -1,6 +1,7 @@
 'use client';
 
 import Button from '@/components/Button';
+import { formatRangeDuration } from '@/lib/utils';
 
 type QuickRangePreset = 'year' | '1w' | '2w' | '1m';
 
@@ -43,6 +44,7 @@ export default function TimelineDateRangePicker({
   const start = parseISODateLocal(startDate);
   const end = parseISODateLocal(endDate);
   const normalized = normalizeRange(start, end);
+  const rangeDuration = formatRangeDuration(normalized.start, normalized.end);
 
   return (
     <div className="mt-3 rounded-lg border border-gray-200 bg-gray-50 p-3">
@@ -86,6 +88,10 @@ export default function TimelineDateRangePicker({
             className="block w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-gray-400 focus:outline-none"
           />
         </div>
+      </div>
+
+      <div className="mt-2 text-xs text-gray-500">
+        Duration: <span className="font-medium text-gray-600">{rangeDuration}</span>
       </div>
     </div>
   );

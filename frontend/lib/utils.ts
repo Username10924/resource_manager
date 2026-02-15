@@ -180,3 +180,35 @@ export function processEmployeeScheduleWithBookings(
     schedule: processedSchedule,
   };
 }
+
+export function formatRangeDuration(startDate: string, endDate: string): string {
+  const start = parseDateInput(startDate);
+  const end = parseDateInput(endDate);
+  if (!start || !end) return '';
+
+  const [rangeStart, rangeEnd] = start <= end ? [start, end] : [end, start];
+
+  let months = 0;
+  const cursor = new Date(rangeStart);
+
+  while (true) {
+    const next = new Date(cursor);
+    next.setMonth(next.getMonth() + 1);
+    if (next <= rangeEnd) {
+      months += 1;
+      cursor.setMonth(cursor.getMonth() + 1);
+    } else {
+      break;
+    }
+  }
+
+  const msPerDay = 24 * 60 * 60 * 1000;
+  const days = Math.max(0, Math.floor((rangeEnd.getTime() - cursor.getTime()) / msPerDay));
+
+  const parts: string[] = [];
+  if (months > 0) parts.push(`${months} month${months === 1 ? '' : 's'}`);
+  if (days > 0) parts.push(`${days} day${days === 1 ? '' : 's'}`);
+  if (parts.length === 0) return '0 days';
+  if (parts.length === 1) return parts[0];
+  return `${parts[0]} and ${parts[1]}`;
+}
