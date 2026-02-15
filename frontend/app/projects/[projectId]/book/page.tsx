@@ -53,10 +53,13 @@ export default function ProjectBookingPage() {
   }, [viewYear]);
 
   useEffect(() => {
-    // When switching years, reset selection to Jan 1 of that year (commit once).
-    const jan1 = `${viewYear}-01-01`;
-    setRange({ start: jan1, end: jan1 });
-    setBookingData((p) => ({ ...p, startDate: jan1, endDate: jan1 }));
+    // When switching years, anchor selection to today (clamped into the selected year).
+    const yearStart = `${viewYear}-01-01`;
+    const yearEnd = `${viewYear}-12-31`;
+    const todayIso = formatISODateLocal(new Date());
+    const start = todayIso < yearStart ? yearStart : todayIso > yearEnd ? yearEnd : todayIso;
+    setRange({ start, end: start });
+    setBookingData((p) => ({ ...p, startDate: start, endDate: start }));
   }, [viewYear]);
 
   const [loading, setLoading] = useState(true);

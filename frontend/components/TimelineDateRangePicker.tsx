@@ -16,21 +16,25 @@ export default function TimelineDateRangePicker({
   onChange: (start: string, end: string) => void;
 }) {
   const handlePreset = (preset: QuickRangePreset) => {
-    if (preset === 'year') {
-      onChange(`${viewYear}-01-01`, `${viewYear}-12-31`);
-      return;
-    }
-
     const yearStart = parseISODateLocal(`${viewYear}-01-01`);
     const yearEnd = parseISODateLocal(`${viewYear}-12-31`);
     if (!yearStart || !yearEnd) return;
 
-    const anchor = parseISODateLocal(startDate) ?? new Date();
-    const clampedAnchor = clampDate(anchor, yearStart, yearEnd);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const clampedAnchor = clampDate(today, yearStart, yearEnd);
 
-    const days = preset === '1w' ? 6 : preset === '2w' ? 13 : 29;
     const nextEnd = new Date(clampedAnchor);
-    nextEnd.setDate(nextEnd.getDate() + days);
+    if (preset === 'year') {
+      nextEnd.setFullYear(nextEnd.getFullYear() + 1);
+      nextEnd.setDate(nextEnd.getDate() - 1);
+    } else if (preset === '1m') {
+      nextEnd.setMonth(nextEnd.getMonth() + 1);
+      nextEnd.setDate(nextEnd.getDate() - 1);
+    } else {
+      const days = preset === '1w' ? 6 : 13;
+      nextEnd.setDate(nextEnd.getDate() + days);
+    }
     const clampedEnd = clampDate(nextEnd, yearStart, yearEnd);
 
     onChange(formatISODateLocal(clampedAnchor), formatISODateLocal(clampedEnd));

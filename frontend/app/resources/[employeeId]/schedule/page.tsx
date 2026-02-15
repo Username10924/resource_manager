@@ -50,9 +50,12 @@ export default function EmployeeSchedulePage() {
   }, [viewYear]);
 
   useEffect(() => {
-    // Keep selection anchored in the visible year when switching years.
-    const jan1 = `${viewYear}-01-01`;
-    setReservationForm((p) => ({ ...p, start_date: jan1, end_date: jan1 }));
+    // Keep selection anchored to today (clamped into the visible year) when switching years.
+    const yearStart = `${viewYear}-01-01`;
+    const yearEnd = `${viewYear}-12-31`;
+    const today = formatISODateLocal(new Date());
+    const start = today < yearStart ? yearStart : today > yearEnd ? yearEnd : today;
+    setReservationForm((p) => ({ ...p, start_date: start, end_date: start }));
   }, [viewYear]);
 
   useEffect(() => {
