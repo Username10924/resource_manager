@@ -21,6 +21,22 @@ import { SkeletonProjectsPage, Skeleton } from "@/components/Skeleton";
 import { VisualScheduleTimeline } from "@/components/VisualScheduleTimeline";
 import type { VisualScheduleItem } from "@/components/VisualScheduleTimeline";
 
+const BUSINESS_UNIT_OPTIONS = [
+  "Chemicals",
+  "Corporate Audit",
+  "Digital",
+  "Dry Bulk",
+  "Finance",
+  "Fleet Planning",
+  "Liner",
+  "Logistics",
+  "Legal",
+  "Oil",
+  "Shared Services",
+  "Ship Management",
+  "Sustainability & GRC",
+];
+
 export default function ProjectsPage() {
   const router = useRouter();
   const [projects, setProjects] = useState<Project[]>([]);
@@ -762,11 +778,21 @@ function CreateProjectModal({
           required
         />
 
-        <Input
-          label="Business Unit"
-          value={formData.business_unit}
-          onChange={(e) => setFormData({ ...formData, business_unit: e.target.value })}
-        />
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Business Unit</label>
+          <select
+            value={formData.business_unit}
+            onChange={(e) => setFormData({ ...formData, business_unit: e.target.value })}
+            className="block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-gray-400 focus:outline-none"
+          >
+            <option value="">Select business unit</option>
+            {BUSINESS_UNIT_OPTIONS.map((unit) => (
+              <option key={unit} value={unit}>
+                {unit}
+              </option>
+            ))}
+          </select>
+        </div>
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
@@ -1162,11 +1188,21 @@ function EditProjectModal({
           required
         />
 
-        <Input
-          label="Business Unit"
-          value={formData.business_unit}
-          onChange={(e) => setFormData({ ...formData, business_unit: e.target.value })}
-        />
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Business Unit</label>
+          <select
+            value={formData.business_unit}
+            onChange={(e) => setFormData({ ...formData, business_unit: e.target.value })}
+            className="block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-gray-400 focus:outline-none"
+          >
+            <option value="">Select business unit</option>
+            {BUSINESS_UNIT_OPTIONS.map((unit) => (
+              <option key={unit} value={unit}>
+                {unit}
+              </option>
+            ))}
+          </select>
+        </div>
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
