@@ -164,7 +164,7 @@ export default function DashboardPage() {
     if (!resourceData) return [];
     return Object.entries(resourceData.monthly_summary).map(([month, data]) => ({
       month: monthNames[parseInt(month) - 1],
-      available: data.total_available,
+      available: Math.max(0, data.total_available || 0),
       utilized: data.total_booked, // Note: This is total utilized (booked + reserved)
       utilization: Math.min(100, Math.max(0, data.utilization_rate)),
     }));
@@ -595,6 +595,7 @@ export default function DashboardPage() {
                       },
                       0
                     );
+                    const safeTotalAvailable = Math.max(0, totalAvailable || 0);
                     // Use project_booked_hours for displaying booked hours
                     const totalBooked = empSchedule.reduce(
                       (sum: number, s: any) => sum + (s.project_booked_hours || 0),
@@ -657,7 +658,7 @@ export default function DashboardPage() {
                           </div>
                           <div className="flex justify-between text-xs text-gray-500">
                             <span>{formatHours(totalBooked)} booked</span>
-                            <span>{formatHours(totalAvailable)} available</span>
+                            <span>{formatHours(safeTotalAvailable)} available</span>
                           </div>
                         </div>
 
