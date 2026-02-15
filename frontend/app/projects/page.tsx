@@ -2075,6 +2075,8 @@ function ProjectDetailsModal({
   project: Project;
   bookings: Booking[];
 }) {
+  const router = useRouter();
+
   // Group bookings by employee
   const employeeBookings = bookings.reduce((acc, booking) => {
     const key = booking.employee_id;
@@ -2093,6 +2095,12 @@ function ProjectDetailsModal({
   }, {} as Record<number, any>);
 
   const employees = Object.values(employeeBookings);
+  const totalTeamHours = employees.reduce((sum: number, emp: any) => sum + (emp.total_hours || 0), 0);
+
+  const formatProjectDate = (value: string | null | undefined) => {
+    if (!value) return "Not set";
+    return new Date(value + "T00:00:00").toLocaleDateString();
+  };
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={project.name} size="lg">
@@ -2137,6 +2145,17 @@ function ProjectDetailsModal({
               <p className="text-sm text-gray-600">{(project as any).business_unit}</p>
             </div>
           )}
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="rounded-lg border border-gray-200 bg-gray-50 p-3">
+              <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1">Start Date</h3>
+              <p className="text-sm font-medium text-gray-800">{formatProjectDate((project as any).start_date)}</p>
+            </div>
+            <div className="rounded-lg border border-gray-200 bg-gray-50 p-3">
+              <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1">End Date</h3>
+              <p className="text-sm font-medium text-gray-800">{formatProjectDate((project as any).end_date)}</p>
+            </div>
+          </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
@@ -2207,7 +2226,12 @@ function ProjectDetailsModal({
 
         {/* Team Members Section */}
         <div>
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Team Members</h3>
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+            <h3 className="text-lg font-semibold text-gray-900">Team Members</h3>
+            <div className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-700">
+              Total Team Hours: <span className="font-semibold text-gray-900">{totalTeamHours}</span>
+            </div>
+          </div>
           {employees.length > 0 ? (
             <div className="space-y-3">
               {employees.map((emp) => (
@@ -2278,6 +2302,20 @@ function ProjectDetailsModal({
               </p>
             </div>
           )}
+
+          <div className="mt-4 flex justify-end">
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => {
+                onClose();
+                router.push(`/projects/${project.id}/book`);
+              }}
+              className="text-gray-700 bg-gray-100 hover:bg-gray-200"
+            >
+              Book Resources
+            </Button>
+          </div>
         </div>
 
         <div className="flex justify-end pt-4 border-t">
