@@ -10,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/Card';
 import { SkeletonModal } from '@/components/Skeleton';
 import { VisualScheduleTimeline } from '@/components/VisualScheduleTimeline';
 import type { VisualScheduleItem } from '@/components/VisualScheduleTimeline';
+import TimelineDateRangePicker from '@/components/TimelineDateRangePicker';
 import { dashboardAPI, employeeAPI, settingsAPI, type Employee, type Reservation, type Settings } from '@/lib/api';
 
 export default function EmployeeSchedulePage() {
@@ -311,6 +312,17 @@ export default function EmployeeSchedulePage() {
                 <div className="mt-2 text-xs text-gray-500 whitespace-nowrap overflow-hidden text-ellipsis font-mono tabular-nums">
                   Selected: {range.start} → {range.end}
                 </div>
+                <TimelineDateRangePicker
+                  startDate={range.start}
+                  endDate={range.end}
+                  viewYear={viewYear}
+                  onChange={(start, end) => {
+                    const normalizedStart = start <= end ? start : end;
+                    const normalizedEnd = start <= end ? end : start;
+                    setRange({ start: normalizedStart, end: normalizedEnd });
+                    setReservationForm((prev) => ({ ...prev, start_date: normalizedStart, end_date: normalizedEnd }));
+                  }}
+                />
               </div>
               <Input
                 type="number"

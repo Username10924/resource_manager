@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/Card';
 import { SkeletonProjectsPage, Skeleton } from '@/components/Skeleton';
 import { VisualScheduleTimeline } from '@/components/VisualScheduleTimeline';
 import type { VisualScheduleItem } from '@/components/VisualScheduleTimeline';
+import TimelineDateRangePicker from '@/components/TimelineDateRangePicker';
 import { dashboardAPI, employeeAPI, projectAPI, type Employee, type Project } from '@/lib/api';
 
 export default function ProjectBookingPage() {
@@ -351,6 +352,17 @@ export default function ProjectBookingPage() {
             <div className="mt-2 text-xs text-gray-500 whitespace-nowrap overflow-hidden text-ellipsis font-mono tabular-nums">
               Selected: {range.start} → {range.end}
             </div>
+            <TimelineDateRangePicker
+              startDate={range.start}
+              endDate={range.end}
+              viewYear={viewYear}
+              onChange={(start, end) => {
+                const normalizedStart = start <= end ? start : end;
+                const normalizedEnd = start <= end ? end : start;
+                setRange({ start: normalizedStart, end: normalizedEnd });
+                setBookingData((prev) => ({ ...prev, startDate: normalizedStart, endDate: normalizedEnd }));
+              }}
+            />
           </div>
 
           <Input
