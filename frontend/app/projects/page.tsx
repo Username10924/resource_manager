@@ -565,6 +565,7 @@ function CreateProjectModal({
 }) {
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [isEmployeeOpen, setIsEmployeeOpen] = useState(false);
+  const [employeeSearch, setEmployeeSearch] = useState("");
   const [attachments, setAttachments] = useState<File[]>([]);
   const [isDragging, setIsDragging] = useState(false);
   const [allProjects, setAllProjects] = useState<Project[]>([]);
@@ -581,6 +582,7 @@ function CreateProjectModal({
     if (isOpen) {
       loadEmployees();
       loadProjects();
+      setEmployeeSearch("");
     }
   }, [isOpen]);
 
@@ -771,7 +773,10 @@ function CreateProjectModal({
           <div className="relative">
             <button
               type="button"
-              onClick={() => setIsEmployeeOpen(!isEmployeeOpen)}
+              onClick={() => {
+                setIsEmployeeOpen(!isEmployeeOpen);
+                if (!isEmployeeOpen) setEmployeeSearch("");
+              }}
               className="w-full px-3 py-2 text-left text-sm bg-white border border-gray-300 rounded-lg shadow-sm hover:border-gray-400 hover:shadow-md focus:outline-none focus:border-gray-400 transition-all duration-200 flex items-center justify-between group"
             >
               <span className="text-gray-900">
@@ -797,13 +802,32 @@ function CreateProjectModal({
 
             {isEmployeeOpen && (
               <div className="absolute z-10 w-full mt-2 bg-white border border-gray-200 rounded-lg shadow-xl max-h-60 overflow-auto">
-                {employees.map((employee) => (
+                <div className="sticky top-0 bg-white p-2 border-b border-gray-100">
+                  <input
+                    type="text"
+                    value={employeeSearch}
+                    onChange={(e) => setEmployeeSearch(e.target.value)}
+                    placeholder="Search project managers..."
+                    className="w-full px-3 py-2 text-sm bg-white border border-gray-300 rounded-lg shadow-sm hover:border-gray-400 focus:outline-none focus:border-gray-400 focus:ring-2 focus:ring-gray-200 transition-all duration-200"
+                  />
+                </div>
+                {employees
+                  .slice()
+                  .sort((a, b) => a.full_name.localeCompare(b.full_name))
+                  .filter(
+                    (employee) =>
+                      employee.full_name.toLowerCase().includes(employeeSearch.toLowerCase()) ||
+                      employee.department.toLowerCase().includes(employeeSearch.toLowerCase()) ||
+                      employee.position.toLowerCase().includes(employeeSearch.toLowerCase())
+                  )
+                  .map((employee) => (
                   <button
                     key={employee.id}
                     type="button"
                     onClick={() => {
                       setFormData((prev) => ({ ...prev, solution_architect_id: employee.id }));
                       setIsEmployeeOpen(false);
+                      setEmployeeSearch("");
                     }}
                     className={`w-full px-4 py-3 text-left text-sm hover:bg-gray-50 transition-colors duration-150 first:rounded-t-lg last:rounded-b-lg ${
                       formData.solution_architect_id === employee.id
@@ -968,6 +992,7 @@ function EditProjectModal({
 }) {
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [isEmployeeOpen, setIsEmployeeOpen] = useState(false);
+  const [employeeSearch, setEmployeeSearch] = useState("");
   const [attachments, setAttachments] = useState<File[]>([]);
   const [isDragging, setIsDragging] = useState(false);
   const [formData, setFormData] = useState({
@@ -993,6 +1018,7 @@ function EditProjectModal({
         start_date: (project as any).start_date || "",
         end_date: (project as any).end_date || "",
       });
+      setEmployeeSearch("");
       setAttachments([]);
     }
   }, [isOpen, project]);
@@ -1147,7 +1173,10 @@ function EditProjectModal({
           <div className="relative">
             <button
               type="button"
-              onClick={() => setIsEmployeeOpen(!isEmployeeOpen)}
+              onClick={() => {
+                setIsEmployeeOpen(!isEmployeeOpen);
+                if (!isEmployeeOpen) setEmployeeSearch("");
+              }}
               className="w-full px-3 py-2 text-left text-sm bg-white border border-gray-300 rounded-lg shadow-sm hover:border-gray-400 hover:shadow-md focus:outline-none focus:border-gray-400 transition-all duration-200 flex items-center justify-between group"
             >
               <span className="text-gray-900">
@@ -1173,13 +1202,32 @@ function EditProjectModal({
 
             {isEmployeeOpen && (
               <div className="absolute z-10 w-full mt-2 bg-white border border-gray-200 rounded-lg shadow-xl max-h-60 overflow-auto">
-                {employees.map((employee) => (
+                <div className="sticky top-0 bg-white p-2 border-b border-gray-100">
+                  <input
+                    type="text"
+                    value={employeeSearch}
+                    onChange={(e) => setEmployeeSearch(e.target.value)}
+                    placeholder="Search project managers..."
+                    className="w-full px-3 py-2 text-sm bg-white border border-gray-300 rounded-lg shadow-sm hover:border-gray-400 focus:outline-none focus:border-gray-400 focus:ring-2 focus:ring-gray-200 transition-all duration-200"
+                  />
+                </div>
+                {employees
+                  .slice()
+                  .sort((a, b) => a.full_name.localeCompare(b.full_name))
+                  .filter(
+                    (employee) =>
+                      employee.full_name.toLowerCase().includes(employeeSearch.toLowerCase()) ||
+                      employee.department.toLowerCase().includes(employeeSearch.toLowerCase()) ||
+                      employee.position.toLowerCase().includes(employeeSearch.toLowerCase())
+                  )
+                  .map((employee) => (
                   <button
                     key={employee.id}
                     type="button"
                     onClick={() => {
                       setFormData({ ...formData, solution_architect_id: employee.id });
                       setIsEmployeeOpen(false);
+                      setEmployeeSearch("");
                     }}
                     className={`w-full px-4 py-3 text-left text-sm hover:bg-gray-50 transition-colors duration-150 first:rounded-t-lg last:rounded-b-lg ${
                       formData.solution_architect_id === employee.id
