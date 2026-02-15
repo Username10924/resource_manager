@@ -2,7 +2,6 @@ import json
 from typing import List, Dict, Any, Optional
 from datetime import date, datetime
 from models.project import Project
-from models.user import User
 from models.employee import Employee
 from models.schedule import EmployeeSchedule
 from controllers.settings_controller import SettingsController
@@ -17,10 +16,10 @@ class ProjectController:
             if field not in project_data:
                 return {'error': f'Missing required field: {field}'}
         
-        # Check if solution architect exists
-        architect = User.get_by_id(project_data['solution_architect_id'])
-        if not architect or architect.role != 'solution_architect':
-            return {'error': 'Invalid solution architect'}
+        # Check if selected project manager (employee) exists
+        manager = Employee.get_by_id(project_data['solution_architect_id'])
+        if not manager:
+            return {'error': 'Invalid project manager'}
         
         # Check if project code already exists
         existing = Project.get_by_code(project_data['project_code'])
