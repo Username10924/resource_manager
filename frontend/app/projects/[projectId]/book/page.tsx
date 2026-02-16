@@ -453,9 +453,8 @@ export default function ProjectBookingPage() {
               items={timelineItems}
               cellWidth={32}
               leftColumnWidth={200}
-              minBodyHeight={60}
+              minBodyHeight={200}
               contextMenuItems={contextMenuItems}
-              stickyScrollbar
               wheelToHorizontal
             />
           </div>
