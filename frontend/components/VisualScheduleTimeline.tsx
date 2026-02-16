@@ -56,10 +56,13 @@ export function VisualScheduleTimeline({
   stickyScrollbar?: boolean;
   wheelToHorizontal?: boolean;
 }) {
-  const CELL_WIDTH = cellWidth ?? 36;
-  const LEFT_COL_WIDTH = leftColumnWidth ?? 240;
+  const CELL_WIDTH = cellWidth ?? 32;
+  const LEFT_COL_WIDTH = leftColumnWidth ?? 200;
   const MIN_BODY_HEIGHT = minBodyHeight ?? 0;
   const COMMIT_ON_MOUSE_UP = commitSelectionOnMouseUp ?? false;
+  const BAR_HEIGHT = 28;
+  const BAR_GAP = 4;
+  const BAR_TOP_OFFSET = 6;
 
   const [pendingStart, setPendingStart] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -141,6 +144,8 @@ export function VisualScheduleTimeline({
 
   const dayKeys = useMemo(() => days.map((d) => formatISODate(d)), [days]);
 
+  const todayKey = useMemo(() => formatISODate(new Date()), []);
+
   const selection = useMemo(() => {
     const start = parseISODate(toDateKey(selectionStart) ?? selectionStart);
     const end = parseISODate(toDateKey(selectionEnd) ?? selectionEnd);
@@ -212,15 +217,20 @@ export function VisualScheduleTimeline({
     };
   }, [selection, dayKeys, CELL_WIDTH]);
 
+  const todayIndex = useMemo(() => {
+    const idx = dayKeys.indexOf(todayKey);
+    return idx >= 0 ? idx : null;
+  }, [dayKeys, todayKey]);
+
   const laneCount = Math.max(1, laneLayout.length);
-  const timelineHeight = 12 + laneCount * 26;
+  const timelineHeight = BAR_TOP_OFFSET + laneCount * (BAR_HEIGHT + BAR_GAP) + BAR_GAP;
   const bodyHeight = Math.max(timelineHeight, MIN_BODY_HEIGHT);
 
   const timelineWidth = days.length * CELL_WIDTH;
 
   const gridTemplateColumns = useMemo(
     () => `${LEFT_COL_WIDTH}px repeat(${days.length}, ${CELL_WIDTH}px)`,
-    [days.length]
+    [days.length, LEFT_COL_WIDTH, CELL_WIDTH]
   );
 
   const syncScroll = (source: HTMLDivElement | null, target: HTMLDivElement | null) => {
@@ -238,10 +248,8 @@ export function VisualScheduleTimeline({
     const el = mainScrollRef.current;
     if (!el) return;
 
-    // If user is already horizontal-scrolling (trackpad), don't override.
     if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) return;
 
-    // Convert vertical wheel into horizontal scroll for fast month navigation.
     if (e.deltaY !== 0) {
       el.scrollLeft += e.deltaY;
       syncScroll(el, barScrollRef.current);
@@ -282,11 +290,7 @@ export function VisualScheduleTimeline({
       dateKey ?? (lastClientXRef.current !== null ? getDateKeyFromClientX(lastClientXRef.current) : null);
     if (effectiveEndKey) {
       const normalized = normalizeRange(pendingStart, effectiveEndKey);
-      if (COMMIT_ON_MOUSE_UP) {
-        onSelectionChange(normalized.start, normalized.end);
-      } else {
-        onSelectionChange(normalized.start, normalized.end);
-      }
+      onSelectionChange(normalized.start, normalized.end);
     }
     setPendingStart(null);
     dragStartKeyRef.current = null;
@@ -303,7 +307,6 @@ export function VisualScheduleTimeline({
 
     const rect = scroller.getBoundingClientRect();
     const xInViewport = clientX - rect.left;
-    // Convert to scroll-content coordinates.
     const xInContent = scroller.scrollLeft + xInViewport;
     const xInDays = xInContent - LEFT_COL_WIDTH;
     const index = Math.floor(xInDays / CELL_WIDTH);
@@ -370,8 +373,6 @@ export function VisualScheduleTimeline({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isDragging]);
 
-  // (mouseup handled in the drag effect above)
-
   useEffect(() => {
     if (!contextMenu.open) return;
 
@@ -400,30 +401,36 @@ export function VisualScheduleTimeline({
   };
 
   return (
-    <div ref={rootRef} className="rounded-lg border border-gray-200 bg-white flex flex-col">
+    <div ref={rootRef} className="rounded-lg border border-gray-200 bg-white flex flex-col overflow-hidden shadow-sm">
       <div
         ref={mainScrollRef}
         className="overflow-x-auto"
         onMouseDownCapture={(e) => {
           if (!contextMenu.open) return;
-          // Any left click inside the schedule closes the right-click menu.
           if (e.button === 0) closeContextMenu();
         }}
         onScroll={() => syncScroll(mainScrollRef.current, barScrollRef.current)}
         onWheel={handleWheel}
       >
+        {/* Header: month row + day number row */}
         <div
-          className="grid border-b border-gray-200 bg-gray-50"
+          className="grid bg-white border-b border-gray-200"
           style={{ gridTemplateColumns }}
         >
-          <div className="sticky left-0 z-10 border-r border-gray-200 bg-gray-50 px-4 py-3" style={{ gridRow: 'span 2' }}>
-            <div className="text-sm font-semibold text-gray-900">{rowLabel}</div>
-            {rowSublabel ? <div className="mt-0.5 text-xs text-gray-600">{rowSublabel}</div> : null}
-            <div className="mt-2 text-[11px] text-gray-500">Click a start day, then an end day</div>
+          {/* Left column header - spans both header rows */}
+          <div
+            className="sticky left-0 z-10 border-r border-gray-100 bg-white flex items-center px-3"
+            style={{ gridRow: 'span 2' }}
+          >
+            <div className="min-w-0">
+              <div className="text-sm font-semibold text-gray-900 truncate">{rowLabel}</div>
+              {rowSublabel ? <div className="text-[11px] text-gray-500 truncate">{rowSublabel}</div> : null}
+            </div>
           </div>
 
+          {/* Month labels row */}
           <div
-            className="grid border-b border-gray-200"
+            className="grid border-b border-gray-100"
             style={{
               gridColumn: '2 / -1',
               gridTemplateColumns: `repeat(${days.length}, ${CELL_WIDTH}px)`,
@@ -432,7 +439,7 @@ export function VisualScheduleTimeline({
             {monthSegments.map((seg) => (
               <div
                 key={seg.key}
-                className="px-2 py-1 text-[11px] font-semibold text-gray-700 border-r border-gray-200"
+                className="px-2 py-1.5 text-[11px] font-semibold text-gray-600 uppercase tracking-wider border-r border-gray-100 bg-gray-50/50"
                 style={{ gridColumn: `span ${seg.count}` }}
                 title={seg.label}
               >
@@ -441,6 +448,7 @@ export function VisualScheduleTimeline({
             ))}
           </div>
 
+          {/* Day numbers row - compact single row with day number only */}
           <div
             className="grid"
             style={{
@@ -450,38 +458,55 @@ export function VisualScheduleTimeline({
           >
             {days.map((d) => {
               const key = formatISODate(d);
-              const isWeekend = d.getDay() === 5 || d.getDay() === 6; // Friday/Saturday
+              const isWeekend = d.getDay() === 5 || d.getDay() === 6;
+              const isToday = key === todayKey;
+              const isMonday = d.getDay() === 0; // Sunday (week start in many locales)
+              const isFirstOfMonth = d.getDate() === 1;
+
               return (
                 <div
                   key={key}
-                  className={`border-r border-gray-200 px-1 py-2 text-center ${
-                    isWeekend ? 'bg-gray-100/50' : ''
-                  }`}
+                  className={`flex flex-col items-center justify-center py-1 text-center
+                    ${isWeekend ? 'bg-gray-50/80' : 'bg-white'}
+                    ${isFirstOfMonth ? 'border-l border-gray-200' : 'border-l border-gray-100/50'}
+                  `}
                 >
-                  <div className="text-[10px] font-medium text-gray-500">
-                    {d.toLocaleDateString(undefined, { weekday: 'short' })}
+                  <div className={`text-[9px] leading-none uppercase ${isWeekend ? 'text-gray-400' : 'text-gray-400'}`}>
+                    {d.toLocaleDateString(undefined, { weekday: 'narrow' })}
                   </div>
-                  <div className="text-xs font-semibold text-gray-700">{d.getDate()}</div>
+                  <div
+                    className={`mt-0.5 text-[11px] leading-none font-medium
+                      ${isToday ? 'bg-blue-600 text-white rounded-full w-[18px] h-[18px] flex items-center justify-center' : ''}
+                      ${!isToday && isWeekend ? 'text-gray-400' : !isToday ? 'text-gray-600' : ''}
+                    `}
+                  >
+                    {d.getDate()}
+                  </div>
                 </div>
               );
             })}
           </div>
         </div>
 
+        {/* Body: timeline area */}
         <div className="grid" style={{ gridTemplateColumns }}>
+          {/* Left column body - empty spacer to keep alignment */}
           <div
-            className="sticky left-0 z-10 border-r border-gray-200 bg-white px-4 py-3"
+            className="sticky left-0 z-10 border-r border-gray-100 bg-white"
             style={{ minHeight: bodyHeight }}
           />
 
+          {/* Timeline grid and bars */}
           <div
             className="relative"
             style={{ width: timelineWidth, minHeight: bodyHeight }}
           >
+            {/* Background grid cells */}
             <div className="absolute inset-0 grid" style={{ gridTemplateColumns: `repeat(${days.length}, ${CELL_WIDTH}px)` }}>
               {days.map((d) => {
                 const key = formatISODate(d);
-                const isWeekend = d.getDay() === 5 || d.getDay() === 6; // Friday/Saturday
+                const isWeekend = d.getDay() === 5 || d.getDay() === 6;
+                const isFirstOfMonth = d.getDate() === 1;
                 const isSelected =
                   selection &&
                   compareISODate(key, selection.start) >= 0 &&
@@ -506,9 +531,11 @@ export function VisualScheduleTimeline({
                       if (!selection) return;
                       openContextMenu(e.clientX, e.clientY);
                     }}
-                    className={`h-full border-r border-gray-200 transition-colors cursor-crosshair select-none ${
-                      isWeekend ? 'bg-gray-50' : 'bg-white'
-                    } ${isSelected ? 'bg-gray-100' : 'hover:bg-gray-50'}`}
+                    className={`h-full transition-colors cursor-crosshair select-none
+                      ${isWeekend ? 'bg-gray-50/60' : 'bg-white'}
+                      ${isFirstOfMonth ? 'border-l border-gray-200' : 'border-l border-gray-100/30'}
+                      ${isSelected ? 'bg-blue-50/60' : 'hover:bg-gray-50/50'}
+                    `}
                     role="button"
                     aria-label={`Select ${key}`}
                   />
@@ -516,31 +543,40 @@ export function VisualScheduleTimeline({
               })}
             </div>
 
+            {/* Today marker */}
+            {todayIndex !== null ? (
+              <div
+                className="absolute top-0 bottom-0 w-0.5 bg-blue-500 z-[5] pointer-events-none"
+                style={{ left: todayIndex * CELL_WIDTH + CELL_WIDTH / 2 }}
+              />
+            ) : null}
+
+            {/* Selection overlay */}
             {selectionOverlay ? (
               <div
-                className="absolute inset-y-2 pointer-events-none rounded-md ring-2 ring-gray-700/40 shadow-sm"
+                className="absolute inset-y-0 pointer-events-none bg-blue-500/8 border-l-2 border-r-2 border-blue-500/25"
                 style={{ left: selectionOverlay.left, width: selectionOverlay.width }}
               />
             ) : null}
 
-            {/* Bars */}
+            {/* Booking / Reservation bars */}
             {laneLayout.map((lane, laneIndex) =>
               lane.map(({ item, startIndex, endIndex }) => {
-                const left = startIndex * CELL_WIDTH + 2;
-                const width = (endIndex - startIndex + 1) * CELL_WIDTH - 4;
-                const top = 10 + laneIndex * 26;
+                const left = startIndex * CELL_WIDTH + 1;
+                const width = (endIndex - startIndex + 1) * CELL_WIDTH - 2;
+                const top = BAR_TOP_OFFSET + laneIndex * (BAR_HEIGHT + BAR_GAP);
 
-                const classes = getBarClasses(item);
+                const barStyle = getBarStyle(item);
 
                 return (
                   <div
                     key={`${item.kind}-${item.id}`}
-                    className={`absolute overflow-hidden whitespace-nowrap text-ellipsis rounded-md border px-2 py-1 text-[11px] ${classes}`}
-                    style={{ left, top, width }}
+                    className={`absolute overflow-hidden whitespace-nowrap text-ellipsis rounded-[5px] px-2 flex items-center text-[11px] font-medium shadow-sm transition-shadow hover:shadow-md ${barStyle.classes}`}
+                    style={{ left, top, width, height: BAR_HEIGHT, ...barStyle.style }}
                     title={`${item.label} (${toDateKey(item.start_date) ?? item.start_date} → ${toDateKey(item.end_date) ?? item.end_date})`}
                   >
-                    <span className="font-semibold">{item.label}</span>
-                    {item.sublabel ? <span className="ml-1 opacity-80">• {item.sublabel}</span> : null}
+                    <span className="font-semibold truncate">{item.label}</span>
+                    {item.sublabel ? <span className="ml-1 opacity-70 truncate">· {item.sublabel}</span> : null}
                   </div>
                 );
               })
@@ -549,26 +585,30 @@ export function VisualScheduleTimeline({
         </div>
       </div>
 
+      {/* Sticky bottom scrollbar */}
       {stickyScrollbar ? (
-        <div className="sticky bottom-0 border-t border-gray-200 bg-white">
+        <div className="sticky bottom-0 border-t border-gray-100 bg-white">
           <div
             ref={barScrollRef}
             className="overflow-x-auto"
             onScroll={() => syncScroll(barScrollRef.current, mainScrollRef.current)}
           >
-            <div style={{ width: LEFT_COL_WIDTH + timelineWidth, height: 14 }} />
+            <div style={{ width: LEFT_COL_WIDTH + timelineWidth, height: 12 }} />
           </div>
         </div>
       ) : null}
 
+      {/* Context menu */}
       {contextMenu.open && selection && (contextMenuItems?.length || 0) > 0 ? (
         <div
-          className="fixed z-50 min-w-56 overflow-hidden rounded-lg border border-gray-200 bg-white shadow-lg"
+          className="fixed z-50 min-w-52 overflow-hidden rounded-lg border border-gray-200 bg-white shadow-xl"
           style={{ left: contextMenu.x, top: contextMenu.y }}
           onContextMenu={(e) => e.preventDefault()}
         >
-          <div className="px-3 py-2 border-b border-gray-100">
-            <div className="text-xs font-semibold text-gray-900">{selection.start} → {selection.end}</div>
+          <div className="px-3 py-2 border-b border-gray-100 bg-gray-50">
+            <div className="text-[11px] font-medium text-gray-500">
+              {selection.start} → {selection.end}
+            </div>
           </div>
           <div className="py-1">
             {contextMenuItems!.map((item) => (
@@ -593,35 +633,50 @@ export function VisualScheduleTimeline({
         </div>
       ) : null}
 
-      <div className="flex flex-wrap items-center gap-3 px-4 py-3 text-xs text-gray-600">
-        <div className="flex items-center gap-2">
-          <span className="h-3 w-3 rounded-sm border border-orange-200 bg-orange-100" />
+      {/* Compact inline legend */}
+      <div className="flex items-center gap-4 px-3 py-1.5 border-t border-gray-100 bg-gray-50/50 text-[10px] text-gray-500">
+        <div className="flex items-center gap-1.5">
+          <span className="h-2.5 w-5 rounded-sm" style={{ background: '#3b82f6' }} />
           <span>Booking</span>
         </div>
-        <div className="flex items-center gap-2">
-          <span className="h-3 w-3 rounded-sm border border-purple-200 bg-purple-100" />
+        <div className="flex items-center gap-1.5">
+          <span className="h-2.5 w-5 rounded-sm" style={{ background: '#8b5cf6' }} />
           <span>Reservation</span>
         </div>
-        <div className="flex items-center gap-2">
-          <span className="h-3 w-3 rounded-sm border border-gray-200 bg-gray-100" />
-          <span>Selected range</span>
+        <div className="flex items-center gap-1.5">
+          <span className="h-2.5 w-5 rounded-sm bg-blue-100 border border-blue-200" />
+          <span>Selected</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <span className="h-2.5 w-0.5 bg-blue-500" />
+          <span>Today</span>
         </div>
       </div>
     </div>
   );
 }
 
-function getBarClasses(item: VisualScheduleItem) {
+function getBarStyle(item: VisualScheduleItem): { classes: string; style: React.CSSProperties } {
   const status = (item.status || '').toLowerCase();
   if (status === 'cancelled' || status === 'canceled') {
-    return 'bg-gray-100 border-gray-200 text-gray-600';
+    return {
+      classes: 'text-gray-500 line-through opacity-60',
+      style: { background: '#e5e7eb', borderLeft: '3px solid #9ca3af' },
+    };
   }
 
   if (item.kind === 'booking') {
-    return 'bg-orange-100 border-orange-200 text-orange-900';
+    return {
+      classes: 'text-white',
+      style: { background: '#3b82f6', borderLeft: '3px solid #2563eb' },
+    };
   }
 
-  return 'bg-purple-100 border-purple-200 text-purple-900';
+  // reservation
+  return {
+    classes: 'text-white',
+    style: { background: '#8b5cf6', borderLeft: '3px solid #7c3aed' },
+  };
 }
 
 function parseISODate(value: string): Date | null {
@@ -638,7 +693,6 @@ function toDateKey(value: unknown): string | null {
   if (value instanceof Date) return formatISODate(value);
   if (typeof value !== 'string') return null;
 
-  // Accept YYYY-MM-DD or timestamps like YYYY-MM-DDTHH:mm:ss / YYYY-MM-DD HH:mm:ss
   const match = value.match(/\d{4}-\d{2}-\d{2}/);
   return match ? match[0] : null;
 }
@@ -651,7 +705,6 @@ function formatISODate(date: Date): string {
 }
 
 function compareISODate(a: string, b: string) {
-  // Lexicographic compare works for YYYY-MM-DD
   if (a === b) return 0;
   return a < b ? -1 : 1;
 }

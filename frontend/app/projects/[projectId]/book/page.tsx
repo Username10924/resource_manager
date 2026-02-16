@@ -301,8 +301,8 @@ export default function ProjectBookingPage() {
     <div className="h-[calc(100vh-6rem)] min-h-[650px] flex flex-col gap-4">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">Book Resources</h1>
-          <p className="mt-2 text-sm text-gray-600">{project.name} • Click-drag to highlight, then right-click for actions</p>
+          <h1 className="text-2xl font-bold text-gray-900">Book Resources</h1>
+          <p className="mt-1 text-xs text-gray-500">{project.name} · Drag to select, right-click for actions</p>
         </div>
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-2">
@@ -451,10 +451,12 @@ export default function ProjectBookingPage() {
               rowLabel={selectedEmployee.full_name}
               rowSublabel={`${selectedEmployee.position} • ${selectedEmployee.department}`}
               items={timelineItems}
-              cellWidth={28}
-              leftColumnWidth={320}
-              minBodyHeight={520}
+              cellWidth={32}
+              leftColumnWidth={200}
+              minBodyHeight={60}
               contextMenuItems={contextMenuItems}
+              stickyScrollbar
+              wheelToHorizontal
             />
           </div>
         )}

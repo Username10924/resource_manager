@@ -263,8 +263,8 @@ export default function EmployeeSchedulePage() {
     <div className="h-[calc(100vh-6rem)] min-h-[650px] flex flex-col gap-4">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">Schedule</h1>
-          <p className="mt-2 text-sm text-gray-600">Click-drag to highlight a range, then right-click for actions</p>
+          <h1 className="text-2xl font-bold text-gray-900">Schedule</h1>
+          <p className="mt-1 text-xs text-gray-500">Drag to select a range, right-click for actions</p>
         </div>
 
         <div className="flex items-center gap-3">
@@ -391,10 +391,12 @@ export default function EmployeeSchedulePage() {
                 rowLabel={employee.full_name}
                 rowSublabel={`${employee.position} • ${employee.department}`}
                 items={timelineItems}
-                cellWidth={28}
-                leftColumnWidth={320}
-                minBodyHeight={520}
+                cellWidth={32}
+                leftColumnWidth={200}
+                minBodyHeight={60}
                 contextMenuItems={contextMenuItems}
+                stickyScrollbar
+                wheelToHorizontal
               />
             </div>
           </div>
