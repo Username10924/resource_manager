@@ -14,6 +14,7 @@ import UtilizationBarChart from "@/components/charts/UtilizationBarChart";
 import DepartmentPieChart from "@/components/charts/DepartmentPieChart";
 import ProjectStatusChart from "@/components/charts/ProjectStatusChart";
 import ProjectProgressChart from "@/components/charts/ProjectProgressChart";
+import ProjectRoadmapGantt from "@/components/charts/ProjectRoadmapGantt";
 import {
   FaUsers,
   FaBuilding,
@@ -467,6 +468,18 @@ export default function DashboardPage() {
               </CardContent>
             </Card>
           </div>
+
+          {/* Product Roadmap Gantt */}
+          <Card className="bg-white border border-zinc-200">
+            <CardHeader>
+              <CardTitle className="text-lg font-semibold text-zinc-900">
+                Product Roadmap Timeline (Monthly)
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ProjectRoadmapGantt projects={projectData.projects} />
+            </CardContent>
+          </Card>
 
           {/* Projects List */}
           <Card className="bg-white border border-zinc-200">
