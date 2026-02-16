@@ -104,7 +104,7 @@ export default function DashboardPage() {
       if (viewMode === "resources") {
         // Fetch dashboard data first
         const data = await dashboardAPI.getResourceStats();
-        
+
         // Fetch bookings separately with error handling
         let bookings: any[] = [];
         try {
@@ -113,7 +113,7 @@ export default function DashboardPage() {
           console.error("Error fetching bookings, continuing with empty bookings:", bookingError);
           // Continue with empty bookings array
         }
-        
+
         // Process all employees with correct monthly booking calculations
         const processedData = {
           ...data,
@@ -129,7 +129,7 @@ export default function DashboardPage() {
             ])
           ),
         };
-        
+
         setResourceData(processedData);
         setAllBookings(bookings);
       } else {
@@ -229,10 +229,10 @@ export default function DashboardPage() {
     <div className="space-y-6">
       {/* Page Header with Greeting */}
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">
+        <h1 className="text-2xl font-bold text-zinc-900">
           Hey {user?.full_name?.split(" ")[0] || "Ahmed"} -
         </h1>
-        <p className="mt-1 text-sm text-gray-600">here's what's happening.</p>
+        <p className="mt-1 text-sm text-zinc-600">here's what's happening.</p>
       </div>
 
       {/* View Toggle */}
@@ -261,7 +261,7 @@ export default function DashboardPage() {
       {error && (
         <Card>
           <CardContent className="pt-6">
-            <div className="rounded-xl bg-red-50 border border-red-100 p-4 text-red-600">
+            <div className="rounded-lg bg-red-50 border border-red-100 p-4 text-red-600">
               {error}
             </div>
           </CardContent>
@@ -333,9 +333,9 @@ export default function DashboardPage() {
           </div>
 
           {/* Charts Row 1: Utilization Over Time */}
-          <Card className="bg-white border border-gray-100">
+          <Card className="bg-white border border-zinc-200">
             <CardHeader>
-              <CardTitle className="text-lg font-semibold text-gray-900">
+              <CardTitle className="text-lg font-semibold text-zinc-900">
                 Monthly Resource Utilization Trends
               </CardTitle>
             </CardHeader>
@@ -346,9 +346,9 @@ export default function DashboardPage() {
 
           {/* Charts Row 2: Two columns */}
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-            <Card className="bg-white border border-gray-100">
+            <Card className="bg-white border border-zinc-200">
               <CardHeader>
-                <CardTitle className="text-lg font-semibold text-gray-900">
+                <CardTitle className="text-lg font-semibold text-zinc-900">
                   Utilization Rate by Month
                 </CardTitle>
               </CardHeader>
@@ -357,9 +357,9 @@ export default function DashboardPage() {
               </CardContent>
             </Card>
 
-            <Card className="bg-white border border-gray-100">
+            <Card className="bg-white border border-zinc-200">
               <CardHeader>
-                <CardTitle className="text-lg font-semibold text-gray-900">
+                <CardTitle className="text-lg font-semibold text-zinc-900">
                   Department Distribution
                 </CardTitle>
               </CardHeader>
@@ -370,9 +370,9 @@ export default function DashboardPage() {
           </div>
 
           {/* Departments Breakdown */}
-          <Card className="bg-white border border-gray-100">
+          <Card className="bg-white border border-zinc-200">
             <CardHeader>
-              <CardTitle className="text-lg font-semibold text-gray-900">
+              <CardTitle className="text-lg font-semibold text-zinc-900">
                 Department Details
               </CardTitle>
             </CardHeader>
@@ -381,12 +381,12 @@ export default function DashboardPage() {
                 {Object.entries(resourceData.departments).map(([dept, data]) => (
                   <div
                     key={dept}
-                    className="rounded-2xl border border-gray-100 bg-gradient-to-br from-gray-50 to-white p-6"
+                    className="rounded-lg border border-zinc-200 bg-zinc-50 p-6"
                   >
                     <div className="flex items-center justify-between mb-4">
                       <div>
-                        <h3 className="text-lg font-semibold text-gray-900">{dept}</h3>
-                        <p className="text-sm text-gray-500 mt-1">
+                        <h3 className="text-lg font-semibold text-zinc-900">{dept}</h3>
+                        <p className="text-sm text-zinc-500 mt-1">
                           {data.count} employee{data.count !== 1 ? "s" : ""}
                         </p>
                       </div>
@@ -396,9 +396,9 @@ export default function DashboardPage() {
                         <button
                           key={emp.id}
                           onClick={() => handleEmployeeClick(emp)}
-                          className="flex items-center rounded-xl bg-white p-4 border border-gray-100 shadow-sm transition-all hover:shadow-md cursor-pointer"
+                          className="flex items-center rounded-lg bg-white p-4 border border-zinc-200 shadow-sm transition-all hover:border-zinc-300 cursor-pointer"
                         >
-                          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-[#9CA3AF] to-[#D1D5DB] text-white font-medium text-sm">
+                          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-zinc-900 text-white font-medium text-sm">
                             {emp.full_name
                               .split(" ")
                               .map((n: string) => n[0])
@@ -406,8 +406,8 @@ export default function DashboardPage() {
                               .toUpperCase()}
                           </div>
                           <div className="ml-3 flex-1 text-left">
-                            <p className="text-sm font-medium text-gray-900">{emp.full_name}</p>
-                            <p className="text-xs text-gray-500 mt-0.5">{emp.job_title}</p>
+                            <p className="text-sm font-medium text-zinc-900">{emp.full_name}</p>
+                            <p className="text-xs text-zinc-500 mt-0.5">{emp.job_title}</p>
                           </div>
                         </button>
                       ))}
@@ -445,9 +445,9 @@ export default function DashboardPage() {
 
           {/* Charts Row: Status and Progress */}
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-            <Card className="bg-white border border-gray-100">
+            <Card className="bg-white border border-zinc-200">
               <CardHeader>
-                <CardTitle className="text-lg font-semibold text-gray-900">
+                <CardTitle className="text-lg font-semibold text-zinc-900">
                   Project Status Distribution
                 </CardTitle>
               </CardHeader>
@@ -456,9 +456,9 @@ export default function DashboardPage() {
               </CardContent>
             </Card>
 
-            <Card className="bg-white border border-gray-100">
+            <Card className="bg-white border border-zinc-200">
               <CardHeader>
-                <CardTitle className="text-lg font-semibold text-gray-900">
+                <CardTitle className="text-lg font-semibold text-zinc-900">
                   Project Progress Overview
                 </CardTitle>
               </CardHeader>
@@ -469,9 +469,9 @@ export default function DashboardPage() {
           </div>
 
           {/* Projects List */}
-          <Card className="bg-white border border-gray-100">
+          <Card className="bg-white border border-zinc-200">
             <CardHeader>
-              <CardTitle className="text-lg font-semibold text-gray-900">All Projects</CardTitle>
+              <CardTitle className="text-lg font-semibold text-zinc-900">All Projects</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
@@ -479,17 +479,17 @@ export default function DashboardPage() {
                   <div
                     key={project.id}
                     onClick={() => handleProjectClick(project)}
-                    className="rounded-2xl border border-gray-100 bg-gradient-to-br from-white to-gray-50 p-6 shadow-sm transition-all hover:shadow-lg cursor-pointer"
+                    className="rounded-lg border border-zinc-200 bg-white p-6 shadow-sm transition-all hover:border-zinc-300 cursor-pointer"
                   >
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
                         <div className="flex items-center gap-3">
-                          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-[#9CA3AF] to-[#D1D5DB] text-white shadow-sm">
+                          <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-zinc-900 text-white shadow-sm">
                             <FaProjectDiagram />
                           </div>
                           <div>
-                            <h3 className="font-semibold text-gray-900 text-lg">{project.name}</h3>
-                            <p className="mt-1 text-sm text-gray-600">{project.description}</p>
+                            <h3 className="font-semibold text-zinc-900 text-lg">{project.name}</h3>
+                            <p className="mt-1 text-sm text-zinc-600">{project.description}</p>
                           </div>
                         </div>
                         <div className="mt-4 flex flex-wrap gap-2">
@@ -498,7 +498,7 @@ export default function DashboardPage() {
                               project.status === "active"
                                 ? "bg-emerald-100 text-emerald-700"
                                 : project.status === "completed"
-                                ? "bg-gray-100 text-gray-700"
+                                ? "bg-zinc-100 text-zinc-700"
                                 : project.status === "planned"
                                 ? "bg-yellow-100 text-yellow-700"
                                 : project.status === "on_hold"
@@ -508,24 +508,24 @@ export default function DashboardPage() {
                           >
                             {project.status.replace("_", " ")}
                           </span>
-                          <span className="inline-flex items-center rounded-full bg-gray-100 px-3 py-1 text-xs font-medium text-gray-700">
+                          <span className="inline-flex items-center rounded-full bg-zinc-100 px-3 py-1 text-xs font-medium text-zinc-700">
                             {project.progress}% complete
                           </span>
                         </div>
                       </div>
                       <div className="ml-6 text-right">
-                        <div className="text-sm font-medium text-gray-900">
+                        <div className="text-sm font-medium text-zinc-900">
                           {project.booking_stats?.unique_employees || 0} employees
                         </div>
-                        <div className="text-sm text-gray-500 mt-1">
+                        <div className="text-sm text-zinc-500 mt-1">
                           {project.booking_stats?.total_hours || 0} hours booked
                         </div>
                       </div>
                     </div>
                     <div className="mt-4">
-                      <div className="h-2 w-full rounded-full bg-gray-100">
+                      <div className="h-2 w-full rounded-full bg-zinc-100">
                         <div
-                          className="h-2 rounded-full bg-gradient-to-r from-[#9CA3AF] to-[#D1D5DB] transition-all"
+                          className="h-2 rounded-full bg-zinc-900 transition-all"
                           style={{ width: `${project.progress}%` }}
                         />
                       </div>
@@ -563,11 +563,11 @@ export default function DashboardPage() {
 
           {/* Employees by Department */}
           {Object.entries(resourceData.departments).map(([dept, data]) => (
-            <Card key={dept} className="bg-white border border-gray-100">
+            <Card key={dept} className="bg-white border border-zinc-200">
               <CardHeader>
                 <div className="flex items-center justify-between">
-                  <CardTitle className="text-lg font-semibold text-gray-900">{dept}</CardTitle>
-                  <span className="text-sm font-medium text-gray-500 bg-gray-100 px-3 py-1 rounded-full">
+                  <CardTitle className="text-lg font-semibold text-zinc-900">{dept}</CardTitle>
+                  <span className="text-sm font-medium text-zinc-500 bg-zinc-100 px-3 py-1 rounded-full">
                     {data.count} employee{data.count !== 1 ? "s" : ""}
                   </span>
                 </div>
@@ -616,10 +616,10 @@ export default function DashboardPage() {
                       <button
                         key={emp.id}
                         onClick={() => handleEmployeeClick(emp)}
-                        className="flex flex-col rounded-2xl border border-gray-100 bg-white p-5 shadow-sm transition-all hover:shadow-lg cursor-pointer text-left"
+                        className="flex flex-col rounded-lg border border-zinc-200 bg-white p-5 shadow-sm transition-all hover:border-zinc-300 cursor-pointer text-left"
                       >
                         <div className="flex items-start space-x-3">
-                          <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#9CA3AF] to-[#D1D5DB] text-base font-semibold text-white shadow-sm">
+                          <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-zinc-900 text-base font-semibold text-white">
                             {emp.full_name
                               .split(" ")
                               .map((n: string) => n[0])
@@ -627,43 +627,43 @@ export default function DashboardPage() {
                               .toUpperCase()}
                           </div>
                           <div className="flex-1 min-w-0">
-                            <h4 className="font-semibold text-gray-900 truncate">
+                            <h4 className="font-semibold text-zinc-900 truncate">
                               {emp.full_name}
                             </h4>
-                            <p className="text-sm text-gray-600 truncate">{emp.job_title}</p>
-                            <p className="text-xs text-gray-400 mt-1 truncate">{emp.email}</p>
+                            <p className="text-sm text-zinc-600 truncate">{emp.job_title}</p>
+                            <p className="text-xs text-zinc-400 mt-1 truncate">{emp.email}</p>
                           </div>
                         </div>
 
                         <div className="mt-4 space-y-2">
                           <div className="flex justify-between text-sm">
-                            <span className="text-gray-500">Utilization</span>
-                            <span className="font-semibold text-gray-900">
+                            <span className="text-zinc-500">Utilization</span>
+                            <span className="font-semibold text-zinc-900">
                               {utilizationCapped.toFixed(1)}%
                             </span>
                           </div>
-                          <div className="h-2 w-full rounded-full bg-gray-100">
+                          <div className="h-2 w-full rounded-full bg-zinc-100">
                             <div
                               className={`h-2 rounded-full transition-all ${
                                 utilization >= 90
-                                  ? "bg-gradient-to-r from-red-500 to-pink-500"
+                                  ? "bg-red-500"
                                   : utilization >= 75
-                                  ? "bg-gradient-to-r from-emerald-500 to-teal-500"
+                                  ? "bg-emerald-500"
                                   : utilization >= 50
-                                  ? "bg-gradient-to-r from-orange-500 to-amber-500"
-                                  : "bg-gradient-to-r from-gray-400 to-gray-500"
+                                  ? "bg-amber-500"
+                                  : "bg-zinc-400"
                               }`}
                               style={{ width: `${Math.min(utilization, 100)}%` }}
                             />
                           </div>
-                          <div className="flex justify-between text-xs text-gray-500">
+                          <div className="flex justify-between text-xs text-zinc-500">
                             <span>{formatHours(totalBooked)} booked</span>
                             <span>{formatHours(safeTotalAvailable)} available</span>
                           </div>
                         </div>
 
-                        <div className="mt-4 pt-4 border-t border-gray-100">
-                          <span className="text-xs text-gray-600 font-medium">
+                        <div className="mt-4 pt-4 border-t border-zinc-100">
+                          <span className="text-xs text-zinc-600 font-medium">
                             Click to view detailed stats →
                           </span>
                         </div>
@@ -742,19 +742,19 @@ function ProjectDetailsModal({
         {/* Project Info */}
         <div className="space-y-4">
           <div>
-            <h3 className="text-sm font-semibold text-gray-700 mb-2">Description</h3>
-            <p className="text-sm text-gray-600">{project.description}</p>
+            <h3 className="text-sm font-semibold text-zinc-600 mb-2">Description</h3>
+            <p className="text-sm text-zinc-600">{project.description}</p>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <h3 className="text-sm font-semibold text-gray-700 mb-1">Status</h3>
+              <h3 className="text-sm font-semibold text-zinc-600 mb-1">Status</h3>
               <span
                 className={`inline-block rounded-full px-3 py-1 text-xs font-medium ${
                   project.status === "active"
                     ? "bg-emerald-100 text-emerald-700"
                     : project.status === "completed"
-                    ? "bg-gray-100 text-gray-700"
+                    ? "bg-zinc-100 text-zinc-700"
                     : project.status === "planned"
                     ? "bg-yellow-100 text-yellow-700"
                     : project.status === "on_hold"
@@ -766,15 +766,15 @@ function ProjectDetailsModal({
               </span>
             </div>
             <div>
-              <h3 className="text-sm font-semibold text-gray-700 mb-1">Progress</h3>
+              <h3 className="text-sm font-semibold text-zinc-600 mb-1">Progress</h3>
               <div className="flex items-center gap-2">
-                <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
+                <div className="flex-1 h-2 bg-zinc-200 rounded-full overflow-hidden">
                   <div
-                    className="h-full bg-gradient-to-r from-[#9CA3AF] to-[#D1D5DB] transition-all"
+                    className="h-full bg-zinc-900 transition-all"
                     style={{ width: `${project.progress}%` }}
                   />
                 </div>
-                <span className="text-sm font-medium text-gray-900">{project.progress}%</span>
+                <span className="text-sm font-medium text-zinc-900">{project.progress}%</span>
               </div>
             </div>
           </div>
@@ -783,16 +783,16 @@ function ProjectDetailsModal({
         {/* Attachments Section */}
         {Array.isArray(project.attachments) && project.attachments.length > 0 && (
           <div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Attachments</h3>
+            <h3 className="text-lg font-semibold text-zinc-900 mb-4">Attachments</h3>
             <div className="space-y-2">
               {project.attachments.map((attachment: any, index: number) => (
                 <div
                   key={index}
-                  className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200"
+                  className="flex items-center justify-between p-3 bg-zinc-50 rounded-lg border border-zinc-200"
                 >
                   <div className="flex items-center gap-3">
                     <svg
-                      className="w-5 h-5 text-gray-500"
+                      className="w-5 h-5 text-zinc-500"
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"
@@ -805,8 +805,8 @@ function ProjectDetailsModal({
                       />
                     </svg>
                     <div>
-                      <p className="text-sm font-medium text-gray-900">{attachment.filename}</p>
-                      <p className="text-xs text-gray-500">
+                      <p className="text-sm font-medium text-zinc-900">{attachment.filename}</p>
+                      <p className="text-xs text-zinc-500">
                         {new Date(attachment.uploaded_at).toLocaleDateString()}
                       </p>
                     </div>
@@ -815,7 +815,7 @@ function ProjectDetailsModal({
                     href={`https://dplanner.alkhathlan.dev/${attachment.path}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-gray-600 hover:text-gray-800 text-sm font-medium"
+                    className="text-zinc-600 hover:text-zinc-900 text-sm font-medium"
                   >
                     Download
                   </a>
@@ -827,16 +827,16 @@ function ProjectDetailsModal({
 
         {/* Team Members Section */}
         <div>
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Team Members</h3>
+          <h3 className="text-lg font-semibold text-zinc-900 mb-4">Team Members</h3>
           {employees.length > 0 ? (
             <div className="space-y-3">
               {employees.map((emp) => (
-                <Card key={emp.employee_id} className="border-l-4 border-l-gray-400">
+                <Card key={emp.employee_id} className="border-l-4 border-l-zinc-400">
                   <CardContent className="py-4">
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
                         <div className="flex items-center gap-2">
-                          <div className="h-10 w-10 rounded-full bg-gradient-to-br from-[#9CA3AF] to-[#D1D5DB] flex items-center justify-center text-white font-semibold">
+                          <div className="h-10 w-10 rounded-full bg-zinc-900 flex items-center justify-center text-white font-semibold">
                             {emp.employee_name
                               .split(" ")
                               .map((n: string) => n[0])
@@ -844,8 +844,8 @@ function ProjectDetailsModal({
                               .toUpperCase()}
                           </div>
                           <div>
-                            <h4 className="font-semibold text-gray-900">{emp.employee_name}</h4>
-                            <p className="text-xs text-gray-500">{emp.department}</p>
+                            <h4 className="font-semibold text-zinc-900">{emp.employee_name}</h4>
+                            <p className="text-xs text-zinc-500">{emp.department}</p>
                           </div>
                         </div>
 
@@ -854,13 +854,13 @@ function ProjectDetailsModal({
                           {emp.bookings.map((booking: any, idx: number) => (
                             <div
                               key={idx}
-                              className="flex items-center justify-between text-sm bg-gray-50 rounded px-3 py-2"
+                              className="flex items-center justify-between text-sm bg-zinc-50 rounded px-3 py-2"
                             >
-                              <span className="text-gray-600">
+                              <span className="text-zinc-600">
                                 {formatMonth(`${booking.start_date}`)} -{" "}
                                 {formatMonth(`${booking.end_date}`)}
                               </span>
-                              <span className="font-medium text-gray-900">
+                              <span className="font-medium text-zinc-900">
                                 {booking.booked_hours} hours total
                               </span>
                             </div>
@@ -869,7 +869,7 @@ function ProjectDetailsModal({
                       </div>
 
                       <div className="ml-4 text-right">
-                        <div className="text-xs text-gray-500">Total Hours</div>
+                        <div className="text-xs text-zinc-500">Total Hours</div>
                         <div className="text-2xl font-bold text-orange-600">{emp.total_hours}</div>
                       </div>
                     </div>
@@ -878,9 +878,9 @@ function ProjectDetailsModal({
               ))}
             </div>
           ) : (
-            <div className="text-center py-8 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
+            <div className="text-center py-8 bg-zinc-50 rounded-lg border-2 border-dashed border-zinc-300">
               <svg
-                className="mx-auto h-12 w-12 text-gray-400"
+                className="mx-auto h-12 w-12 text-zinc-400"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -892,8 +892,8 @@ function ProjectDetailsModal({
                   d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"
                 />
               </svg>
-              <p className="mt-2 text-sm text-gray-600">No team members assigned yet</p>
-              <p className="mt-1 text-xs text-gray-500">
+              <p className="mt-2 text-sm text-zinc-600">No team members assigned yet</p>
+              <p className="mt-1 text-xs text-zinc-500">
                 Book resources to add team members to this project
               </p>
             </div>

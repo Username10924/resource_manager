@@ -263,8 +263,8 @@ export default function EmployeeSchedulePage() {
     <div className="h-[calc(100vh-6rem)] min-h-[650px] flex flex-col gap-4">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Schedule</h1>
-          <p className="mt-1 text-xs text-gray-500">Drag to select a range, right-click for actions</p>
+          <h1 className="text-2xl font-semibold text-zinc-900">Schedule</h1>
+          <p className="mt-1 text-xs text-zinc-500">Drag to select a range, right-click for actions</p>
         </div>
 
         <div className="flex items-center gap-3">
@@ -275,7 +275,7 @@ export default function EmployeeSchedulePage() {
             <select
               value={viewYear}
               onChange={(e) => setViewYear(parseInt(e.target.value, 10))}
-              className="h-10 px-3 text-sm bg-white border border-gray-300 rounded-lg shadow-sm hover:border-gray-400 focus:outline-none focus:border-gray-400 focus:ring-2 focus:ring-gray-200 transition-all duration-200"
+              className="h-10 px-3 text-sm bg-white border border-zinc-200 rounded-md shadow-sm focus:outline-none focus:border-zinc-400 focus:ring-2 focus:ring-zinc-200 transition-all duration-200"
             >
               {Array.from({ length: 7 }).map((_, idx) => {
                 const year = new Date().getFullYear() - 3 + idx;
@@ -307,12 +307,12 @@ export default function EmployeeSchedulePage() {
         <SkeletonModal />
       ) : (
         <div className="flex flex-col gap-3 flex-1 min-h-0">
-          <div className="rounded-lg border border-gray-200 bg-white p-3">
+          <div className="rounded-md border border-zinc-200 bg-white p-3">
             <div className="grid grid-cols-1 gap-3 lg:grid-cols-4">
               <div className="lg:col-span-2">
-                <div className="text-sm font-semibold text-gray-900">{employee.full_name}</div>
-                <div className="mt-0.5 text-xs text-gray-600">{employee.position} • {employee.department}</div>
-                <div className="mt-2 text-xs text-gray-500 whitespace-nowrap overflow-hidden text-ellipsis font-mono tabular-nums">
+                <div className="text-sm font-semibold text-zinc-900">{employee.full_name}</div>
+                <div className="mt-0.5 text-xs text-zinc-600">{employee.position} • {employee.department}</div>
+                <div className="mt-2 text-xs text-zinc-500 whitespace-nowrap overflow-hidden text-ellipsis font-mono tabular-nums">
                   Selected: {range.start} → {range.end}
                 </div>
                 <TimelineDateRangePicker
@@ -350,7 +350,7 @@ export default function EmployeeSchedulePage() {
                 placeholder="Vacation, training..."
               />
             </div>
-            <div className="mt-2 text-xs text-gray-600 whitespace-nowrap overflow-hidden text-ellipsis font-mono tabular-nums">
+            <div className="mt-2 text-xs text-zinc-600 whitespace-nowrap overflow-hidden text-ellipsis font-mono tabular-nums">
               Working days: <span className="font-semibold">{workingDays}</span>
               {maxHoursTotal !== null ? (
                 <>
@@ -371,7 +371,7 @@ export default function EmployeeSchedulePage() {
                   {' '}• Remaining: <span className="font-semibold">{remainingAfterRequest.toFixed(1)}h</span>
                 </>
               ) : null}
-              <span className="ml-2 text-gray-500">{loadingAvailability ? 'Checking availability…' : ''}</span>
+              <span className="ml-2 text-zinc-500">{loadingAvailability ? 'Checking availability…' : ''}</span>
             </div>
           </div>
 

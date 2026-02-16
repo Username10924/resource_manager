@@ -4,10 +4,9 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
-import Button from './Button';
-import { 
-  FaChartLine, 
-  FaUsers, 
+import {
+  FaChartLine,
+  FaUsers,
   FaProjectDiagram,
   FaSignOutAlt,
   FaBars,
@@ -27,7 +26,6 @@ export default function Navigation() {
     router.push('/');
   };
 
-  // Define links based on user role
   const getLinks = () => {
     if (!user) return [];
 
@@ -41,7 +39,6 @@ export default function Navigation() {
       baseLinks.push({ href: '/projects', label: 'Projects', icon: FaProjectDiagram, section: 'ANALYTICS' });
     }
 
-    // Admins can see everything
     if (user.role === 'admin') {
       baseLinks.push(
         { href: '/resources', label: 'Resources', icon: FaUsers, section: 'ANALYTICS' },
@@ -49,7 +46,6 @@ export default function Navigation() {
       );
     }
 
-    // Settings is available to all roles
     baseLinks.push({ href: '/dashboard/settings', label: 'Settings', icon: FaCog, section: 'CONFIGURATION' });
 
     return baseLinks;
@@ -59,143 +55,122 @@ export default function Navigation() {
 
   return (
     <nav className={cn(
-      "fixed left-0 top-0 h-screen bg-white border-r border-gray-200 transition-all duration-300 flex flex-col z-50",
-      isCollapsed ? "w-20" : "w-64"
+      "fixed left-0 top-0 h-screen bg-white border-r border-zinc-200 transition-all duration-200 flex flex-col z-50",
+      isCollapsed ? "w-16" : "w-56"
     )}>
       <div className="flex flex-col h-full">
-        {/* Header with Logo and Toggle */}
-        <div className="flex items-center justify-between p-4 border-b border-gray-200">
-          {/* Logo */}
-          <Link href="/dashboard" className="flex items-center gap-3 group">
-              <div className="w-10 h-10 flex items-center justify-center transition-transform group-hover:scale-105">
-                <svg width="40" height="40" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" className="block">
-                  <defs>
-                    <linearGradient id="aiGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                      <stop offset="0%" stopColor="#d1d5db" stopOpacity="1" />
-                      <stop offset="100%" stopColor="#9ca3af" stopOpacity="1" />
-                    </linearGradient>
-                  </defs>
-                  <g fill="none" stroke="url(#aiGradient)" strokeWidth="26" strokeLinecap="round">
-                    <path d="M 100 40 A 60 60 0 0 1 152 70" />
-                    <path d="M 152 70 A 60 60 0 0 1 152 130" />
-                    <path d="M 152 130 A 60 60 0 0 1 100 160" />
-                    <path d="M 100 160 A 60 60 0 0 1 48 130" />
-                    <path d="M 48 130 A 60 60 0 0 1 48 70" />
-                    <path d="M 48 70 A 60 60 0 0 1 100 40" />
-                  </g>
-                  <circle cx="100" cy="100" r="15" fill="#ffffff" fillOpacity="0.1" />
-                </svg>
+        {/* Header */}
+        <div className="flex items-center justify-between h-14 px-3 border-b border-zinc-200">
+          <Link href="/dashboard" className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-md bg-zinc-900 flex items-center justify-center flex-shrink-0">
+              <span className="text-white text-xs font-bold">R</span>
+            </div>
+            {!isCollapsed && (
+              <span className="font-semibold text-sm text-zinc-900">RMS</span>
+            )}
+          </Link>
+
+          <button
+            onClick={() => setIsCollapsed(!isCollapsed)}
+            className="p-1.5 rounded-md text-zinc-400 hover:text-zinc-600 hover:bg-zinc-100 transition-colors"
+          >
+            {isCollapsed ? <FaBars size={14} /> : <FaTimes size={14} />}
+          </button>
+        </div>
+
+        {/* Navigation Links */}
+        <div className="flex-1 overflow-y-auto py-3">
+          <div className="space-y-0.5 px-2">
+            {!isCollapsed && (
+              <div className="px-2 mb-2">
+                <p className="text-[11px] font-medium text-zinc-400 uppercase tracking-wider">Analytics</p>
               </div>
-              {!isCollapsed && (
-                <span className="font-bold text-lg bg-gradient-to-r from-[#9CA3AF] to-[#D1D5DB] bg-clip-text text-transparent">
-                  RMS
-                </span>
-              )}
-            </Link>
-            
-            {/* Toggle Button */}
+            )}
+            {links.filter(link => link.section === 'ANALYTICS').map((link) => {
+              const isActive = pathname === link.href;
+              const Icon = link.icon;
+              return (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className={cn(
+                    'flex items-center gap-2.5 px-2.5 py-2 rounded-md text-sm transition-colors',
+                    isActive
+                      ? 'bg-zinc-100 text-zinc-900 font-medium'
+                      : 'text-zinc-600 hover:text-zinc-900 hover:bg-zinc-50'
+                  )}
+                  title={isCollapsed ? link.label : undefined}
+                >
+                  <Icon className={cn(
+                    "flex-shrink-0",
+                    isActive ? "text-zinc-900" : "text-zinc-400"
+                  )} size={15} />
+                  {!isCollapsed && <span>{link.label}</span>}
+                </Link>
+              );
+            })}
+
+            {!isCollapsed && (
+              <div className="px-2 mb-2 mt-5">
+                <p className="text-[11px] font-medium text-zinc-400 uppercase tracking-wider">Configuration</p>
+              </div>
+            )}
+            {isCollapsed && <div className="mt-4" />}
+            {links.filter(link => link.section === 'CONFIGURATION').map((link) => {
+              const isActive = pathname === link.href;
+              const Icon = link.icon;
+              return (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className={cn(
+                    'flex items-center gap-2.5 px-2.5 py-2 rounded-md text-sm transition-colors',
+                    isActive
+                      ? 'bg-zinc-100 text-zinc-900 font-medium'
+                      : 'text-zinc-600 hover:text-zinc-900 hover:bg-zinc-50'
+                  )}
+                  title={isCollapsed ? link.label : undefined}
+                >
+                  <Icon className={cn(
+                    "flex-shrink-0",
+                    isActive ? "text-zinc-900" : "text-zinc-400"
+                  )} size={15} />
+                  {!isCollapsed && <span>{link.label}</span>}
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* User Info and Logout */}
+        {user && (
+          <div className="border-t border-zinc-200 p-3 space-y-2">
+            {!isCollapsed && (
+              <div className="flex items-center gap-2.5 px-1 mb-2">
+                <div className="w-8 h-8 rounded-full bg-zinc-900 flex items-center justify-center text-white text-xs font-medium flex-shrink-0">
+                  {user.full_name.split(' ').map(n => n[0]).join('').toUpperCase()}
+                </div>
+                <div className="text-sm overflow-hidden min-w-0">
+                  <div className="font-medium text-zinc-900 truncate text-sm">{user.full_name}</div>
+                  <div className="text-xs text-zinc-500 capitalize truncate">
+                    {user.role.replace('_', ' ')}
+                  </div>
+                </div>
+              </div>
+            )}
             <button
-              onClick={() => setIsCollapsed(!isCollapsed)}
-              className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
+              onClick={handleLogout}
+              className={cn(
+                "flex items-center gap-2.5 w-full px-2.5 py-2 rounded-md text-sm transition-colors text-zinc-500 hover:text-red-600 hover:bg-red-50",
+                isCollapsed && "justify-center"
+              )}
+              title={isCollapsed ? "Logout" : undefined}
             >
-              {isCollapsed ? <FaBars className="text-gray-600" /> : <FaTimes className="text-gray-600" />}
+              <FaSignOutAlt className="flex-shrink-0" size={14} />
+              {!isCollapsed && <span>Logout</span>}
             </button>
           </div>
-
-          {/* Navigation Links */}
-          <div className="flex-1 overflow-y-auto py-4">
-            <div className="space-y-1 px-3">
-              {/* Analytics Section */}
-              {!isCollapsed && (
-                <div className="px-2 mb-3">
-                  <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">ANALYTICS</p>
-                </div>
-              )}
-              {links.filter(link => link.section === 'ANALYTICS').map((link) => {
-                const isActive = pathname === link.href;
-                const Icon = link.icon;
-                return (
-                  <Link
-                    key={link.href}
-                    href={link.href}
-                    className={cn(
-                      'flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all group',
-                      isActive
-                        ? 'text-gray-700'
-                        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-                    )}
-                    title={isCollapsed ? link.label : undefined}
-                  >
-                    <Icon className={cn(
-                      "flex-shrink-0 text-lg",
-                      isActive ? "text-gray-700" : "text-gray-500 group-hover:text-gray-700"
-                    )} />
-                    {!isCollapsed && <span>{link.label}</span>}
-                  </Link>
-                );
-              })}
-
-              {/* Configuration Section */}
-              {!isCollapsed && (
-                <div className="px-2 mb-3 mt-6">
-                  <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">CONFIGURATION</p>
-                </div>
-              )}
-              {links.filter(link => link.section === 'CONFIGURATION').map((link) => {
-                const isActive = pathname === link.href;
-                const Icon = link.icon;
-                return (
-                  <Link
-                    key={link.href}
-                    href={link.href}
-                    className={cn(
-                      'flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all group',
-                      isActive
-                        ? 'text-gray-700'
-                        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-                    )}
-                    title={isCollapsed ? link.label : undefined}
-                  >
-                    <Icon className={cn(
-                      "flex-shrink-0 text-lg",
-                      isActive ? "text-gray-700" : "text-gray-500 group-hover:text-gray-700"
-                    )} />
-                    {!isCollapsed && <span>{link.label}</span>}
-                  </Link>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* User Info and Logout */}
-          {user && (
-            <div className="border-t border-gray-200 p-4 space-y-2">
-              {!isCollapsed && (
-                <div className="flex items-center gap-3 px-2 mb-3">
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#9CA3AF] to-[#D1D5DB] flex items-center justify-center text-white text-sm font-medium flex-shrink-0">
-                    {user.full_name.split(' ').map(n => n[0]).join('').toUpperCase()}
-                  </div>
-                  <div className="text-sm overflow-hidden">
-                    <div className="font-medium text-gray-900 truncate">{user.full_name}</div>
-                    <div className="text-xs text-gray-500 capitalize truncate">
-                      {user.role.replace('_', ' ')}
-                    </div>
-                  </div>
-                </div>
-              )}
-              <button
-                onClick={handleLogout}
-                className={cn(
-                  "flex items-center gap-3 w-full px-4 py-3 rounded-lg text-sm font-medium transition-all text-gray-600 hover:text-red-600 hover:bg-red-50",
-                  isCollapsed && "justify-center"
-                )}
-                title={isCollapsed ? "Logout" : undefined}
-              >
-                <FaSignOutAlt className="flex-shrink-0 text-lg" />
-                {!isCollapsed && <span>Logout</span>}
-              </button>
-            </div>
-          )}
+        )}
       </div>
     </nav>
   );

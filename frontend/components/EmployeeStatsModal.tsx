@@ -197,9 +197,9 @@ export default function EmployeeStatsModal({ isOpen, onClose, employee, size = '
 
   const getUtilizationColor = (utilization: number) => {
     if (utilization >= 90) return '#ef4444';
-    if (utilization >= 75) return '#10b981';
-    if (utilization >= 50) return '#f59e0b';
-    return '#6b7280';
+    if (utilization >= 75) return '#18181b';
+    if (utilization >= 50) return '#71717a';
+    return '#d4d4d8';
   };
 
   const monthlyData = getMonthlyData();
@@ -214,23 +214,23 @@ export default function EmployeeStatsModal({ isOpen, onClose, employee, size = '
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Employee Statistics" size={size}>
       <div className="space-y-6">
-        <div className="flex items-center space-x-4 rounded-lg bg-gradient-to-r from-gray-50 to-gray-100 p-4">
-          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gray-600 text-2xl font-bold text-white">
+        <div className="flex items-center space-x-4 rounded-lg bg-zinc-50 p-4">
+          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-zinc-900 text-2xl font-bold text-white">
             {employee.full_name.charAt(0)}
           </div>
           <div className="flex-1">
-            <h2 className="text-2xl font-bold text-gray-900">{employee.full_name}</h2>
-            <div className="mt-1 flex flex-wrap gap-3 text-sm text-gray-600">
+            <h2 className="text-2xl font-bold text-zinc-900">{employee.full_name}</h2>
+            <div className="mt-1 flex flex-wrap gap-3 text-sm text-zinc-600">
               <span className="flex items-center gap-1">
-                <FaBriefcase className="text-gray-600" />
+                <FaBriefcase className="text-zinc-600" />
                 {employee.job_title}
               </span>
               <span className="flex items-center gap-1">
-                <FaBuilding className="text-green-600" />
+                <FaBuilding className="text-zinc-900" />
                 {employee.department}
               </span>
               <span className="flex items-center gap-1">
-                <FaEnvelope className="text-purple-600" />
+                <FaEnvelope className="text-zinc-900" />
                 {employee.email}
               </span>
             </div>
@@ -241,32 +241,32 @@ export default function EmployeeStatsModal({ isOpen, onClose, employee, size = '
           <Card>
             <CardContent className="pt-4">
               <div className="text-center">
-                <div className="text-sm font-medium text-gray-600">Total Available</div>
-                <div className="mt-1 text-2xl font-bold text-gray-600">{formatHours(totalAvailable)}</div>
+                <div className="text-sm font-medium text-zinc-600">Total Available</div>
+                <div className="mt-1 text-2xl font-bold text-zinc-600">{formatHours(totalAvailable)}</div>
               </div>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="pt-4">
               <div className="text-center">
-                <div className="text-sm font-medium text-gray-600">Project Booked</div>
-                <div className="mt-1 text-2xl font-bold text-green-600">{formatHours(totalBooked)}</div>
+                <div className="text-sm font-medium text-zinc-600">Project Booked</div>
+                <div className="mt-1 text-2xl font-bold text-zinc-900">{formatHours(totalBooked)}</div>
               </div>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="pt-4">
               <div className="text-center">
-                <div className="text-sm font-medium text-gray-600">Reserved Hours</div>
-                <div className="mt-1 text-2xl font-bold text-blue-600">{formatHours(totalReserved)}</div>
+                <div className="text-sm font-medium text-zinc-600">Reserved Hours</div>
+                <div className="mt-1 text-2xl font-bold text-zinc-900">{formatHours(totalReserved)}</div>
               </div>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="pt-4">
               <div className="text-center">
-                <div className="text-sm font-medium text-gray-600">Avg Utilization</div>
-                <div className="mt-1 text-2xl font-bold text-purple-600">{avgUtilization.toFixed(1)}%</div>
+                <div className="text-sm font-medium text-zinc-600">Avg Utilization</div>
+                <div className="mt-1 text-2xl font-bold text-zinc-900">{avgUtilization.toFixed(1)}%</div>
               </div>
             </CardContent>
           </Card>
@@ -280,10 +280,10 @@ export default function EmployeeStatsModal({ isOpen, onClose, employee, size = '
             <ResponsiveContainer width="100%" height={250}>
               <BarChart data={monthlyData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                <XAxis dataKey="month" stroke="#6b7280" style={{ fontSize: '12px' }} />
-                <YAxis stroke="#6b7280" style={{ fontSize: '12px' }} />
+                <XAxis dataKey="month" stroke="#71717a" style={{ fontSize: '12px' }} />
+                <YAxis stroke="#71717a" style={{ fontSize: '12px' }} />
                 <Tooltip
-                  contentStyle={{ backgroundColor: 'white', border: '1px solid #e5e7eb', borderRadius: '8px' }}
+                  contentStyle={{ backgroundColor: 'white', border: '1px solid #e4e4e7', borderRadius: '8px' }}
                   formatter={(value: any, name: any) => {
                     const num = typeof value === 'number' ? value : Number(value);
                     if (!Number.isFinite(num)) return ['0h', name];
@@ -292,9 +292,9 @@ export default function EmployeeStatsModal({ isOpen, onClose, employee, size = '
                   }}
                 />
                 <Legend />
-                <Bar dataKey="available" fill="#9ca3af" name="Available Hours" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="booked" fill="#10b981" name="Project Booked" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="reserved" fill="#3b82f6" name="Reserved Hours" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="available" fill="#a1a1aa" name="Available Hours" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="booked" fill="#18181b" name="Project Booked" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="reserved" fill="#52525b" name="Reserved Hours" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </CardContent>
@@ -308,17 +308,17 @@ export default function EmployeeStatsModal({ isOpen, onClose, employee, size = '
             <ResponsiveContainer width="100%" height={250}>
               <BarChart data={monthlyData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                <XAxis dataKey="month" stroke="#6b7280" style={{ fontSize: '12px' }} />
+                <XAxis dataKey="month" stroke="#71717a" style={{ fontSize: '12px' }} />
                 <YAxis
-                  stroke="#6b7280"
+                  stroke="#71717a"
                   style={{ fontSize: '12px' }}
                   label={{ value: 'Utilization %', angle: -90, position: 'insideLeft' }}
                 />
                 <Tooltip
-                  contentStyle={{ backgroundColor: 'white', border: '1px solid #e5e7eb', borderRadius: '8px' }}
+                  contentStyle={{ backgroundColor: 'white', border: '1px solid #e4e4e7', borderRadius: '8px' }}
                   formatter={(value: number | undefined) => (value !== undefined ? [`${value.toFixed(1)}%`, 'Utilization'] : ['', ''])}
                 />
-                <Bar dataKey="utilization" radius={[8, 8, 0, 0]}>
+                <Bar dataKey="utilization" radius={[4, 4, 0, 0]}>
                   {monthlyData.map((entry: any, index: number) => (
                     <Cell key={`cell-${index}`} fill={getUtilizationColor(entry.utilization)} />
                   ))}
@@ -335,27 +335,27 @@ export default function EmployeeStatsModal({ isOpen, onClose, employee, size = '
           <CardContent>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
-                <thead className="border-b border-gray-200 bg-gray-50">
+                <thead className="border-b border-zinc-200 bg-zinc-50">
                   <tr>
-                    <th className="px-4 py-2 text-left font-medium text-gray-700">Month</th>
-                    <th className="px-4 py-2 text-right font-medium text-gray-700">Available</th>
-                    <th className="px-4 py-2 text-right font-medium text-gray-700">Booked</th>
-                    <th className="px-4 py-2 text-right font-medium text-gray-700">Reserved</th>
-                    <th className="px-4 py-2 text-right font-medium text-gray-700">Utilization</th>
-                    <th className="px-4 py-2 text-center font-medium text-gray-700">Details</th>
+                    <th className="px-4 py-2 text-left font-medium text-zinc-700">Month</th>
+                    <th className="px-4 py-2 text-right font-medium text-zinc-700">Available</th>
+                    <th className="px-4 py-2 text-right font-medium text-zinc-700">Booked</th>
+                    <th className="px-4 py-2 text-right font-medium text-zinc-700">Reserved</th>
+                    <th className="px-4 py-2 text-right font-medium text-zinc-700">Utilization</th>
+                    <th className="px-4 py-2 text-center font-medium text-zinc-700">Details</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-200">
+                <tbody className="divide-y divide-zinc-200">
                   {monthlyData.map((data: any, index: number) => (
                     <tr
                       key={index}
-                      className="hover:bg-gray-50 cursor-pointer transition-colors"
+                      className="hover:bg-zinc-50 cursor-pointer transition-colors"
                       onClick={() => loadMonthDetails(data.monthNum, data.year, data.month)}
                     >
-                      <td className="px-4 py-2 font-medium text-gray-900">{data.month}</td>
-                      <td className="px-4 py-2 text-right text-gray-600">{formatHours(data.available)}</td>
-                      <td className="px-4 py-2 text-right text-gray-600">{formatHours(data.booked)}</td>
-                      <td className="px-4 py-2 text-right text-gray-600">{formatHours(data.reserved)}</td>
+                      <td className="px-4 py-2 font-medium text-zinc-900">{data.month}</td>
+                      <td className="px-4 py-2 text-right text-zinc-600">{formatHours(data.available)}</td>
+                      <td className="px-4 py-2 text-right text-zinc-600">{formatHours(data.booked)}</td>
+                      <td className="px-4 py-2 text-right text-zinc-600">{formatHours(data.reserved)}</td>
                       <td className="px-4 py-2 text-right">
                         <span
                           className="inline-flex items-center rounded-full px-2 py-1 text-xs font-medium"
@@ -365,7 +365,7 @@ export default function EmployeeStatsModal({ isOpen, onClose, employee, size = '
                         </span>
                       </td>
                       <td className="px-4 py-2 text-center">
-                        <FaChevronRight className="inline-block text-gray-400" />
+                        <FaChevronRight className="inline-block text-zinc-400" />
                       </td>
                     </tr>
                   ))}
@@ -376,14 +376,14 @@ export default function EmployeeStatsModal({ isOpen, onClose, employee, size = '
         </Card>
 
         {selectedMonth && (
-          <Card className="mt-4 border-2 border-gray-200 bg-gray-50">
-            <CardHeader className="bg-gradient-to-r from-gray-100 to-gray-200">
+          <Card className="mt-4 border border-zinc-200 bg-zinc-50">
+            <CardHeader className="bg-zinc-100">
               <div className="flex items-center justify-between">
                 <CardTitle className="flex items-center gap-2">
-                  <FaProjectDiagram className="text-gray-600" />
+                  <FaProjectDiagram className="text-zinc-600" />
                   Details - {selectedMonth.monthName} {selectedMonth.year}
                 </CardTitle>
-                <button onClick={handleCloseMonthDetails} className="text-gray-500 hover:text-gray-700">
+                <button onClick={handleCloseMonthDetails} className="text-zinc-500 hover:text-zinc-700">
                   ✕
                 </button>
               </div>
@@ -392,14 +392,14 @@ export default function EmployeeStatsModal({ isOpen, onClose, employee, size = '
               <div className="space-y-6">
                 <div>
                   <div className="flex items-center justify-between mb-3">
-                    <h3 className="text-sm font-semibold text-gray-700">Projects</h3>
-                    {loadingProjects ? <span className="text-xs text-gray-500">Loading...</span> : null}
+                    <h3 className="text-sm font-semibold text-zinc-700">Projects</h3>
+                    {loadingProjects ? <span className="text-xs text-zinc-500">Loading...</span> : null}
                   </div>
 
                   {loadingProjects ? (
-                    <div className="py-4 text-center text-gray-500">Loading project details...</div>
+                    <div className="py-4 text-center text-zinc-500">Loading project details...</div>
                   ) : projectBookings.length === 0 ? (
-                    <div className="py-4 text-center text-gray-500">No projects assigned for this month</div>
+                    <div className="py-4 text-center text-zinc-500">No projects assigned for this month</div>
                   ) : (
                     <div className="space-y-4">
                       {projectBookings.map((booking: ProjectBooking) => (
@@ -407,21 +407,19 @@ export default function EmployeeStatsModal({ isOpen, onClose, employee, size = '
                           <div className="flex items-start justify-between mb-3">
                             <div className="flex-1">
                               <div className="flex items-center gap-3 mb-2">
-                                <span className="font-semibold text-gray-700 text-lg">{booking.project_code}</span>
+                                <span className="font-semibold text-zinc-700 text-lg">{booking.project_code}</span>
                                 <span
                                   className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
                                     booking.project_status === 'active'
                                       ? 'bg-green-100 text-green-800'
-                                      : booking.project_status === 'completed'
-                                      ? 'bg-gray-100 text-gray-800'
-                                      : 'bg-gray-100 text-gray-800'
+                                      : 'bg-zinc-100 text-zinc-600'
                                   }`}
                                 >
                                   {booking.project_status}
                                 </span>
                               </div>
-                              <h4 className="text-gray-900 font-medium mb-1">{booking.project_name}</h4>
-                              <div className="text-xs text-gray-500 flex items-center gap-1 mt-2">
+                              <h4 className="text-zinc-900 font-medium mb-1">{booking.project_name}</h4>
+                              <div className="text-xs text-zinc-500 flex items-center gap-1 mt-2">
                                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                   <path
                                     strokeLinecap="round"
@@ -434,19 +432,19 @@ export default function EmployeeStatsModal({ isOpen, onClose, employee, size = '
                               </div>
                             </div>
                             <div className="text-right">
-                              <div className="text-2xl font-bold text-gray-900">
+                              <div className="text-2xl font-bold text-zinc-900">
                                 {(booking as any).monthly_hours?.toFixed(1) || booking.booked_hours}h
                               </div>
-                              <div className="text-xs text-gray-500">this month</div>
+                              <div className="text-xs text-zinc-500">this month</div>
                               {booking.booked_hours !== (booking as any).monthly_hours && (
-                                <div className="text-xs text-gray-400 mt-1">{booking.booked_hours}h total</div>
+                                <div className="text-xs text-zinc-400 mt-1">{booking.booked_hours}h total</div>
                               )}
                             </div>
                           </div>
 
                           {booking.attachments && booking.attachments.length > 0 && (
-                            <div className="mt-3 pt-3 border-t border-gray-100">
-                              <div className="text-xs font-medium text-gray-600 mb-2 flex items-center gap-1">
+                            <div className="mt-3 pt-3 border-t border-zinc-100">
+                              <div className="text-xs font-medium text-zinc-600 mb-2 flex items-center gap-1">
                                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                   <path
                                     strokeLinecap="round"
@@ -464,7 +462,7 @@ export default function EmployeeStatsModal({ isOpen, onClose, employee, size = '
                                     href={`https://resource-manager-kg4d.onrender.com/${attachment.path}`}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gray-50 hover:bg-gray-100 text-gray-700 rounded-md text-xs font-medium transition-colors border border-gray-200"
+                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-zinc-50 hover:bg-zinc-100 text-zinc-700 rounded-md text-xs font-medium transition-colors border border-zinc-200"
                                   >
                                     <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                       <path
@@ -483,10 +481,10 @@ export default function EmployeeStatsModal({ isOpen, onClose, employee, size = '
                         </div>
                       ))}
 
-                      <div className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-lg p-4 border-2 border-gray-200">
+                      <div className="bg-zinc-50 rounded-lg p-4 border border-zinc-200">
                         <div className="flex items-center justify-between">
-                          <span className="text-gray-700 font-semibold text-lg">Total Project Hours for {selectedMonth.monthName}</span>
-                          <span className="text-2xl font-bold text-gray-700">
+                          <span className="text-zinc-700 font-semibold text-lg">Total Project Hours for {selectedMonth.monthName}</span>
+                          <span className="text-2xl font-bold text-zinc-700">
                             {projectBookings.reduce((sum, b) => sum + ((b as any).monthly_hours || b.booked_hours), 0).toFixed(1)}h
                           </span>
                         </div>
@@ -495,16 +493,16 @@ export default function EmployeeStatsModal({ isOpen, onClose, employee, size = '
                   )}
                 </div>
 
-                <div className="border-t border-gray-100 pt-4">
+                <div className="border-t border-zinc-100 pt-4">
                   <div className="flex items-center justify-between mb-3">
-                    <h3 className="text-sm font-semibold text-gray-700">Reservations</h3>
-                    {loadingReservations ? <span className="text-xs text-gray-500">Loading...</span> : null}
+                    <h3 className="text-sm font-semibold text-zinc-700">Reservations</h3>
+                    {loadingReservations ? <span className="text-xs text-zinc-500">Loading...</span> : null}
                   </div>
 
                   {loadingReservations ? (
-                    <div className="py-4 text-center text-gray-500">Loading reservation details...</div>
+                    <div className="py-4 text-center text-zinc-500">Loading reservation details...</div>
                   ) : monthlyReservations.length === 0 ? (
-                    <div className="py-4 text-center text-gray-500">No reservations for this month</div>
+                    <div className="py-4 text-center text-zinc-500">No reservations for this month</div>
                   ) : (
                     <div className="space-y-3">
                       {monthlyReservations.map((r) => (
@@ -512,20 +510,18 @@ export default function EmployeeStatsModal({ isOpen, onClose, employee, size = '
                           <div className="flex items-start justify-between">
                             <div className="flex-1">
                               <div className="flex items-center gap-2">
-                                <span className="text-sm font-semibold text-gray-800">{r.reason?.trim() ? r.reason : 'Reserved'}</span>
+                                <span className="text-sm font-semibold text-zinc-800">{r.reason?.trim() ? r.reason : 'Reserved'}</span>
                                 <span
                                   className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
                                     r.status === 'active'
-                                      ? 'bg-blue-100 text-blue-800'
-                                      : r.status === 'cancelled'
-                                      ? 'bg-gray-100 text-gray-700'
-                                      : 'bg-gray-100 text-gray-800'
+                                      ? 'bg-green-100 text-green-800'
+                                      : 'bg-zinc-100 text-zinc-600'
                                   }`}
                                 >
                                   {r.status}
                                 </span>
                               </div>
-                              <div className="mt-1 text-xs text-gray-500 flex items-center gap-2">
+                              <div className="mt-1 text-xs text-zinc-500 flex items-center gap-2">
                                 <span>
                                   {parseDateOnlyToLocal(r.start_date).toLocaleDateString()} - {parseDateOnlyToLocal(r.end_date).toLocaleDateString()}
                                 </span>
@@ -536,17 +532,17 @@ export default function EmployeeStatsModal({ isOpen, onClose, employee, size = '
                               </div>
                             </div>
                             <div className="text-right">
-                              <div className="text-xl font-bold text-gray-900">{r.monthly_hours.toFixed(1)}h</div>
-                              <div className="text-xs text-gray-500">this month</div>
+                              <div className="text-xl font-bold text-zinc-900">{r.monthly_hours.toFixed(1)}h</div>
+                              <div className="text-xs text-zinc-500">this month</div>
                             </div>
                           </div>
                         </div>
                       ))}
 
-                      <div className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-lg p-4 border-2 border-gray-200">
+                      <div className="bg-zinc-50 rounded-lg p-4 border border-zinc-200">
                         <div className="flex items-center justify-between">
-                          <span className="text-gray-700 font-semibold text-lg">Total Reserved Hours for {selectedMonth.monthName}</span>
-                          <span className="text-2xl font-bold text-gray-700">
+                          <span className="text-zinc-700 font-semibold text-lg">Total Reserved Hours for {selectedMonth.monthName}</span>
+                          <span className="text-2xl font-bold text-zinc-700">
                             {monthlyReservations
                               .filter((r) => r.status !== 'cancelled')
                               .reduce((sum, r) => sum + (r.monthly_hours || 0), 0)

@@ -34,7 +34,7 @@ export default function ResourcesPage() {
   const loadData = async () => {
     try {
       const statsData = await dashboardAPI.getResourceStats(user?.id);
-      
+
       // Extract employees from statsData (which includes schedule data)
       let employeesWithSchedule: any[] = [];
       if (statsData && statsData.departments) {
@@ -44,7 +44,7 @@ export default function ResourcesPage() {
           }
         });
       }
-      
+
       // Fetch bookings separately with error handling
       let bookings: any[] = [];
       try {
@@ -52,12 +52,12 @@ export default function ResourcesPage() {
       } catch (bookingError) {
         console.error('Error fetching bookings, continuing with empty bookings:', bookingError);
       }
-      
+
       // Process employees with correct monthly booking calculations
       const processedEmployees = employeesWithSchedule.map((emp: any) =>
         processEmployeeScheduleWithBookings(emp, bookings)
       );
-      
+
       setEmployees(processedEmployees);
       setStats(statsData);
     } catch (error) {
@@ -82,7 +82,7 @@ export default function ResourcesPage() {
     const confirmed = window.confirm(
       `Are you sure you want to delete ${employee.full_name}? This action cannot be undone.`
     );
-    
+
     if (confirmed) {
       try {
         await employeeAPI.delete(employee.id);
@@ -104,8 +104,8 @@ export default function ResourcesPage() {
         <div className="mb-8">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-4xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">Resources</h1>
-              <p className="mt-2 text-sm text-gray-600">
+              <h1 className="text-2xl font-semibold text-zinc-900">Resources</h1>
+              <p className="mt-2 text-sm text-zinc-600">
                 Manage employee schedules and availability
               </p>
             </div>
@@ -125,21 +125,21 @@ export default function ResourcesPage() {
           <div className="mb-8 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
             <Card>
               <CardContent className="py-6">
-                <div className="text-xs font-medium text-gray-500 uppercase tracking-wide">Available Hours This Month</div>
-                <div className="mt-3 text-4xl font-bold bg-gradient-to-r from-gray-600 to-gray-500 bg-clip-text text-transparent">
+                <div className="text-xs font-medium text-zinc-500 uppercase tracking-wide">Available Hours This Month</div>
+                <div className="mt-3 text-4xl font-bold text-zinc-900">
                   {(() => {
                     // Calculate actual available hours for current month from all employees
                     const now = new Date();
                     const currentMonth = now.getMonth() + 1;
                     const currentYear = now.getFullYear();
                     let totalAvailable = 0;
-                    
+
                     employees.forEach((emp: Employee) => {
                       const empSchedule = (emp as any).schedule || [];
                       const currentMonthSchedule = empSchedule.find(
                         (s: any) => s.month === currentMonth && s.year === currentYear
                       );
-                      
+
                       if (currentMonthSchedule) {
                         const capacity = currentMonthSchedule.available_hours_per_month || 0;
                         const projectBooked = currentMonthSchedule.project_booked_hours || 0;
@@ -147,7 +147,7 @@ export default function ResourcesPage() {
                         totalAvailable += Math.max(0, capacity - projectBooked - reserved);
                       }
                     });
-                    
+
                     return totalAvailable;
                   })()}
                 </div>
@@ -164,38 +164,38 @@ export default function ResourcesPage() {
           <CardContent className="p-0">
             <div className="overflow-x-auto">
               <table className="w-full">
-                <thead className="border-b border-gray-200 bg-gray-50">
+                <thead className="border-b border-zinc-200 bg-zinc-50">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-600">
+                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-zinc-500">
                       Name
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-600">
+                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-zinc-500">
                       Role
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-600">
+                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-zinc-500">
                       Department
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-600">
+                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-zinc-500">
                       Available Days/Year
                     </th>
-                    <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-600">
+                    <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-zinc-500">
                       Actions
                     </th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-200 bg-white">
+                <tbody className="divide-y divide-zinc-200 bg-white">
                   {employees.map((employee) => (
-                    <tr key={employee.id} className="hover:bg-gray-50">
-                      <td className="whitespace-nowrap px-6 py-4 text-sm font-medium text-gray-900">
+                    <tr key={employee.id} className="hover:bg-zinc-50">
+                      <td className="whitespace-nowrap px-6 py-4 text-sm font-medium text-zinc-900">
                         {employee.full_name}
                       </td>
-                      <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-600">
+                      <td className="whitespace-nowrap px-6 py-4 text-sm text-zinc-600">
                         {employee.position}
                       </td>
-                      <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-600">
+                      <td className="whitespace-nowrap px-6 py-4 text-sm text-zinc-600">
                         {employee.department}
                       </td>
-                      <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-600">
+                      <td className="whitespace-nowrap px-6 py-4 text-sm text-zinc-600">
                         {employee.available_days_per_year}
                       </td>
                       <td className="whitespace-nowrap px-6 py-4 text-right text-sm">
@@ -211,7 +211,7 @@ export default function ResourcesPage() {
                             variant="ghost"
                             size="sm"
                             onClick={() => router.push(`/resources/${employee.id}/schedule`)}
-                            className="text-gray-700 hover:text-gray-900 underline underline-offset-4 hover:bg-gray-50"
+                            className="text-zinc-700 hover:text-zinc-900 underline underline-offset-4 hover:bg-zinc-50"
                           >
                             Manage Schedule
                           </Button>
@@ -291,7 +291,7 @@ function ScheduleModal({
     const end = addDaysISO(start, 55);
     return { start, end };
   });
-  
+
   const [reservationForm, setReservationForm] = useState<{
     start_date: string;
     end_date: string;
@@ -319,7 +319,7 @@ function ScheduleModal({
         }
       };
       fetchSettings();
-      
+
       // Reset form when opening modal
       setReservationForm({
         start_date: today,
@@ -357,17 +357,17 @@ function ScheduleModal({
   // Calculate working days (excludes weekends)
   const calculateWorkingDays = (startDate: string, endDate: string): number => {
     if (!startDate || !endDate) return 0;
-    
+
     const start = new Date(startDate);
     const end = new Date(endDate);
-    
+
     if (isNaN(start.getTime()) || isNaN(end.getTime()) || end < start) {
       return 0;
     }
-    
+
     let count = 0;
     const currentDate = new Date(start);
-    
+
     while (currentDate <= end) {
       const dayOfWeek = currentDate.getDay();
       // Weekend: Friday (5) and Saturday (6). Sunday is a workday.
@@ -376,7 +376,7 @@ function ScheduleModal({
       }
       currentDate.setDate(currentDate.getDate() + 1);
     }
-    
+
     return count;
   };
 
@@ -460,8 +460,8 @@ function ScheduleModal({
       ) : (
         <div className="space-y-6">
           {/* Create New Reservation */}
-          <div className="rounded-lg border border-gray-200 p-4">
-            <h4 className="mb-4 text-sm font-semibold text-gray-900">Create New Reservation</h4>
+          <div className="rounded-lg border border-zinc-200 p-4">
+            <h4 className="mb-4 text-sm font-semibold text-zinc-900">Create New Reservation</h4>
 
             <div className="mb-4">
               <VisualScheduleTimeline
@@ -477,7 +477,7 @@ function ScheduleModal({
                 items={timelineItems}
               />
             </div>
-            
+
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <Input
                 type="date"
@@ -492,9 +492,9 @@ function ScheduleModal({
                 onChange={(e) => handleInputChange('end_date', e.target.value)}
               />
             </div>
-            <div className="mt-2 text-xs text-gray-500">
+            <div className="mt-2 text-xs text-zinc-500">
               Duration:{' '}
-              <span className="font-medium text-gray-600">
+              <span className="font-medium text-zinc-600">
                 {formatRangeDuration(reservationForm.start_date, reservationForm.end_date)}
               </span>
             </div>
@@ -519,17 +519,17 @@ function ScheduleModal({
               />
             </div>
 
-            <div className="mt-4 rounded-lg bg-gray-50 p-4 space-y-2">
-              <div className="text-sm text-gray-900">
+            <div className="mt-4 rounded-lg bg-zinc-50 p-4 space-y-2">
+              <div className="text-sm text-zinc-900">
                 <span className="font-medium">Working Days:</span> <span className="font-bold">{workingDays}</span> days
               </div>
-              <div className="text-sm text-gray-900">
+              <div className="text-sm text-zinc-900">
                 <span className="font-medium">Total Reserved Hours:</span> <span className="font-bold">{totalReservedHours.toFixed(1)}</span> hrs
               </div>
-              <div className="text-sm text-gray-900">
+              <div className="text-sm text-zinc-900">
                 <span className="font-medium">Available Hours per Day:</span> <span className="font-bold">{availableHoursPerDay.toFixed(1)}</span> hrs
               </div>
-              <div className="text-xs text-gray-700 mt-1">
+              <div className="text-xs text-zinc-700 mt-1">
                 (Weekends are excluded from working days calculation)
               </div>
             </div>
@@ -544,30 +544,30 @@ function ScheduleModal({
           {/* Existing Reservations */}
           {reservations.length > 0 && (
             <div>
-              <h4 className="mb-3 text-sm font-semibold text-gray-900">Active Reservations</h4>
+              <h4 className="mb-3 text-sm font-semibold text-zinc-900">Active Reservations</h4>
               <div className="space-y-2">
                 {reservations.map((reservation) => (
                   <div
                     key={reservation.id}
                     className={`flex items-center justify-between rounded-lg border p-3 ${
-                      reservation.status === 'cancelled' 
-                        ? 'border-gray-200 bg-gray-50' 
-                        : 'border-gray-200 bg-white'
+                      reservation.status === 'cancelled'
+                        ? 'border-zinc-200 bg-zinc-50'
+                        : 'border-zinc-200 bg-white'
                     }`}
                   >
                     <div className="flex-1">
                       <div className="flex items-center gap-2">
-                        <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg className="w-4 h-4 text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                         </svg>
-                        <div className="text-sm font-medium text-gray-900">
+                        <div className="text-sm font-medium text-zinc-900">
                           {new Date(reservation.start_date + 'T00:00:00').toLocaleDateString()} - {new Date(reservation.end_date + 'T00:00:00').toLocaleDateString()}
                         </div>
                         {reservation.status === 'cancelled' && (
-                          <span className="text-xs px-2 py-1 bg-gray-200 text-gray-700 rounded">Cancelled</span>
+                          <span className="text-xs px-2 py-1 bg-zinc-200 text-zinc-700 rounded">Cancelled</span>
                         )}
                       </div>
-                      <div className="mt-1 text-xs text-gray-600">
+                      <div className="mt-1 text-xs text-zinc-600">
                         Reserved: {reservation.reserved_hours_per_day}h/day
                         {reservation.reason && ` • ${reservation.reason}`}
                       </div>
@@ -647,20 +647,20 @@ function AddEmployeeModal({
           required
         />
         <div className="relative">
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="block text-sm font-medium text-zinc-700 mb-1">
             Department <span className="text-red-500">*</span>
           </label>
           <div className="relative">
             <button
               type="button"
               onClick={() => setIsDepartmentOpen(!isDepartmentOpen)}
-              className="w-full px-3 py-2 text-left text-sm bg-white border border-gray-300 rounded-lg shadow-sm hover:border-gray-400 hover:shadow-md focus:outline-none focus:ring-1 focus:ring-gray-400 focus:border-gray-400 transition-all duration-200 flex items-center justify-between group"
+              className="w-full px-3 py-2 text-left text-sm bg-white border border-zinc-200 rounded-md shadow-sm hover:border-zinc-300 focus:outline-none focus:ring-1 focus:ring-zinc-400 focus:border-zinc-400 transition-all duration-200 flex items-center justify-between group"
             >
-              <span className={formData.department ? 'text-gray-900' : 'text-gray-500'}>
+              <span className={formData.department ? 'text-zinc-900' : 'text-zinc-500'}>
                 {formData.department || 'Select a department'}
               </span>
               <svg
-                className={`w-5 h-5 text-gray-400 transition-transform duration-200 flex-shrink-0 ${isDepartmentOpen ? 'rotate-180' : ''}`}
+                className={`w-5 h-5 text-zinc-400 transition-transform duration-200 flex-shrink-0 ${isDepartmentOpen ? 'rotate-180' : ''}`}
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -668,9 +668,9 @@ function AddEmployeeModal({
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
               </svg>
             </button>
-            
+
             {isDepartmentOpen && (
-              <div className="absolute z-10 w-full mt-2 bg-white border border-gray-200 rounded-lg shadow-xl max-h-60 overflow-auto">
+              <div className="absolute z-10 w-full mt-2 bg-white border border-zinc-200 rounded-md shadow-sm max-h-60 overflow-auto">
                 {departments.map((dept) => (
                   <button
                     key={dept}
@@ -679,10 +679,10 @@ function AddEmployeeModal({
                       setFormData({ ...formData, department: dept });
                       setIsDepartmentOpen(false);
                     }}
-                    className={`w-full px-4 py-3 text-left text-sm hover:bg-gray-50 transition-colors duration-150 first:rounded-t-lg last:rounded-b-lg ${
+                    className={`w-full px-4 py-3 text-left text-sm hover:bg-zinc-50 transition-colors duration-150 first:rounded-t-md last:rounded-b-md ${
                       formData.department === dept
-                        ? 'bg-gray-50 text-gray-700 font-medium'
-                        : 'text-gray-700'
+                        ? 'bg-zinc-50 text-zinc-700 font-medium'
+                        : 'text-zinc-700'
                     }`}
                   >
                     {dept}
@@ -716,7 +716,7 @@ function AddEmployeeModal({
           max="365"
           required
         />
-        
+
         <div className="flex justify-end gap-3 pt-4">
           <Button type="button" variant="secondary" onClick={onClose}>
             Cancel
@@ -791,20 +791,20 @@ function EditEmployeeModal({
           required
         />
         <div className="relative">
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="block text-sm font-medium text-zinc-700 mb-1">
             Department <span className="text-red-500">*</span>
           </label>
           <div className="relative">
             <button
               type="button"
               onClick={() => setIsDepartmentOpen(!isDepartmentOpen)}
-              className="w-full px-3 py-2 text-left text-sm bg-white border border-gray-300 rounded-lg shadow-sm hover:border-gray-400 hover:shadow-md focus:outline-none focus:ring-1 focus:ring-gray-400 focus:border-gray-400 transition-all duration-200 flex items-center justify-between group"
+              className="w-full px-3 py-2 text-left text-sm bg-white border border-zinc-200 rounded-md shadow-sm hover:border-zinc-300 focus:outline-none focus:ring-1 focus:ring-zinc-400 focus:border-zinc-400 transition-all duration-200 flex items-center justify-between group"
             >
-              <span className={formData.department ? 'text-gray-900' : 'text-gray-500'}>
+              <span className={formData.department ? 'text-zinc-900' : 'text-zinc-500'}>
                 {formData.department || 'Select a department'}
               </span>
               <svg
-                className={`w-5 h-5 text-gray-400 transition-transform duration-200 flex-shrink-0 ${isDepartmentOpen ? 'rotate-180' : ''}`}
+                className={`w-5 h-5 text-zinc-400 transition-transform duration-200 flex-shrink-0 ${isDepartmentOpen ? 'rotate-180' : ''}`}
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -812,9 +812,9 @@ function EditEmployeeModal({
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
               </svg>
             </button>
-            
+
             {isDepartmentOpen && (
-              <div className="absolute z-10 w-full mt-2 bg-white border border-gray-200 rounded-lg shadow-xl max-h-60 overflow-auto">
+              <div className="absolute z-10 w-full mt-2 bg-white border border-zinc-200 rounded-md shadow-sm max-h-60 overflow-auto">
                 {departments.map((dept) => (
                   <button
                     key={dept}
@@ -823,10 +823,10 @@ function EditEmployeeModal({
                       setFormData({ ...formData, department: dept });
                       setIsDepartmentOpen(false);
                     }}
-                    className={`w-full px-4 py-3 text-left text-sm hover:bg-gray-50 transition-colors duration-150 first:rounded-t-lg last:rounded-b-lg ${
+                    className={`w-full px-4 py-3 text-left text-sm hover:bg-zinc-50 transition-colors duration-150 first:rounded-t-md last:rounded-b-md ${
                       formData.department === dept
-                        ? 'bg-gray-50 text-gray-700 font-medium'
-                        : 'text-gray-700'
+                        ? 'bg-zinc-50 text-zinc-700 font-medium'
+                        : 'text-zinc-700'
                     }`}
                   >
                     {dept}
@@ -860,7 +860,7 @@ function EditEmployeeModal({
           max="365"
           required
         />
-        
+
         <div className="flex justify-end gap-3 pt-4">
           <Button type="button" variant="secondary" onClick={onClose}>
             Cancel

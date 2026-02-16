@@ -13,8 +13,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <>
       <Navigation />
-      <div className="pl-64 min-h-screen bg-[#f5f6fa]">
-        <main className="p-8">
+      <div className="pl-56 min-h-screen bg-[var(--background)]">
+        <main className="p-6">
           {children}
         </main>
       </div>

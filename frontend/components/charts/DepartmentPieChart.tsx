@@ -7,7 +7,7 @@ interface DepartmentPieChartProps {
   }[];
 }
 
-const COLORS = ['#9ca3af', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#cbd5e1', '#6b7280', '#84cc16'];
+const COLORS = ['#18181b', '#52525b', '#a1a1aa', '#d4d4d8', '#71717a', '#3f3f46', '#e4e4e7', '#27272a'];
 
 export default function DepartmentPieChart({ data }: DepartmentPieChartProps) {
   return (
@@ -20,19 +20,20 @@ export default function DepartmentPieChart({ data }: DepartmentPieChartProps) {
           labelLine={false}
           label={({ name, percent }) => percent !== undefined ? `${name}: ${(percent * 100).toFixed(0)}%` : name}
           outerRadius={100}
-          fill="#8884d8"
+          fill="#18181b"
           dataKey="value"
         >
           {data.map((entry, index) => (
             <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
           ))}
         </Pie>
-        <Tooltip 
-          contentStyle={{ 
-            backgroundColor: 'white', 
-            border: '1px solid #e5e7eb',
-            borderRadius: '8px',
-            boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'
+        <Tooltip
+          contentStyle={{
+            backgroundColor: 'white',
+            border: '1px solid #e4e4e7',
+            borderRadius: '6px',
+            boxShadow: '0 1px 3px 0 rgb(0 0 0 / 0.1)',
+            fontSize: '13px',
           }}
         />
         <Legend />

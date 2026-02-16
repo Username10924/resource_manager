@@ -65,12 +65,12 @@ export default function Home() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-orange-50 via-white to-purple-50">
+    <div className="flex min-h-screen items-center justify-center bg-zinc-50">
       <div className="w-full max-w-md px-4">
         {/* Logo and Title */}
         <div className="mb-10 text-center">
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-orange-600 to-pink-600 bg-clip-text text-transparent">RMS</h1>
-          <p className="mt-2 text-sm text-gray-600">Resource Management System</p>
+          <h1 className="text-4xl font-bold text-zinc-900">RMS</h1>
+          <p className="mt-2 text-sm text-zinc-600">Resource Management System</p>
         </div>
 
         {/* Login Card */}
@@ -103,7 +103,7 @@ export default function Home() {
 
               {/* Error Message */}
               {error && (
-                <div className="rounded-xl bg-red-50 border border-red-100 p-3 text-sm text-red-600">
+                <div className="rounded-lg bg-red-50 border border-red-100 p-3 text-sm text-red-600">
                   {error}
                 </div>
               )}

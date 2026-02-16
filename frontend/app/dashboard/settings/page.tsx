@@ -326,16 +326,16 @@ export default function SettingsPage() {
       <div className="p-6">
         <div className="max-w-2xl mx-auto">
           <div className="mb-6">
-            <div className="h-8 bg-gray-200 rounded w-48 mb-2 animate-pulse"></div>
-            <div className="h-4 bg-gray-200 rounded w-96 animate-pulse"></div>
+            <div className="h-8 bg-zinc-200 rounded w-48 mb-2 animate-pulse"></div>
+            <div className="h-4 bg-zinc-200 rounded w-96 animate-pulse"></div>
           </div>
           <Card>
             <CardContent className="p-6">
               <div className="space-y-6">
                 {[1, 2, 3].map((i) => (
                   <div key={i}>
-                    <div className="h-4 bg-gray-200 rounded w-48 mb-2 animate-pulse"></div>
-                    <div className="h-10 bg-gray-200 rounded w-full animate-pulse"></div>
+                    <div className="h-4 bg-zinc-200 rounded w-48 mb-2 animate-pulse"></div>
+                    <div className="h-10 bg-zinc-200 rounded w-full animate-pulse"></div>
                   </div>
                 ))}
               </div>
@@ -352,21 +352,21 @@ export default function SettingsPage() {
         {/* Header */}
         <div className="mb-6">
           <div className="flex items-center gap-3 mb-2">
-            <FaCog className="text-2xl text-gray-700" />
-            <h1 className="text-2xl font-bold text-gray-900">Settings</h1>
+            <FaCog className="text-2xl text-zinc-500" />
+            <h1 className="text-2xl font-bold text-zinc-900">Settings</h1>
           </div>
-          <p className="text-gray-600">Configure business rules and manage your account</p>
+          <p className="text-zinc-600">Configure business rules and manage your account</p>
         </div>
 
         {/* Current User Info */}
         {user && (
-          <Card className="mb-6 border-blue-200 bg-blue-50/30">
+          <Card className="mb-6 border-zinc-200 bg-zinc-50/30">
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-600 mb-1">Logged in as</p>
-                  <p className="font-semibold text-gray-900">{user.full_name}</p>
-                  <p className="text-sm text-gray-600">
+                  <p className="text-sm text-zinc-500 mb-1">Logged in as</p>
+                  <p className="font-semibold text-zinc-900">{user.full_name}</p>
+                  <p className="text-sm text-zinc-600">
                     {user.username} •{" "}
                     {user.role.replace("_", " ").replace(/\b\w/g, (l) => l.toUpperCase())}
                   </p>
@@ -377,14 +377,14 @@ export default function SettingsPage() {
         )}
 
         {/* Tabs */}
-        <div className="mb-6 border-b border-gray-200">
+        <div className="mb-6 border-b border-zinc-200">
           <nav className="-mb-px flex space-x-8">
             <button
               onClick={() => setActiveTab("config")}
               className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
                 activeTab === "config"
-                  ? "border-blue-500 text-blue-600"
-                  : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                  ? "border-zinc-900 text-zinc-900"
+                  : "border-transparent text-zinc-500 hover:text-zinc-700 hover:border-zinc-300"
               }`}
             >
               <div className="flex items-center gap-2">
@@ -396,8 +396,8 @@ export default function SettingsPage() {
               onClick={() => setActiveTab("password")}
               className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
                 activeTab === "password"
-                  ? "border-blue-500 text-blue-600"
-                  : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                  ? "border-zinc-900 text-zinc-900"
+                  : "border-transparent text-zinc-500 hover:text-zinc-700 hover:border-zinc-300"
               }`}
             >
               <div className="flex items-center gap-2">
@@ -410,8 +410,8 @@ export default function SettingsPage() {
                 onClick={() => setActiveTab("users")}
                 className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
                   activeTab === "users"
-                    ? "border-blue-500 text-blue-600"
-                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                    ? "border-zinc-900 text-zinc-900"
+                    : "border-transparent text-zinc-500 hover:text-zinc-700 hover:border-zinc-300"
                 }`}
               >
                 <div className="flex items-center gap-2">
@@ -425,12 +425,12 @@ export default function SettingsPage() {
 
         {/* Alerts */}
         {(error || userError) && (
-          <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
+          <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-md text-red-700 text-sm">
             {error || userError}
           </div>
         )}
         {(success || userSuccess) && (
-          <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg text-green-700">
+          <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-md text-green-700 text-sm">
             {success || userSuccess}
           </div>
         )}
@@ -446,7 +446,7 @@ export default function SettingsPage() {
                 <div className="space-y-6">
                   {/* Work Hours Per Day */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-zinc-700 mb-2">
                       Work Hours Per Day
                     </label>
                     <Input
@@ -457,14 +457,14 @@ export default function SettingsPage() {
                       onChange={(e) => handleChange("work_hours_per_day", e.target.value)}
                       className="max-w-xs"
                     />
-                    <p className="mt-1 text-sm text-gray-500">
+                    <p className="mt-1 text-sm text-zinc-500">
                       Number of work hours in a standard work day (1-24)
                     </p>
                   </div>
 
                   {/* Work Days Per Month */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-zinc-700 mb-2">
                       Work Days Per Month
                     </label>
                     <Input
@@ -475,14 +475,14 @@ export default function SettingsPage() {
                       onChange={(e) => handleChange("work_days_per_month", e.target.value)}
                       className="max-w-xs"
                     />
-                    <p className="mt-1 text-sm text-gray-500">
+                    <p className="mt-1 text-sm text-zinc-500">
                       Number of work days in a standard month (1-31)
                     </p>
                   </div>
 
                   {/* Months In Year */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-zinc-700 mb-2">
                       Months In Year
                     </label>
                     <Input
@@ -493,14 +493,14 @@ export default function SettingsPage() {
                       onChange={(e) => handleChange("months_in_year", e.target.value)}
                       className="max-w-xs"
                     />
-                    <p className="mt-1 text-sm text-gray-500">
+                    <p className="mt-1 text-sm text-zinc-500">
                       Number of months in a year (typically 12)
                     </p>
                   </div>
                 </div>
 
                 {/* Action Buttons */}
-                <div className="flex items-center gap-3 mt-8 pt-6 border-t border-gray-200">
+                <div className="flex items-center gap-3 mt-8 pt-6 border-t border-zinc-200">
                   <Button
                     onClick={handleSave}
                     disabled={!hasChanges || saving}
@@ -526,17 +526,17 @@ export default function SettingsPage() {
             {/* Info Card */}
             <Card className="mt-6">
               <CardContent className="p-6">
-                <h3 className="font-semibold text-gray-900 mb-2">About Business Rules</h3>
-                <p className="text-sm text-gray-600 mb-3">
+                <h3 className="font-semibold text-zinc-900 mb-2">About Business Rules</h3>
+                <p className="text-sm text-zinc-600 mb-3">
                   These business rules are used throughout the system to calculate:
                 </p>
-                <ul className="list-disc list-inside text-sm text-gray-600 space-y-1">
+                <ul className="list-disc list-inside text-sm text-zinc-600 space-y-1">
                   <li>Employee capacity and availability</li>
                   <li>Project resource requirements</li>
                   <li>Utilization rates and statistics</li>
                   <li>Scheduling and booking calculations</li>
                 </ul>
-                <p className="text-sm text-gray-600 mt-3">
+                <p className="text-sm text-zinc-600 mt-3">
                   <strong>Note:</strong> Changes will take effect immediately and apply to all
                   future calculations.
                 </p>
@@ -550,30 +550,30 @@ export default function SettingsPage() {
           <Card className="mt-6">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <FaLock className="text-gray-600" />
+                <FaLock className="text-zinc-500" />
                 Change Your Password
               </CardTitle>
             </CardHeader>
             <CardContent className="p-6">
-              <p className="text-sm text-gray-600 mb-4">
+              <p className="text-sm text-zinc-600 mb-4">
                 Update your account password. You will need to use the new password the next time
                 you log in.
               </p>
 
               {passwordError && (
-                <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
+                <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md text-sm text-red-700">
                   {passwordError}
                 </div>
               )}
               {passwordSuccess && (
-                <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg text-sm text-green-700">
+                <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-md text-sm text-green-700">
                   {passwordSuccess}
                 </div>
               )}
 
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-zinc-700 mb-2">
                     Current Password
                   </label>
                   <div className="relative max-w-xs">
@@ -581,13 +581,13 @@ export default function SettingsPage() {
                       type={showCurrentPassword ? "text" : "password"}
                       value={currentPassword}
                       onChange={(e) => setCurrentPassword(e.target.value)}
-                      className="block w-full rounded-lg border border-gray-300 px-3 py-2 pr-10 text-sm shadow-sm focus:border-gray-400 focus:outline-none"
+                      className="block w-full rounded-md border border-zinc-200 px-3 py-2 pr-10 text-sm transition-colors placeholder:text-zinc-400 focus:border-zinc-400 focus:ring-1 focus:ring-zinc-400 focus:outline-none"
                       placeholder="Enter current password"
                     />
                     <button
                       type="button"
                       onClick={() => setShowCurrentPassword(!showCurrentPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600"
                     >
                       {showCurrentPassword ? <FaEyeSlash size={14} /> : <FaEye size={14} />}
                     </button>
@@ -595,7 +595,7 @@ export default function SettingsPage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-zinc-700 mb-2">
                     New Password
                   </label>
                   <div className="relative max-w-xs">
@@ -603,13 +603,13 @@ export default function SettingsPage() {
                       type={showNewPassword ? "text" : "password"}
                       value={newPassword}
                       onChange={(e) => setNewPassword(e.target.value)}
-                      className="block w-full rounded-lg border border-gray-300 px-3 py-2 pr-10 text-sm shadow-sm focus:border-gray-400 focus:outline-none"
+                      className="block w-full rounded-md border border-zinc-200 px-3 py-2 pr-10 text-sm transition-colors placeholder:text-zinc-400 focus:border-zinc-400 focus:ring-1 focus:ring-zinc-400 focus:outline-none"
                       placeholder="Enter new password"
                     />
                     <button
                       type="button"
                       onClick={() => setShowNewPassword(!showNewPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600"
                     >
                       {showNewPassword ? <FaEyeSlash size={14} /> : <FaEye size={14} />}
                     </button>
@@ -617,7 +617,7 @@ export default function SettingsPage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-zinc-700 mb-2">
                     Confirm New Password
                   </label>
                   <Input
@@ -630,7 +630,7 @@ export default function SettingsPage() {
                 </div>
               </div>
 
-              <div className="flex items-center gap-3 mt-6 pt-4 border-t border-gray-200">
+              <div className="flex items-center gap-3 mt-6 pt-4 border-t border-zinc-200">
                 <Button
                   onClick={handlePasswordChange}
                   disabled={passwordSaving || (!currentPassword && !newPassword)}
@@ -649,7 +649,7 @@ export default function SettingsPage() {
         {activeTab === "users" && user?.role === "admin" && (
           <>
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-semibold text-gray-900">Manage Users</h2>
+              <h2 className="text-xl font-semibold text-zinc-900">Manage Users</h2>
               <Button
                 onClick={() => setShowAddUserModal(true)}
                 variant="primary"
@@ -665,7 +665,7 @@ export default function SettingsPage() {
                 <CardContent className="p-6">
                   <div className="space-y-4">
                     {[1, 2, 3].map((i) => (
-                      <div key={i} className="h-16 bg-gray-200 rounded animate-pulse"></div>
+                      <div key={i} className="h-16 bg-zinc-200 rounded animate-pulse"></div>
                     ))}
                   </div>
                 </CardContent>
@@ -674,46 +674,46 @@ export default function SettingsPage() {
               <Card>
                 <CardContent className="p-0">
                   <div className="overflow-x-auto">
-                    <table className="min-w-full divide-y divide-gray-200">
-                      <thead className="bg-gray-50">
+                    <table className="min-w-full divide-y divide-zinc-200">
+                      <thead className="bg-zinc-50">
                         <tr>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          <th className="px-6 py-3 text-left text-xs font-medium text-zinc-500 uppercase tracking-wider">
                             Username
                           </th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          <th className="px-6 py-3 text-left text-xs font-medium text-zinc-500 uppercase tracking-wider">
                             Full Name
                           </th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          <th className="px-6 py-3 text-left text-xs font-medium text-zinc-500 uppercase tracking-wider">
                             Role
                           </th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          <th className="px-6 py-3 text-left text-xs font-medium text-zinc-500 uppercase tracking-wider">
                             Department
                           </th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          <th className="px-6 py-3 text-left text-xs font-medium text-zinc-500 uppercase tracking-wider">
                             Actions
                           </th>
                         </tr>
                       </thead>
-                      <tbody className="bg-white divide-y divide-gray-200">
+                      <tbody className="bg-white divide-y divide-zinc-200">
                         {users.map((userData) => (
-                          <tr key={userData.id}>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                          <tr key={userData.id} className="hover:bg-zinc-50 transition-colors">
+                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-zinc-900">
                               {userData.username}
                             </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-zinc-600">
                               {userData.full_name}
                             </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                              <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-zinc-600">
+                              <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-md bg-zinc-100 text-zinc-900">
                                 {userData.role
                                   .replace("_", " ")
                                   .replace(/\b\w/g, (l) => l.toUpperCase())}
                               </span>
                             </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-zinc-600">
                               {userData.department || "-"}
                             </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-zinc-600">
                               {userData.id !== user?.id && (
                                 <Button
                                   onClick={() => handleDeleteUser(userData.id)}
@@ -736,7 +736,7 @@ export default function SettingsPage() {
 
             {/* Add User Modal */}
             {showAddUserModal && (
-              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+              <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
                 <Card className="w-full max-w-md">
                   <CardHeader>
                     <CardTitle>Add New User</CardTitle>
@@ -744,7 +744,7 @@ export default function SettingsPage() {
                   <CardContent className="p-6">
                     <div className="space-y-4">
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                        <label className="block text-sm font-medium text-zinc-700 mb-2">
                           Username *
                         </label>
                         <Input
@@ -756,7 +756,7 @@ export default function SettingsPage() {
                       </div>
 
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                        <label className="block text-sm font-medium text-zinc-700 mb-2">
                           Password *
                         </label>
                         <Input
@@ -768,7 +768,7 @@ export default function SettingsPage() {
                       </div>
 
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                        <label className="block text-sm font-medium text-zinc-700 mb-2">
                           Full Name *
                         </label>
                         <Input
@@ -780,13 +780,13 @@ export default function SettingsPage() {
                       </div>
 
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                        <label className="block text-sm font-medium text-zinc-700 mb-2">
                           Role *
                         </label>
                         <select
                           value={newUser.role}
                           onChange={(e) => setNewUser({ ...newUser, role: e.target.value })}
-                          className="block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-gray-400 focus:outline-none"
+                          className="block w-full rounded-md border border-zinc-200 px-3 py-2 text-sm transition-colors focus:border-zinc-400 focus:ring-1 focus:ring-zinc-400 focus:outline-none"
                         >
                           <option value="dashboard_viewer">Dashboard Viewer</option>
                           <option value="line_manager">Line Manager</option>
@@ -796,7 +796,7 @@ export default function SettingsPage() {
                       </div>
 
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                        <label className="block text-sm font-medium text-zinc-700 mb-2">
                           Department
                         </label>
                         <Input
@@ -808,7 +808,7 @@ export default function SettingsPage() {
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-3 mt-6 pt-4 border-t border-gray-200">
+                    <div className="flex items-center gap-3 mt-6 pt-4 border-t border-zinc-200">
                       <Button
                         onClick={handleAddUser}
                         variant="primary"

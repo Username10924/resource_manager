@@ -7,12 +7,12 @@ export const metadata: Metadata = {
   description: "Manage employee schedules and project resource bookings",
 };
 
-import { Work_Sans } from 'next/font/google'
+import { Inter } from 'next/font/google'
 
-const myfont = Work_Sans({
+const myfont = Inter({
   subsets: ['latin'],
   variable: '--font-myfont',
-  weight: '400',
+  weight: ['400', '500', '600', '700'],
 })
 
 export default function RootLayout({

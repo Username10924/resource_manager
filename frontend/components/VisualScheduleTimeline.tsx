@@ -401,7 +401,7 @@ export function VisualScheduleTimeline({
   };
 
   return (
-    <div ref={rootRef} className="rounded-lg border border-gray-200 bg-white flex flex-col overflow-hidden shadow-sm">
+    <div ref={rootRef} className="rounded-lg border border-zinc-200 bg-white flex flex-col overflow-hidden shadow-sm">
       <div
         ref={mainScrollRef}
         className="overflow-x-auto"
@@ -414,23 +414,23 @@ export function VisualScheduleTimeline({
       >
         {/* Header: month row + day number row */}
         <div
-          className="grid bg-white border-b border-gray-200"
+          className="grid bg-white border-b border-zinc-200"
           style={{ gridTemplateColumns }}
         >
           {/* Left column header - spans both header rows */}
           <div
-            className="sticky left-0 z-10 border-r border-gray-100 bg-white flex items-center px-3"
+            className="sticky left-0 z-10 border-r border-zinc-100 bg-white flex items-center px-3"
             style={{ gridRow: 'span 2' }}
           >
             <div className="min-w-0">
-              <div className="text-sm font-semibold text-gray-900 truncate">{rowLabel}</div>
-              {rowSublabel ? <div className="text-[11px] text-gray-500 truncate">{rowSublabel}</div> : null}
+              <div className="text-sm font-semibold text-zinc-900 truncate">{rowLabel}</div>
+              {rowSublabel ? <div className="text-[11px] text-zinc-500 truncate">{rowSublabel}</div> : null}
             </div>
           </div>
 
           {/* Month labels row */}
           <div
-            className="grid border-b border-gray-100"
+            className="grid border-b border-zinc-100"
             style={{
               gridColumn: '2 / -1',
               gridTemplateColumns: `repeat(${days.length}, ${CELL_WIDTH}px)`,
@@ -439,7 +439,7 @@ export function VisualScheduleTimeline({
             {monthSegments.map((seg) => (
               <div
                 key={seg.key}
-                className="px-2 py-1.5 text-[11px] font-semibold text-gray-600 uppercase tracking-wider border-r border-gray-100 bg-gray-50/50"
+                className="px-2 py-1.5 text-[11px] font-semibold text-zinc-600 uppercase tracking-wider border-r border-zinc-100 bg-zinc-50/50"
                 style={{ gridColumn: `span ${seg.count}` }}
                 title={seg.label}
               >
@@ -467,17 +467,17 @@ export function VisualScheduleTimeline({
                 <div
                   key={key}
                   className={`flex flex-col items-center justify-center py-1 text-center
-                    ${isWeekend ? 'bg-gray-50/80' : 'bg-white'}
-                    ${isFirstOfMonth ? 'border-l border-gray-200' : 'border-l border-gray-100/50'}
+                    ${isWeekend ? 'bg-zinc-50/80' : 'bg-white'}
+                    ${isFirstOfMonth ? 'border-l border-zinc-200' : 'border-l border-zinc-100/50'}
                   `}
                 >
-                  <div className={`text-[9px] leading-none uppercase ${isWeekend ? 'text-gray-400' : 'text-gray-400'}`}>
+                  <div className={`text-[9px] leading-none uppercase ${isWeekend ? 'text-zinc-400' : 'text-zinc-400'}`}>
                     {d.toLocaleDateString(undefined, { weekday: 'narrow' })}
                   </div>
                   <div
                     className={`mt-0.5 text-[11px] leading-none font-medium
                       ${isToday ? 'bg-blue-600 text-white rounded-full w-[18px] h-[18px] flex items-center justify-center' : ''}
-                      ${!isToday && isWeekend ? 'text-gray-400' : !isToday ? 'text-gray-600' : ''}
+                      ${!isToday && isWeekend ? 'text-zinc-400' : !isToday ? 'text-zinc-600' : ''}
                     `}
                   >
                     {d.getDate()}
@@ -492,7 +492,7 @@ export function VisualScheduleTimeline({
         <div className="grid" style={{ gridTemplateColumns }}>
           {/* Left column body - empty spacer to keep alignment */}
           <div
-            className="sticky left-0 z-10 border-r border-gray-100 bg-white"
+            className="sticky left-0 z-10 border-r border-zinc-100 bg-white"
             style={{ minHeight: bodyHeight }}
           />
 
@@ -532,9 +532,9 @@ export function VisualScheduleTimeline({
                       openContextMenu(e.clientX, e.clientY);
                     }}
                     className={`h-full transition-colors cursor-crosshair select-none
-                      ${isWeekend ? 'bg-gray-50/60' : 'bg-white'}
-                      ${isFirstOfMonth ? 'border-l border-gray-200' : 'border-l border-gray-100/30'}
-                      ${isSelected ? 'bg-blue-50/60' : 'hover:bg-gray-50/50'}
+                      ${isWeekend ? 'bg-zinc-50/60' : 'bg-white'}
+                      ${isFirstOfMonth ? 'border-l border-zinc-200' : 'border-l border-zinc-100/30'}
+                      ${isSelected ? 'bg-blue-50/60' : 'hover:bg-zinc-50/50'}
                     `}
                     role="button"
                     aria-label={`Select ${key}`}
@@ -587,7 +587,7 @@ export function VisualScheduleTimeline({
 
       {/* Sticky bottom scrollbar */}
       {stickyScrollbar ? (
-        <div className="sticky bottom-0 border-t border-gray-100 bg-white">
+        <div className="sticky bottom-0 border-t border-zinc-100 bg-white">
           <div
             ref={barScrollRef}
             className="overflow-x-auto"
@@ -601,12 +601,12 @@ export function VisualScheduleTimeline({
       {/* Context menu */}
       {contextMenu.open && selection && (contextMenuItems?.length || 0) > 0 ? (
         <div
-          className="fixed z-50 min-w-52 overflow-hidden rounded-lg border border-gray-200 bg-white shadow-xl"
+          className="fixed z-50 min-w-52 overflow-hidden rounded-lg border border-zinc-200 bg-white shadow-xl"
           style={{ left: contextMenu.x, top: contextMenu.y }}
           onContextMenu={(e) => e.preventDefault()}
         >
-          <div className="px-3 py-2 border-b border-gray-100 bg-gray-50">
-            <div className="text-[11px] font-medium text-gray-500">
+          <div className="px-3 py-2 border-b border-zinc-100 bg-zinc-50">
+            <div className="text-[11px] font-medium text-zinc-500">
               {selection.start} → {selection.end}
             </div>
           </div>
@@ -622,8 +622,8 @@ export function VisualScheduleTimeline({
                 }}
                 className={`w-full px-3 py-2 text-left text-sm transition-colors ${
                   item.disabled
-                    ? 'text-gray-400 cursor-not-allowed'
-                    : 'text-gray-700 hover:bg-gray-50'
+                    ? 'text-zinc-400 cursor-not-allowed'
+                    : 'text-zinc-700 hover:bg-zinc-50'
                 }`}
               >
                 {item.label}
@@ -634,7 +634,7 @@ export function VisualScheduleTimeline({
       ) : null}
 
       {/* Compact inline legend */}
-      <div className="flex items-center gap-4 px-3 py-1.5 border-t border-gray-100 bg-gray-50/50 text-[10px] text-gray-500">
+      <div className="flex items-center gap-4 px-3 py-1.5 border-t border-zinc-100 bg-zinc-50/50 text-[10px] text-zinc-500">
         <div className="flex items-center gap-1.5">
           <span className="h-2.5 w-5 rounded-sm" style={{ background: '#3b82f6' }} />
           <span>Booking</span>
@@ -660,22 +660,22 @@ function getBarStyle(item: VisualScheduleItem): { classes: string; style: React.
   const status = (item.status || '').toLowerCase();
   if (status === 'cancelled' || status === 'canceled') {
     return {
-      classes: 'text-gray-500 line-through opacity-60',
-      style: { background: '#e5e7eb', borderLeft: '3px solid #9ca3af' },
+      classes: 'text-zinc-500 line-through opacity-60',
+      style: { background: '#e4e4e7', borderLeft: '3px solid #a1a1aa' },
     };
   }
 
   if (item.kind === 'booking') {
     return {
       classes: 'text-white',
-      style: { background: '#3b82f6', borderLeft: '3px solid #2563eb' },
+      style: { background: '#18181b', borderLeft: '3px solid #09090b' },
     };
   }
 
   // reservation
   return {
     classes: 'text-white',
-    style: { background: '#8b5cf6', borderLeft: '3px solid #7c3aed' },
+    style: { background: '#52525b', borderLeft: '3px solid #3f3f46' },
   };
 }
 

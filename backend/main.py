@@ -23,13 +23,7 @@ app.mount("/uploads", StaticFiles(directory=upload_dir), name="uploads")
 # CORS middleware - allow frontend origins
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:3000",
-        "https://localhost:3000",
-        "http://dplanner.westeurope.cloudapp.azure.com",
-        "https://dplanner.westeurope.cloudapp.azure.com",
-        "https://resourcemanager-hazel.vercel.app"
-    ],
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

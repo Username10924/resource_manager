@@ -15,19 +15,19 @@ export default function Button({
   className,
   ...props
 }: ButtonProps) {
-  const baseStyles = 'inline-flex items-center justify-center font-medium rounded-xl transition-all focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed';
-  
+  const baseStyles = 'inline-flex items-center justify-center font-medium rounded-md transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-950 focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none';
+
   const variants = {
-    primary: 'bg-gradient-to-r from-[#9CA3AF] to-[#D1D5DB] text-white hover:shadow-lg',
-    secondary: 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 hover:border-gray-300',
-    danger: 'bg-gradient-to-r from-red-500 to-pink-500 text-white hover:shadow-lg',
-    ghost: 'bg-transparent text-gray-600 hover:bg-gray-50',
+    primary: 'bg-zinc-900 text-white hover:bg-zinc-800',
+    secondary: 'border border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50 hover:text-zinc-900',
+    danger: 'bg-red-600 text-white hover:bg-red-700',
+    ghost: 'text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900',
   };
-  
+
   const sizes = {
-    sm: 'px-3 py-1.5 text-sm',
-    md: 'px-5 py-2.5 text-sm',
-    lg: 'px-7 py-3.5 text-base',
+    sm: 'h-8 px-3 text-xs',
+    md: 'h-9 px-4 text-sm',
+    lg: 'h-10 px-6 text-sm',
   };
 
   return (

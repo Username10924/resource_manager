@@ -47,8 +47,8 @@ export default function TimelineDateRangePicker({
   const rangeDuration = formatRangeDuration(normalized.start, normalized.end);
 
   return (
-    <div className="mt-3 rounded-lg border border-gray-200 bg-gray-50 p-3">
-      <div className="mb-2 text-xs font-medium uppercase tracking-wide text-gray-600">Timeline Range</div>
+    <div className="mt-3 rounded-md border border-zinc-200 bg-zinc-50 p-3">
+      <div className="mb-2 text-xs font-medium uppercase tracking-wide text-zinc-600">Timeline Range</div>
 
       <div className="flex flex-wrap gap-2">
         <Button type="button" size="sm" variant="secondary" onClick={() => handlePreset('year')}>
@@ -67,31 +67,31 @@ export default function TimelineDateRangePicker({
 
       <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
         <div>
-          <label className="mb-1 block text-xs font-medium text-gray-700">Start Date</label>
+          <label className="mb-1 block text-xs font-medium text-zinc-600">Start Date</label>
           <input
             type="date"
             value={normalized.start}
             min={`${viewYear}-01-01`}
             max={`${viewYear}-12-31`}
             onChange={(e) => onChange(e.target.value, normalized.end)}
-            className="block w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-gray-400 focus:outline-none"
+            className="block w-full rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-zinc-400 focus:outline-none"
           />
         </div>
         <div>
-          <label className="mb-1 block text-xs font-medium text-gray-700">End Date</label>
+          <label className="mb-1 block text-xs font-medium text-zinc-600">End Date</label>
           <input
             type="date"
             value={normalized.end}
             min={`${viewYear}-01-01`}
             max={`${viewYear}-12-31`}
             onChange={(e) => onChange(normalized.start, e.target.value)}
-            className="block w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-gray-400 focus:outline-none"
+            className="block w-full rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-zinc-400 focus:outline-none"
           />
         </div>
       </div>
 
-      <div className="mt-2 text-xs text-gray-500">
-        Duration: <span className="font-medium text-gray-600">{rangeDuration}</span>
+      <div className="mt-2 text-xs text-zinc-500">
+        Duration: <span className="font-medium text-zinc-600">{rangeDuration}</span>
       </div>
     </div>
   );

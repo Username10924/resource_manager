@@ -171,15 +171,15 @@ export default function ProjectsPage() {
   const getStatusColor = (status: string) => {
     switch (status.toLowerCase()) {
       case "active":
-        return "bg-gradient-to-r from-emerald-100 to-teal-100 text-emerald-700 border border-emerald-200";
+        return "bg-emerald-50 text-emerald-700 border border-emerald-200";
       case "planning":
-        return "bg-gradient-to-r from-gray-100 to-gray-200 text-gray-700 border border-gray-200";
+        return "bg-zinc-100 text-zinc-700 border border-zinc-200";
       case "completed":
-        return "bg-gradient-to-r from-gray-100 to-slate-100 text-gray-700 border border-gray-200";
+        return "bg-zinc-100 text-zinc-700 border border-zinc-200";
       case "on-hold":
-        return "bg-gradient-to-r from-amber-100 to-yellow-100 text-amber-700 border border-amber-200";
+        return "bg-amber-50 text-amber-700 border border-amber-200";
       default:
-        return "bg-gradient-to-r from-gray-100 to-slate-100 text-gray-700 border border-gray-200";
+        return "bg-zinc-100 text-zinc-700 border border-zinc-200";
     }
   };
 
@@ -192,10 +192,10 @@ export default function ProjectsPage() {
       <div className="mb-8">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-4xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
+            <h1 className="text-2xl font-semibold text-zinc-900">
               Projects
             </h1>
-            <p className="mt-2 text-sm text-gray-600">Manage projects and resource bookings</p>
+            <p className="mt-2 text-sm text-zinc-600">Manage projects and resource bookings</p>
           </div>
           <Button onClick={() => setIsCreateModalOpen(true)}>Create Project</Button>
         </div>
@@ -206,15 +206,15 @@ export default function ProjectsPage() {
         <div className="mb-8 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
           <Card>
             <CardContent className="py-6">
-              <div className="text-sm font-medium text-gray-600">Total Projects</div>
-              <div className="mt-2 text-3xl font-bold text-gray-900">
+              <div className="text-sm font-medium text-zinc-600">Total Projects</div>
+              <div className="mt-2 text-3xl font-bold text-zinc-900">
                 {stats.total_projects || 0}
               </div>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="py-6">
-              <div className="text-sm font-medium text-gray-600">Active Projects</div>
+              <div className="text-sm font-medium text-zinc-600">Active Projects</div>
               <div className="mt-2 text-3xl font-bold text-green-600">
                 {stats.active_projects || 0}
               </div>
@@ -222,16 +222,16 @@ export default function ProjectsPage() {
           </Card>
           <Card>
             <CardContent className="py-6">
-              <div className="text-sm font-medium text-gray-600">Total Bookings</div>
-              <div className="mt-2 text-3xl font-bold text-gray-600">
+              <div className="text-sm font-medium text-zinc-600">Total Bookings</div>
+              <div className="mt-2 text-3xl font-bold text-zinc-600">
                 {stats.total_bookings || 0}
               </div>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="py-6">
-              <div className="text-sm font-medium text-gray-600">Avg Progress</div>
-              <div className="mt-2 text-3xl font-bold text-gray-900">
+              <div className="text-sm font-medium text-zinc-600">Avg Progress</div>
+              <div className="mt-2 text-3xl font-bold text-zinc-900">
                 {stats.avg_progress || 0}%
               </div>
             </CardContent>
@@ -240,14 +240,14 @@ export default function ProjectsPage() {
       )}
 
       {/* Tabs */}
-      <div className="mb-6 border-b border-gray-200">
+      <div className="mb-6 border-b border-zinc-200">
         <nav className="-mb-px flex space-x-8">
           <button
             onClick={() => setActiveTab("projects")}
             className={`whitespace-nowrap border-b-2 py-4 px-1 text-sm font-medium transition-colors ${
               activeTab === "projects"
-                ? "border-gray-400 text-gray-700"
-                : "border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700"
+                ? "border-zinc-400 text-zinc-700"
+                : "border-transparent text-zinc-500 hover:border-zinc-300 hover:text-zinc-700"
             }`}
           >
             <div className="flex items-center gap-2">
@@ -266,8 +266,8 @@ export default function ProjectsPage() {
             onClick={() => setActiveTab("bookings")}
             className={`whitespace-nowrap border-b-2 py-4 px-1 text-sm font-medium transition-colors ${
               activeTab === "bookings"
-                ? "border-gray-400 text-gray-700"
-                : "border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700"
+                ? "border-zinc-400 text-zinc-700"
+                : "border-transparent text-zinc-500 hover:border-zinc-300 hover:text-zinc-700"
             }`}
           >
             <div className="flex items-center gap-2">
@@ -294,14 +294,14 @@ export default function ProjectsPage() {
               className="cursor-pointer"
               onClick={() => openProjectDetails(project)}
             >
-              <Card className="transition-all hover:shadow-lg">
+              <Card className="transition-all hover:shadow-sm">
                 <CardHeader>
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
                       <CardTitle>{project.name}</CardTitle>
                       {(project as any).project_code && (
                         <div className="mt-1">
-                          <span className="inline-flex items-center gap-1 text-xs font-mono font-semibold text-blue-700 bg-blue-50 px-2.5 py-1 rounded-md border border-blue-200">
+                          <span className="inline-flex items-center gap-1 text-xs font-mono font-semibold text-zinc-700 bg-zinc-100 px-2.5 py-1 rounded-md border border-zinc-200">
                             <svg
                               className="w-3 h-3"
                               fill="none"
@@ -319,12 +319,12 @@ export default function ProjectsPage() {
                           </span>
                         </div>
                       )}
-                      <p className="mt-2 text-sm text-gray-600 line-clamp-2">
+                      <p className="mt-2 text-sm text-zinc-600 line-clamp-2">
                         {project.description}
                       </p>
                       {(project as any).business_unit && (
-                        <p className="mt-2 text-xs text-gray-500">
-                          Business Unit: <span className="font-medium text-gray-700">{(project as any).business_unit}</span>
+                        <p className="mt-2 text-xs text-zinc-500">
+                          Business Unit: <span className="font-medium text-zinc-700">{(project as any).business_unit}</span>
                         </p>
                       )}
                     </div>
@@ -342,12 +342,12 @@ export default function ProjectsPage() {
                     {/* Progress Bar */}
                     <div>
                       <div className="mb-1 flex items-center justify-between text-sm">
-                        <span className="text-gray-600">Progress</span>
-                        <span className="font-medium text-gray-900">{project.progress}%</span>
+                        <span className="text-zinc-600">Progress</span>
+                        <span className="font-medium text-zinc-900">{project.progress}%</span>
                       </div>
-                      <div className="h-2 w-full overflow-hidden rounded-full bg-gray-200">
+                      <div className="h-2 w-full overflow-hidden rounded-full bg-zinc-200">
                         <div
-                          className="h-full rounded-full bg-gray-600 transition-all"
+                          className="h-full rounded-full bg-zinc-900 transition-all"
                           style={{ width: `${project.progress}%` }}
                         />
                       </div>
@@ -404,13 +404,13 @@ export default function ProjectsPage() {
           <CardContent className="p-0">
             {loadingBookings ? (
               <div className="p-8 text-center">
-                <div className="text-sm text-gray-600">Loading bookings...</div>
+                <div className="text-sm text-zinc-600">Loading bookings...</div>
               </div>
             ) : !allBookings || allBookings.length === 0 ? (
               <div className="p-8 text-center">
-                <div className="text-sm text-gray-600">
+                <div className="text-sm text-zinc-600">
                   No bookings found
-                  <div className="mt-2 text-xs text-gray-500">
+                  <div className="mt-2 text-xs text-zinc-500">
                     {allBookings === null
                       ? "Error loading bookings"
                       : "No bookings have been created yet"}
@@ -420,54 +420,54 @@ export default function ProjectsPage() {
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full">
-                  <thead className="border-b border-gray-200 bg-gray-50">
+                  <thead className="border-b border-zinc-200 bg-zinc-50">
                     <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-600">
+                      <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-zinc-600">
                         Project
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-600">
+                      <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-zinc-600">
                         Employee
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-600">
+                      <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-zinc-600">
                         Department
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-600">
+                      <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-zinc-600">
                         Date Range
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-600">
+                      <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-zinc-600">
                         Hours
                       </th>
-                      <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-600">
+                      <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-zinc-600">
                         Actions
                       </th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-gray-200 bg-white">
+                  <tbody className="divide-y divide-zinc-200 bg-white">
                     {allBookings.map((booking) => (
-                      <tr key={booking.id} className="hover:bg-gray-50">
+                      <tr key={booking.id} className="hover:bg-zinc-50">
                         <td className="whitespace-nowrap px-6 py-4">
-                          <div className="text-sm font-medium text-gray-900">
+                          <div className="text-sm font-medium text-zinc-900">
                             {booking.project_name}
                           </div>
-                          <div className="text-xs text-gray-500">{booking.project_code}</div>
+                          <div className="text-xs text-zinc-500">{booking.project_code}</div>
                         </td>
                         <td className="whitespace-nowrap px-6 py-4">
-                          <div className="text-sm text-gray-900">{booking.full_name}</div>
+                          <div className="text-sm text-zinc-900">{booking.full_name}</div>
                         </td>
-                        <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-600">
+                        <td className="whitespace-nowrap px-6 py-4 text-sm text-zinc-600">
                           {booking.department}
                         </td>
                         <td className="whitespace-nowrap px-6 py-4">
-                          <div className="text-sm text-gray-900">
+                          <div className="text-sm text-zinc-900">
                             {new Date(booking.start_date + "T00:00:00").toLocaleDateString()}
                           </div>
-                          <div className="text-xs text-gray-500">
+                          <div className="text-xs text-zinc-500">
                             to {new Date(booking.end_date + "T00:00:00").toLocaleDateString()}
                           </div>
                         </td>
-                        <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-900">
+                        <td className="whitespace-nowrap px-6 py-4 text-sm text-zinc-900">
                           {booking.booked_hours}h
-                          <span className="text-xs text-gray-500 ml-1">(total)</span>
+                          <span className="text-xs text-zinc-500 ml-1">(total)</span>
                         </td>
                         <td className="whitespace-nowrap px-6 py-4 text-right text-sm">
                           <Button
@@ -536,7 +536,7 @@ export default function ProjectsPage() {
           title="Delete Project"
         >
           <div className="space-y-4">
-            <p className="text-sm text-gray-600">
+            <p className="text-sm text-zinc-600">
               Are you sure you want to delete the project <strong>{selectedProject.name}</strong>?
               This will also delete all associated bookings and cannot be undone.
             </p>
@@ -758,15 +758,15 @@ function CreateProjectModal({
     <Modal isOpen={isOpen} onClose={onClose} title="Create New Project" size="md">
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Project Code</label>
+          <label className="block text-sm font-medium text-zinc-900 mb-1">Project Code</label>
           <input
             type="text"
             value={formData.project_code}
             readOnly
-            className="block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm bg-gray-50 text-gray-600 cursor-not-allowed"
+            className="block w-full rounded-md border border-zinc-200 px-3 py-2 text-sm bg-zinc-50 text-zinc-600 cursor-not-allowed focus:border-zinc-400 focus:ring-1 focus:ring-zinc-400 focus:outline-none"
             placeholder="Auto-generated based on department"
           />
-          <p className="mt-1 text-xs text-gray-500">
+          <p className="mt-1 text-xs text-zinc-500">
             Auto-generated based on project manager's department
           </p>
         </div>
@@ -779,11 +779,11 @@ function CreateProjectModal({
         />
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Business Unit</label>
+          <label className="block text-sm font-medium text-zinc-900 mb-1">Business Unit</label>
           <select
             value={formData.business_unit}
             onChange={(e) => setFormData({ ...formData, business_unit: e.target.value })}
-            className="block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-gray-400 focus:outline-none"
+            className="block w-full rounded-md border border-zinc-200 px-3 py-2 text-sm focus:border-zinc-400 focus:ring-1 focus:ring-zinc-400 focus:outline-none"
           >
             <option value="">Select business unit</option>
             {BUSINESS_UNIT_OPTIONS.map((unit) => (
@@ -795,9 +795,9 @@ function CreateProjectModal({
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+          <label className="block text-sm font-medium text-zinc-900 mb-1">Description</label>
           <textarea
-            className="block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-gray-400 focus:outline-none"
+            className="block w-full rounded-md border border-zinc-200 px-3 py-2 text-sm focus:border-zinc-400 focus:ring-1 focus:ring-zinc-400 focus:outline-none"
             rows={4}
             value={formData.description}
             onChange={(e) => setFormData({ ...formData, description: e.target.value })}
@@ -806,7 +806,7 @@ function CreateProjectModal({
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="block text-sm font-medium text-zinc-900 mb-1">
             Project Manager <span className="text-red-500">*</span>
           </label>
           <div className="relative">
@@ -816,14 +816,14 @@ function CreateProjectModal({
                 setIsEmployeeOpen(!isEmployeeOpen);
                 if (!isEmployeeOpen) setEmployeeSearch("");
               }}
-              className="w-full px-3 py-2 text-left text-sm bg-white border border-gray-300 rounded-lg shadow-sm hover:border-gray-400 hover:shadow-md focus:outline-none focus:border-gray-400 transition-all duration-200 flex items-center justify-between group"
+              className="w-full px-3 py-2 text-left text-sm bg-white border border-zinc-200 rounded-md hover:border-zinc-400 focus:outline-none focus:border-zinc-400 focus:ring-1 focus:ring-zinc-400 transition-all duration-200 flex items-center justify-between group"
             >
-              <span className="text-gray-900">
+              <span className="text-zinc-900">
                 {employees.find((e) => e.id === formData.solution_architect_id)?.full_name ||
                   "Select a project manager"}
               </span>
               <svg
-                className={`w-5 h-5 text-gray-400 transition-transform duration-200 flex-shrink-0 ${
+                className={`w-5 h-5 text-zinc-400 transition-transform duration-200 flex-shrink-0 ${
                   isEmployeeOpen ? "rotate-180" : ""
                 }`}
                 fill="none"
@@ -840,14 +840,14 @@ function CreateProjectModal({
             </button>
 
             {isEmployeeOpen && (
-              <div className="absolute z-10 w-full mt-2 bg-white border border-gray-200 rounded-lg shadow-xl max-h-60 overflow-auto">
-                <div className="sticky top-0 bg-white p-2 border-b border-gray-100">
+              <div className="absolute z-10 w-full mt-2 bg-white border border-zinc-200 rounded-lg shadow-sm max-h-60 overflow-auto">
+                <div className="sticky top-0 bg-white p-2 border-b border-zinc-100">
                   <input
                     type="text"
                     value={employeeSearch}
                     onChange={(e) => setEmployeeSearch(e.target.value)}
                     placeholder="Search project managers..."
-                    className="w-full px-3 py-2 text-sm bg-white border border-gray-300 rounded-lg shadow-sm hover:border-gray-400 focus:outline-none focus:border-gray-400 focus:ring-2 focus:ring-gray-200 transition-all duration-200"
+                    className="w-full px-3 py-2 text-sm bg-white border border-zinc-200 rounded-md hover:border-zinc-400 focus:outline-none focus:border-zinc-400 focus:ring-1 focus:ring-zinc-400 transition-all duration-200"
                   />
                 </div>
                 {employees
@@ -868,14 +868,14 @@ function CreateProjectModal({
                       setIsEmployeeOpen(false);
                       setEmployeeSearch("");
                     }}
-                    className={`w-full px-4 py-3 text-left text-sm hover:bg-gray-50 transition-colors duration-150 first:rounded-t-lg last:rounded-b-lg ${
+                    className={`w-full px-4 py-3 text-left text-sm hover:bg-zinc-50 transition-colors duration-150 first:rounded-t-lg last:rounded-b-lg ${
                       formData.solution_architect_id === employee.id
-                        ? "bg-gray-50 text-gray-700 font-medium"
-                        : "text-gray-700"
+                        ? "bg-zinc-50 text-zinc-700 font-medium"
+                        : "text-zinc-700"
                     }`}
                   >
                     <div className="font-medium">{employee.full_name}</div>
-                    <div className="text-xs text-gray-500">{employee.department} - {employee.position}</div>
+                    <div className="text-xs text-zinc-500">{employee.department} - {employee.position}</div>
                   </button>
                 ))}
               </div>
@@ -908,9 +908,9 @@ function CreateProjectModal({
           />
         </div>
         {formData.start_date && formData.end_date && (
-          <div className="-mt-2 text-xs text-gray-500">
+          <div className="-mt-2 text-xs text-zinc-500">
             Duration:{" "}
-            <span className="font-medium text-gray-600">
+            <span className="font-medium text-zinc-600">
               {formatRangeDuration(formData.start_date, formData.end_date)}
             </span>
           </div>
@@ -918,10 +918,10 @@ function CreateProjectModal({
 
         {/* File Attachments */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Attachments</label>
+          <label className="block text-sm font-medium text-zinc-900 mb-2">Attachments</label>
           <div
             className={`relative border-2 border-dashed rounded-lg p-6 transition-colors ${
-              isDragging ? "border-gray-400 bg-gray-50" : "border-gray-300 hover:border-gray-400"
+              isDragging ? "border-zinc-400 bg-zinc-50" : "border-zinc-300 hover:border-zinc-400"
             }`}
             onDragOver={(e) => {
               e.preventDefault();
@@ -948,7 +948,7 @@ function CreateProjectModal({
             />
             <div className="text-center">
               <svg
-                className="mx-auto h-12 w-12 text-gray-400"
+                className="mx-auto h-12 w-12 text-zinc-400"
                 stroke="currentColor"
                 fill="none"
                 viewBox="0 0 48 48"
@@ -960,11 +960,11 @@ function CreateProjectModal({
                   strokeLinejoin="round"
                 />
               </svg>
-              <p className="mt-2 text-sm text-gray-600">
-                <span className="font-semibold text-gray-600">Click to upload</span> or drag and
+              <p className="mt-2 text-sm text-zinc-600">
+                <span className="font-semibold text-zinc-600">Click to upload</span> or drag and
                 drop
               </p>
-              <p className="mt-1 text-xs text-gray-500">Any file type supported</p>
+              <p className="mt-1 text-xs text-zinc-500">Any file type supported</p>
             </div>
           </div>
 
@@ -974,11 +974,11 @@ function CreateProjectModal({
               {attachments.map((file, index) => (
                 <div
                   key={index}
-                  className="flex items-center justify-between bg-gray-50 rounded-lg px-3 py-2"
+                  className="flex items-center justify-between bg-zinc-50 rounded-lg px-3 py-2"
                 >
                   <div className="flex items-center space-x-2 flex-1 min-w-0">
                     <svg
-                      className="h-5 w-5 text-gray-400 flex-shrink-0"
+                      className="h-5 w-5 text-zinc-400 flex-shrink-0"
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"
@@ -990,8 +990,8 @@ function CreateProjectModal({
                         d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
                       />
                     </svg>
-                    <span className="text-sm text-gray-700 truncate">{file.name}</span>
-                    <span className="text-xs text-gray-500 flex-shrink-0">
+                    <span className="text-sm text-zinc-700 truncate">{file.name}</span>
+                    <span className="text-xs text-zinc-500 flex-shrink-0">
                       ({(file.size / 1024).toFixed(1)} KB)
                     </span>
                   </div>
@@ -1142,18 +1142,18 @@ function EditProjectModal({
         {/* Show existing attachments */}
         {Array.isArray(project.attachments) && project.attachments.length > 0 && (
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-zinc-900 mb-2">
               Existing Attachments
             </label>
             <div className="space-y-2">
               {project.attachments.map((attachment: any, index: number) => (
                 <div
                   key={index}
-                  className="flex items-center justify-between p-2 bg-gray-50 rounded-lg border border-gray-200"
+                  className="flex items-center justify-between p-2 bg-zinc-50 rounded-lg border border-zinc-200"
                 >
                   <div className="flex items-center gap-2">
                     <svg
-                      className="w-4 h-4 text-gray-500"
+                      className="w-4 h-4 text-zinc-500"
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"
@@ -1165,13 +1165,13 @@ function EditProjectModal({
                         d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"
                       />
                     </svg>
-                    <span className="text-sm text-gray-900">{attachment.filename}</span>
+                    <span className="text-sm text-zinc-900">{attachment.filename}</span>
                   </div>
                   <a
                     href={`https://dplanner.alkhathlan.dev/${attachment.path}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-gray-600 hover:text-gray-800 text-xs font-medium"
+                    className="text-zinc-600 hover:text-zinc-800 text-xs font-medium"
                   >
                     Download
                   </a>
@@ -1189,11 +1189,11 @@ function EditProjectModal({
         />
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Business Unit</label>
+          <label className="block text-sm font-medium text-zinc-900 mb-1">Business Unit</label>
           <select
             value={formData.business_unit}
             onChange={(e) => setFormData({ ...formData, business_unit: e.target.value })}
-            className="block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-gray-400 focus:outline-none"
+            className="block w-full rounded-md border border-zinc-200 px-3 py-2 text-sm focus:border-zinc-400 focus:ring-1 focus:ring-zinc-400 focus:outline-none"
           >
             <option value="">Select business unit</option>
             {BUSINESS_UNIT_OPTIONS.map((unit) => (
@@ -1205,9 +1205,9 @@ function EditProjectModal({
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+          <label className="block text-sm font-medium text-zinc-900 mb-1">Description</label>
           <textarea
-            className="block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-gray-400 focus:outline-none"
+            className="block w-full rounded-md border border-zinc-200 px-3 py-2 text-sm focus:border-zinc-400 focus:ring-1 focus:ring-zinc-400 focus:outline-none"
             rows={4}
             value={formData.description}
             onChange={(e) => setFormData({ ...formData, description: e.target.value })}
@@ -1231,16 +1231,16 @@ function EditProjectModal({
           />
         </div>
         {formData.start_date && formData.end_date && (
-          <div className="-mt-2 text-xs text-gray-500">
+          <div className="-mt-2 text-xs text-zinc-500">
             Duration:{" "}
-            <span className="font-medium text-gray-600">
+            <span className="font-medium text-zinc-600">
               {formatRangeDuration(formData.start_date, formData.end_date)}
             </span>
           </div>
         )}
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="block text-sm font-medium text-zinc-900 mb-1">
             Project Manager <span className="text-red-500">*</span>
           </label>
           <div className="relative">
@@ -1250,14 +1250,14 @@ function EditProjectModal({
                 setIsEmployeeOpen(!isEmployeeOpen);
                 if (!isEmployeeOpen) setEmployeeSearch("");
               }}
-              className="w-full px-3 py-2 text-left text-sm bg-white border border-gray-300 rounded-lg shadow-sm hover:border-gray-400 hover:shadow-md focus:outline-none focus:border-gray-400 transition-all duration-200 flex items-center justify-between group"
+              className="w-full px-3 py-2 text-left text-sm bg-white border border-zinc-200 rounded-md hover:border-zinc-400 focus:outline-none focus:border-zinc-400 focus:ring-1 focus:ring-zinc-400 transition-all duration-200 flex items-center justify-between group"
             >
-              <span className="text-gray-900">
+              <span className="text-zinc-900">
                 {employees.find((e) => e.id === formData.solution_architect_id)?.full_name ||
                   "Select a project manager"}
               </span>
               <svg
-                className={`w-5 h-5 text-gray-400 transition-transform duration-200 flex-shrink-0 ${
+                className={`w-5 h-5 text-zinc-400 transition-transform duration-200 flex-shrink-0 ${
                   isEmployeeOpen ? "rotate-180" : ""
                 }`}
                 fill="none"
@@ -1274,14 +1274,14 @@ function EditProjectModal({
             </button>
 
             {isEmployeeOpen && (
-              <div className="absolute z-10 w-full mt-2 bg-white border border-gray-200 rounded-lg shadow-xl max-h-60 overflow-auto">
-                <div className="sticky top-0 bg-white p-2 border-b border-gray-100">
+              <div className="absolute z-10 w-full mt-2 bg-white border border-zinc-200 rounded-lg shadow-sm max-h-60 overflow-auto">
+                <div className="sticky top-0 bg-white p-2 border-b border-zinc-100">
                   <input
                     type="text"
                     value={employeeSearch}
                     onChange={(e) => setEmployeeSearch(e.target.value)}
                     placeholder="Search project managers..."
-                    className="w-full px-3 py-2 text-sm bg-white border border-gray-300 rounded-lg shadow-sm hover:border-gray-400 focus:outline-none focus:border-gray-400 focus:ring-2 focus:ring-gray-200 transition-all duration-200"
+                    className="w-full px-3 py-2 text-sm bg-white border border-zinc-200 rounded-md hover:border-zinc-400 focus:outline-none focus:border-zinc-400 focus:ring-1 focus:ring-zinc-400 transition-all duration-200"
                   />
                 </div>
                 {employees
@@ -1302,14 +1302,14 @@ function EditProjectModal({
                       setIsEmployeeOpen(false);
                       setEmployeeSearch("");
                     }}
-                    className={`w-full px-4 py-3 text-left text-sm hover:bg-gray-50 transition-colors duration-150 first:rounded-t-lg last:rounded-b-lg ${
+                    className={`w-full px-4 py-3 text-left text-sm hover:bg-zinc-50 transition-colors duration-150 first:rounded-t-lg last:rounded-b-lg ${
                       formData.solution_architect_id === employee.id
-                        ? "bg-gray-50 text-gray-700 font-medium"
-                        : "text-gray-700"
+                        ? "bg-zinc-50 text-zinc-700 font-medium"
+                        : "text-zinc-700"
                     }`}
                   >
                     <div className="font-medium">{employee.full_name}</div>
-                    <div className="text-xs text-gray-500">{employee.department} - {employee.position}</div>
+                    <div className="text-xs text-zinc-500">{employee.department} - {employee.position}</div>
                   </button>
                 ))}
               </div>
@@ -1318,9 +1318,9 @@ function EditProjectModal({
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+          <label className="block text-sm font-medium text-zinc-900 mb-1">Status</label>
           <select
-            className="block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-gray-400 focus:outline-none"
+            className="block w-full rounded-md border border-zinc-200 px-3 py-2 text-sm focus:border-zinc-400 focus:ring-1 focus:ring-zinc-400 focus:outline-none"
             value={formData.status}
             onChange={(e) => setFormData({ ...formData, status: e.target.value })}
           >
@@ -1343,12 +1343,12 @@ function EditProjectModal({
 
         {/* New File Attachments */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
+          <label className="block text-sm font-medium text-zinc-900 mb-2">
             Add New Attachments
           </label>
           <div
             className={`relative border-2 border-dashed rounded-lg p-6 transition-colors ${
-              isDragging ? "border-gray-400 bg-gray-50" : "border-gray-300 hover:border-gray-400"
+              isDragging ? "border-zinc-400 bg-zinc-50" : "border-zinc-300 hover:border-zinc-400"
             }`}
             onDragOver={(e) => {
               e.preventDefault();
@@ -1369,7 +1369,7 @@ function EditProjectModal({
             />
             <div className="text-center">
               <svg
-                className="mx-auto h-12 w-12 text-gray-400"
+                className="mx-auto h-12 w-12 text-zinc-400"
                 stroke="currentColor"
                 fill="none"
                 viewBox="0 0 48 48"
@@ -1381,7 +1381,7 @@ function EditProjectModal({
                   strokeLinejoin="round"
                 />
               </svg>
-              <p className="mt-2 text-sm text-gray-600">
+              <p className="mt-2 text-sm text-zinc-600">
                 Drag and drop files here, or click to select files
               </p>
             </div>
@@ -1393,11 +1393,11 @@ function EditProjectModal({
               {attachments.map((file, index) => (
                 <div
                   key={index}
-                  className="flex items-center justify-between p-2 bg-gray-50 rounded-lg border border-gray-200"
+                  className="flex items-center justify-between p-2 bg-zinc-50 rounded-lg border border-zinc-200"
                 >
                   <div className="flex items-center gap-2">
                     <svg
-                      className="w-4 h-4 text-gray-500"
+                      className="w-4 h-4 text-zinc-500"
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"
@@ -1409,8 +1409,8 @@ function EditProjectModal({
                         d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"
                       />
                     </svg>
-                    <span className="text-sm text-gray-900">{file.name}</span>
-                    <span className="text-xs text-gray-500">
+                    <span className="text-sm text-zinc-900">{file.name}</span>
+                    <span className="text-xs text-zinc-500">
                       ({(file.size / 1024).toFixed(1)} KB)
                     </span>
                   </div>
@@ -1605,7 +1605,7 @@ function BookingModal({
     maxHoursFromAvailability !== null
       ? Math.min(totalMaxHours, maxHoursFromAvailability)
       : totalMaxHours;
-  
+
   // Calculate max hours per day
   const maxHoursPerDay = workingDays > 0 ? maxHours / workingDays : 6;
 
@@ -1711,8 +1711,8 @@ function BookingModal({
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
             {/* Employee Selection */}
             <div>
-              <h4 className="mb-3 text-sm font-semibold text-gray-900">Select Team Member</h4>
-              
+              <h4 className="mb-3 text-sm font-semibold text-zinc-900">Select Team Member</h4>
+
               {/* Search Filter */}
               <div className="mb-3">
                 <div className="relative">
@@ -1721,10 +1721,10 @@ function BookingModal({
                     placeholder="Search team members..."
                     value={searchFilter}
                     onChange={(e) => setSearchFilter(e.target.value)}
-                    className="w-full px-3 py-2 pl-9 text-sm bg-white border border-gray-300 rounded-lg shadow-sm hover:border-gray-400 focus:outline-none focus:border-gray-400 focus:ring-2 focus:ring-gray-200 transition-all duration-200"
+                    className="w-full px-3 py-2 pl-9 text-sm bg-white border border-zinc-200 rounded-md hover:border-zinc-400 focus:outline-none focus:border-zinc-400 focus:ring-1 focus:ring-zinc-400 transition-all duration-200"
                   />
                   <svg
-                    className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400"
+                    className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-zinc-400"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -1738,7 +1738,7 @@ function BookingModal({
                   </svg>
                 </div>
               </div>
-              
+
               <div className="space-y-2 max-h-96 overflow-y-auto">
                 {employees
                   .filter((employee) =>
@@ -1753,12 +1753,12 @@ function BookingModal({
                     onClick={() => setSelectedEmployee(employee)}
                     className={`w-full rounded-lg border p-3 text-left transition-colors ${
                       selectedEmployee?.id === employee.id
-                        ? "border-gray-400 bg-gray-50"
-                        : "border-gray-200 hover:border-gray-300"
+                        ? "border-zinc-400 bg-zinc-50"
+                        : "border-zinc-200 hover:border-zinc-300"
                     }`}
                   >
-                    <div className="font-medium text-gray-900">{employee.full_name}</div>
-                    <div className="mt-1 text-xs text-gray-600">
+                    <div className="font-medium text-zinc-900">{employee.full_name}</div>
+                    <div className="mt-1 text-xs text-zinc-600">
                       {employee.position} • {employee.department}
                     </div>
                   </button>
@@ -1768,15 +1768,15 @@ function BookingModal({
 
             {/* Booking Details */}
             <div>
-              <h4 className="mb-3 text-sm font-semibold text-gray-900">Booking Details</h4>
+              <h4 className="mb-3 text-sm font-semibold text-zinc-900">Booking Details</h4>
 
               {selectedEmployee ? (
                 <div className="space-y-4">
-                  <div className="rounded-lg bg-gray-50 p-4">
-                    <div className="text-sm font-medium text-gray-900">
+                  <div className="rounded-lg bg-zinc-50 p-4">
+                    <div className="text-sm font-medium text-zinc-900">
                       Selected: {selectedEmployee.full_name}
                     </div>
-                    <div className="mt-1 text-xs text-gray-600">
+                    <div className="mt-1 text-xs text-zinc-600">
                       {selectedEmployee.position} • {selectedEmployee.department}
                     </div>
                   </div>
@@ -1793,7 +1793,7 @@ function BookingModal({
                   />
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-zinc-900 mb-1">
                       Start Date
                     </label>
                     <input
@@ -1802,31 +1802,31 @@ function BookingModal({
                       onChange={(e) =>
                         setBookingData({ ...bookingData, startDate: e.target.value })
                       }
-                      className="w-full px-3 py-2 text-sm bg-white border border-gray-300 rounded-lg shadow-sm hover:border-gray-400 focus:outline-none focus:border-gray-400 focus:ring-2 focus:ring-gray-200 transition-all duration-200"
+                      className="w-full px-3 py-2 text-sm bg-white border border-zinc-200 rounded-md hover:border-zinc-400 focus:outline-none focus:border-zinc-400 focus:ring-1 focus:ring-zinc-400 transition-all duration-200"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">End Date</label>
+                    <label className="block text-sm font-medium text-zinc-900 mb-1">End Date</label>
                     <input
                       type="date"
                       value={bookingData.endDate}
                       onChange={(e) => setBookingData({ ...bookingData, endDate: e.target.value })}
                       min={bookingData.startDate}
-                      className="w-full px-3 py-2 text-sm bg-white border border-gray-300 rounded-lg shadow-sm hover:border-gray-400 focus:outline-none focus:border-gray-400 focus:ring-2 focus:ring-gray-200 transition-all duration-200"
+                      className="w-full px-3 py-2 text-sm bg-white border border-zinc-200 rounded-md hover:border-zinc-400 focus:outline-none focus:border-zinc-400 focus:ring-1 focus:ring-zinc-400 transition-all duration-200"
                     />
                   </div>
-                  <div className="text-xs text-gray-500 -mt-2">
+                  <div className="text-xs text-zinc-500 -mt-2">
                     Duration:{" "}
-                    <span className="font-medium text-gray-600">
+                    <span className="font-medium text-zinc-600">
                       {formatRangeDuration(bookingData.startDate, bookingData.endDate)}
                     </span>
                   </div>
 
                   {/* Employee Availability Section */}
                   {loadingAvailability ? (
-                    <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
-                      <div className="text-sm text-gray-600">Loading availability...</div>
+                    <div className="rounded-lg border border-zinc-200 bg-zinc-50 p-4">
+                      <div className="text-sm text-zinc-600">Loading availability...</div>
                     </div>
                   ) : (
                     employeeAvailability && (
@@ -1960,15 +1960,15 @@ function BookingModal({
                       className={`rounded-lg border p-3 ${
                         utilizedHours > 0
                           ? "border-amber-200 bg-amber-50"
-                          : "border-gray-200 bg-gray-50"
+                          : "border-zinc-200 bg-zinc-50"
                       }`}
                     >
-                      <div className="text-sm text-gray-900">
-                        📅 {workingDays} working days (
+                      <div className="text-sm text-zinc-900">
+                        {workingDays} working days (
                         {new Date(bookingData.startDate).toLocaleDateString()} -{" "}
                         {new Date(bookingData.endDate).toLocaleDateString()})
                       </div>
-                      <div className="text-xs text-gray-700 mt-1">
+                      <div className="text-xs text-zinc-700 mt-1">
                         Maximum capacity: {totalMaxHours} hours (6 hrs/day)
                       </div>
                       {utilizedHours > 0 && employeeAvailability?.availability && (
@@ -1989,7 +1989,7 @@ function BookingModal({
                         </div>
                       )}
                       {!employeeAvailability?.availability && loadingAvailability && (
-                        <div className="text-xs text-gray-500 mt-1">Checking availability...</div>
+                        <div className="text-xs text-zinc-500 mt-1">Checking availability...</div>
                       )}
                       {!loadingAvailability &&
                         !employeeAvailability?.availability &&
@@ -2015,14 +2015,14 @@ function BookingModal({
                   />
 
                   {bookingData.hoursPerDay > 0 && workingDays > 0 && (
-                    <div className="rounded-lg border border-gray-200 bg-gray-50 p-3 space-y-2">
-                      <div className="text-sm text-gray-900">
+                    <div className="rounded-lg border border-zinc-200 bg-zinc-50 p-3 space-y-2">
+                      <div className="text-sm text-zinc-900">
                         <span className="font-medium">Working Days:</span> <span className="font-bold">{workingDays}</span> days
                       </div>
-                      <div className="text-sm text-gray-900">
+                      <div className="text-sm text-zinc-900">
                         <span className="font-medium">Total Hours:</span> <span className="font-bold">{totalHours.toFixed(1)}</span> hrs
                       </div>
-                      <div className="text-xs text-gray-700 mt-1">
+                      <div className="text-xs text-zinc-700 mt-1">
                         ({bookingData.hoursPerDay} hrs/day × {workingDays} working days)
                       </div>
                     </div>
@@ -2031,7 +2031,7 @@ function BookingModal({
                   {totalHours > 0 && totalHours <= maxHours && workingDays > 0 && (
                     <div className="rounded-lg border border-green-200 bg-green-50 p-3">
                       <div className="text-sm text-green-900">
-                        ✓ Within capacity
+                        Within capacity
                       </div>
                       <div className="text-xs text-green-700 mt-1">
                         Remaining capacity after booking:{" "}
@@ -2087,8 +2087,8 @@ function BookingModal({
                   </div>
                 </div>
               ) : (
-                <div className="rounded-lg border border-gray-200 bg-gray-50 p-8 text-center">
-                  <div className="text-sm text-gray-600">
+                <div className="rounded-lg border border-zinc-200 bg-zinc-50 p-8 text-center">
+                  <div className="text-sm text-zinc-600">
                     Select a team member to book resources
                   </div>
                 </div>
@@ -2145,13 +2145,13 @@ function ProjectDetailsModal({
         <div className="space-y-4">
           {/* Project Code */}
           {(project as any).project_code && (
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-              <h3 className="text-xs font-semibold text-blue-900 uppercase tracking-wide mb-2">
+            <div className="bg-zinc-50 border border-zinc-200 rounded-lg p-4">
+              <h3 className="text-xs font-semibold text-zinc-900 uppercase tracking-wide mb-2">
                 Project Code
               </h3>
               <div className="flex items-center gap-2">
                 <svg
-                  className="w-4 h-4 text-blue-600"
+                  className="w-4 h-4 text-zinc-600"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -2163,7 +2163,7 @@ function ProjectDetailsModal({
                     d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14"
                   />
                 </svg>
-                <span className="text-lg font-mono font-bold text-blue-900">
+                <span className="text-lg font-mono font-bold text-zinc-900">
                   {(project as any).project_code}
                 </span>
               </div>
@@ -2171,45 +2171,45 @@ function ProjectDetailsModal({
           )}
 
           <div>
-            <h3 className="text-sm font-semibold text-gray-700 mb-2">Description</h3>
-            <p className="text-sm text-gray-600">{project.description}</p>
+            <h3 className="text-sm font-semibold text-zinc-900 mb-2">Description</h3>
+            <p className="text-sm text-zinc-600">{project.description}</p>
           </div>
 
           {(project as any).business_unit && (
             <div>
-              <h3 className="text-sm font-semibold text-gray-700 mb-2">Business Unit</h3>
-              <p className="text-sm text-gray-600">{(project as any).business_unit}</p>
+              <h3 className="text-sm font-semibold text-zinc-900 mb-2">Business Unit</h3>
+              <p className="text-sm text-zinc-600">{(project as any).business_unit}</p>
             </div>
           )}
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="rounded-lg border border-gray-200 bg-gray-50 p-3">
-              <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1">Start Date</h3>
-              <p className="text-sm font-medium text-gray-800">{formatProjectDate((project as any).start_date)}</p>
+            <div className="rounded-lg border border-zinc-200 bg-zinc-50 p-3">
+              <h3 className="text-xs font-semibold uppercase tracking-wide text-zinc-500 mb-1">Start Date</h3>
+              <p className="text-sm font-medium text-zinc-900">{formatProjectDate((project as any).start_date)}</p>
             </div>
-            <div className="rounded-lg border border-gray-200 bg-gray-50 p-3">
-              <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1">End Date</h3>
-              <p className="text-sm font-medium text-gray-800">{formatProjectDate((project as any).end_date)}</p>
+            <div className="rounded-lg border border-zinc-200 bg-zinc-50 p-3">
+              <h3 className="text-xs font-semibold uppercase tracking-wide text-zinc-500 mb-1">End Date</h3>
+              <p className="text-sm font-medium text-zinc-900">{formatProjectDate((project as any).end_date)}</p>
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <h3 className="text-sm font-semibold text-gray-700 mb-1">Status</h3>
-              <span className="inline-block rounded-full px-3 py-1 text-xs font-medium bg-gray-100 text-gray-800">
+              <h3 className="text-sm font-semibold text-zinc-900 mb-1">Status</h3>
+              <span className="inline-block rounded-full px-3 py-1 text-xs font-medium bg-zinc-100 text-zinc-900">
                 {project.status}
               </span>
             </div>
             <div>
-              <h3 className="text-sm font-semibold text-gray-700 mb-1">Progress</h3>
+              <h3 className="text-sm font-semibold text-zinc-900 mb-1">Progress</h3>
               <div className="flex items-center gap-2">
-                <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
+                <div className="flex-1 h-2 bg-zinc-200 rounded-full overflow-hidden">
                   <div
-                    className="h-full bg-gray-600 transition-all"
+                    className="h-full bg-zinc-900 transition-all"
                     style={{ width: `${project.progress}%` }}
                   />
                 </div>
-                <span className="text-sm font-medium text-gray-900">{project.progress}%</span>
+                <span className="text-sm font-medium text-zinc-900">{project.progress}%</span>
               </div>
             </div>
           </div>
@@ -2218,16 +2218,16 @@ function ProjectDetailsModal({
         {/* Attachments Section */}
         {Array.isArray(project.attachments) && project.attachments.length > 0 && (
           <div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Attachments</h3>
+            <h3 className="text-lg font-semibold text-zinc-900 mb-4">Attachments</h3>
             <div className="space-y-2">
               {project.attachments.map((attachment: any, index: number) => (
                 <div
                   key={index}
-                  className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200"
+                  className="flex items-center justify-between p-3 bg-zinc-50 rounded-lg border border-zinc-200"
                 >
                   <div className="flex items-center gap-3">
                     <svg
-                      className="w-5 h-5 text-gray-500"
+                      className="w-5 h-5 text-zinc-500"
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"
@@ -2240,8 +2240,8 @@ function ProjectDetailsModal({
                       />
                     </svg>
                     <div>
-                      <p className="text-sm font-medium text-gray-900">{attachment.filename}</p>
-                      <p className="text-xs text-gray-500">
+                      <p className="text-sm font-medium text-zinc-900">{attachment.filename}</p>
+                      <p className="text-xs text-zinc-500">
                         {new Date(attachment.uploaded_at).toLocaleDateString()}
                       </p>
                     </div>
@@ -2250,7 +2250,7 @@ function ProjectDetailsModal({
                     href={`https://dplanner.alkhathlan.dev/${attachment.path}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-gray-600 hover:text-gray-800 text-sm font-medium"
+                    className="text-zinc-600 hover:text-zinc-800 text-sm font-medium"
                   >
                     Download
                   </a>
@@ -2263,20 +2263,20 @@ function ProjectDetailsModal({
         {/* Team Members Section */}
         <div>
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-            <h3 className="text-lg font-semibold text-gray-900">Team Members</h3>
-            <div className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-700">
-              Total Team Hours: <span className="font-semibold text-gray-900">{totalTeamHours}</span>
+            <h3 className="text-lg font-semibold text-zinc-900">Team Members</h3>
+            <div className="rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm text-zinc-700">
+              Total Team Hours: <span className="font-semibold text-zinc-900">{totalTeamHours}</span>
             </div>
           </div>
           {employees.length > 0 ? (
             <div className="space-y-3">
               {employees.map((emp) => (
-                <Card key={emp.employee_id} className="border-l-4 border-l-gray-400">
+                <Card key={emp.employee_id} className="border-l-4 border-l-zinc-400">
                   <CardContent className="py-4">
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
                         <div className="flex items-center gap-2">
-                          <div className="h-10 w-10 rounded-full bg-gradient-to-br from-gray-500 to-gray-700 flex items-center justify-center text-white font-semibold">
+                          <div className="h-10 w-10 rounded-full bg-zinc-900 flex items-center justify-center text-white font-semibold">
                             {emp.employee_name
                               .split(" ")
                               .map((n: string) => n[0])
@@ -2284,8 +2284,8 @@ function ProjectDetailsModal({
                               .toUpperCase()}
                           </div>
                           <div>
-                            <h4 className="font-semibold text-gray-900">{emp.employee_name}</h4>
-                            <p className="text-xs text-gray-500">{emp.department}</p>
+                            <h4 className="font-semibold text-zinc-900">{emp.employee_name}</h4>
+                            <p className="text-xs text-zinc-500">{emp.department}</p>
                           </div>
                         </div>
 
@@ -2294,13 +2294,13 @@ function ProjectDetailsModal({
                           {emp.bookings.map((booking: any, idx: number) => (
                             <div
                               key={idx}
-                              className="flex items-center justify-between text-sm bg-gray-50 rounded px-3 py-2"
+                              className="flex items-center justify-between text-sm bg-zinc-50 rounded px-3 py-2"
                             >
-                              <span className="text-gray-600">
+                              <span className="text-zinc-600">
                                 {new Date(booking.start_date).toLocaleDateString()} -{" "}
                                 {new Date(booking.end_date).toLocaleDateString()}
                               </span>
-                              <span className="font-medium text-gray-900">
+                              <span className="font-medium text-zinc-900">
                                 {booking.booked_hours} hours total
                               </span>
                             </div>
@@ -2309,8 +2309,8 @@ function ProjectDetailsModal({
                       </div>
 
                       <div className="ml-4 text-right">
-                        <div className="text-xs text-gray-500">Total Hours</div>
-                        <div className="text-2xl font-bold text-gray-600">{emp.total_hours}</div>
+                        <div className="text-xs text-zinc-500">Total Hours</div>
+                        <div className="text-2xl font-bold text-zinc-600">{emp.total_hours}</div>
                       </div>
                     </div>
                   </CardContent>
@@ -2318,9 +2318,9 @@ function ProjectDetailsModal({
               ))}
             </div>
           ) : (
-            <div className="text-center py-8 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
+            <div className="text-center py-8 bg-zinc-50 rounded-lg border-2 border-dashed border-zinc-300">
               <svg
-                className="mx-auto h-12 w-12 text-gray-400"
+                className="mx-auto h-12 w-12 text-zinc-400"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -2332,8 +2332,8 @@ function ProjectDetailsModal({
                   d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"
                 />
               </svg>
-              <p className="mt-2 text-sm text-gray-600">No team members assigned yet</p>
-              <p className="mt-1 text-xs text-gray-500">
+              <p className="mt-2 text-sm text-zinc-600">No team members assigned yet</p>
+              <p className="mt-1 text-xs text-zinc-500">
                 Book resources to add team members to this project
               </p>
             </div>
@@ -2347,14 +2347,14 @@ function ProjectDetailsModal({
                 onClose();
                 router.push(`/projects/${project.id}/book`);
               }}
-              className="text-gray-700 bg-gray-100 hover:bg-gray-200"
+              className="text-zinc-700 bg-zinc-100 hover:bg-zinc-200"
             >
               Book Resources
             </Button>
           </div>
         </div>
 
-        <div className="flex justify-end pt-4 border-t">
+        <div className="flex justify-end pt-4 border-t border-zinc-200">
           <Button onClick={onClose}>Close</Button>
         </div>
       </div>

@@ -8,20 +8,22 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
   return (
     <AuthProvider>
       <AppLayout>{children}</AppLayout>
-      <Toaster 
+      <Toaster
         position="top-right"
         toastOptions={{
           duration: 4000,
           style: {
             background: '#fff',
-            color: '#363636',
-            padding: '16px',
+            color: '#18181b',
+            padding: '12px 16px',
             borderRadius: '8px',
-            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+            border: '1px solid #e4e4e7',
+            boxShadow: '0 1px 3px 0 rgba(0,0,0,0.1), 0 1px 2px -1px rgba(0,0,0,0.1)',
+            fontSize: '14px',
           },
           success: {
             iconTheme: {
-              primary: '#10b981',
+              primary: '#18181b',
               secondary: '#fff',
             },
           },

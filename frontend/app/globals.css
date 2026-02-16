@@ -1,30 +1,35 @@
 @import "tailwindcss";
 
 :root {
-  --background: #f5f6fa;
-  --foreground: #0a0a0a;
-  --primary: #9ca3af;
-  --primary-dark: #6b7280;
-  --accent-cyan: #e5e7eb;
-  --accent-purple: #d1d5db;
-  --sidebar-gradient-start: #6b7280;
-  --sidebar-gradient-end: #9ca3af;
+  --background: #fafafa;
+  --foreground: #09090b;
+  --card: #ffffff;
+  --card-foreground: #09090b;
+  --primary: #18181b;
+  --primary-foreground: #fafafa;
+  --muted: #f4f4f5;
+  --muted-foreground: #71717a;
+  --accent: #f4f4f5;
+  --border: #e4e4e7;
+  --input: #e4e4e7;
+  --ring: #18181b;
+  --destructive: #ef4444;
+  --radius: 0.5rem;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-myfont), sans-serif;
+  font-family: var(--font-myfont), system-ui, -apple-system, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Smooth scrolling */
 html {
   scroll-behavior: smooth;
 }
 
-/* Custom minimal scrollbar */
+/* Minimal scrollbar */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -35,43 +40,29 @@ html {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #e0e0e0;
+  background: #d4d4d8;
   border-radius: 10px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #c0c0c0;
+  background: #a1a1aa;
 }
 
-/* Remove outlines from all inputs */
-* {
-  outline: none !important;
-}
-
+/* Focus ring: allow focus-visible only */
 *:focus {
-  outline: none !important;
+  outline: none;
 }
 
 *:focus-visible {
-  outline: none !important;
-}
-
-input,
-textarea,
-select,
-button {
-  outline: none !important;
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
 }
 
 input:focus,
 textarea:focus,
 select:focus,
-button:focus,
-input:focus-visible,
-textarea:focus-visible,
-select:focus-visible,
-button:focus-visible {
-  outline: none !important;
+button:focus {
+  outline: none;
 }
 
 /* Shimmer animation for skeleton loading */

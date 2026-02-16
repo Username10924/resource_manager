@@ -291,7 +291,7 @@ export default function ProjectBookingPage() {
   if (!project) {
     return (
       <div className="space-y-4">
-        <div className="text-sm text-gray-600">Project not found.</div>
+        <div className="text-sm text-zinc-600">Project not found.</div>
         <Button onClick={() => router.push('/projects')}>Back</Button>
       </div>
     );
@@ -301,8 +301,8 @@ export default function ProjectBookingPage() {
     <div className="h-[calc(100vh-6rem)] min-h-[650px] flex flex-col gap-4">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Book Resources</h1>
-          <p className="mt-1 text-xs text-gray-500">{project.name} · Drag to select, right-click for actions</p>
+          <h1 className="text-2xl font-semibold text-zinc-900">Book Resources</h1>
+          <p className="mt-1 text-xs text-zinc-500">{project.name} · Drag to select, right-click for actions</p>
         </div>
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-2">
@@ -312,7 +312,7 @@ export default function ProjectBookingPage() {
             <select
               value={viewYear}
               onChange={(e) => setViewYear(parseInt(e.target.value, 10))}
-              className="h-10 px-3 text-sm bg-white border border-gray-300 rounded-lg shadow-sm hover:border-gray-400 focus:outline-none focus:border-gray-400 focus:ring-2 focus:ring-gray-200 transition-all duration-200"
+              className="h-10 px-3 text-sm bg-white border border-zinc-200 rounded-md shadow-sm focus:outline-none focus:border-zinc-400 focus:ring-2 focus:ring-zinc-200 transition-all duration-200"
             >
               {Array.from({ length: 7 }).map((_, idx) => {
                 const year = new Date().getFullYear() - 3 + idx;
@@ -343,23 +343,23 @@ export default function ProjectBookingPage() {
         </div>
       </div>
 
-      <div className="rounded-xl border border-gray-200 bg-gradient-to-r from-gray-50 to-white p-4">
+      <div className="rounded-lg border border-zinc-200 bg-zinc-50 p-4">
         <div className="flex flex-wrap items-center gap-3">
-          <span className="text-xs font-semibold uppercase tracking-wide text-gray-500">Project Timeline</span>
-          <span className="inline-flex items-center rounded-full border border-gray-200 bg-white px-3 py-1 text-sm font-medium text-gray-700">
+          <span className="text-xs font-semibold uppercase tracking-wide text-zinc-500">Project Timeline</span>
+          <span className="inline-flex items-center rounded-md border border-zinc-200 bg-white px-3 py-1 text-sm font-medium text-zinc-600">
             Start: {formatDisplayDate(projectStartDate)}
           </span>
-          <span className="inline-flex items-center rounded-full border border-gray-200 bg-white px-3 py-1 text-sm font-medium text-gray-700">
+          <span className="inline-flex items-center rounded-md border border-zinc-200 bg-white px-3 py-1 text-sm font-medium text-zinc-600">
             End: {formatDisplayDate(projectEndDate)}
           </span>
         </div>
-        <p className="mt-2 text-xs text-gray-500">Bookings are only allowed within this project date range.</p>
+        <p className="mt-2 text-xs text-zinc-500">Bookings are only allowed within this project date range.</p>
       </div>
 
-      <div className="rounded-lg border border-gray-200 bg-white p-3">
+      <div className="rounded-md border border-zinc-200 bg-white p-3">
         <div className="grid grid-cols-1 gap-3 lg:grid-cols-4">
           <div className="lg:col-span-2">
-            <label className="block text-sm font-medium text-gray-700 mb-1">Team Member</label>
+            <label className="block text-sm font-medium text-zinc-600 mb-1">Team Member</label>
             <select
               value={selectedEmployee?.id ?? ''}
               onChange={(e) => {
@@ -367,7 +367,7 @@ export default function ProjectBookingPage() {
                 const next = employees.find((emp) => emp.id === id) || null;
                 setSelectedEmployee(next);
               }}
-              className="w-full px-3 py-2 text-sm bg-white border border-gray-300 rounded-lg shadow-sm hover:border-gray-400 focus:outline-none focus:border-gray-400 focus:ring-2 focus:ring-gray-200 transition-all duration-200"
+              className="w-full px-3 py-2 text-sm bg-white border border-zinc-200 rounded-md shadow-sm focus:outline-none focus:border-zinc-400 focus:ring-2 focus:ring-zinc-200 transition-all duration-200"
             >
               <option value="" disabled>
                 Select an employee
@@ -381,7 +381,7 @@ export default function ProjectBookingPage() {
                   </option>
                 ))}
             </select>
-            <div className="mt-2 text-xs text-gray-500 whitespace-nowrap overflow-hidden text-ellipsis font-mono tabular-nums">
+            <div className="mt-2 text-xs text-zinc-500 whitespace-nowrap overflow-hidden text-ellipsis font-mono tabular-nums">
               Selected: {range.start} → {range.end}
             </div>
             <TimelineDateRangePicker
@@ -409,17 +409,17 @@ export default function ProjectBookingPage() {
             placeholder="e.g., 6"
           />
 
-          <div className="rounded-lg bg-gray-50 border border-gray-200 p-3">
-            <div className="text-xs text-gray-700 font-mono tabular-nums whitespace-nowrap">
+          <div className="rounded-md bg-zinc-50 border border-zinc-200 p-3">
+            <div className="text-xs text-zinc-600 font-mono tabular-nums whitespace-nowrap">
               Working days: <span className="font-semibold">{workingDays}</span>
             </div>
-            <div className="text-xs text-gray-700 mt-1 font-mono tabular-nums whitespace-nowrap">
+            <div className="text-xs text-zinc-600 mt-1 font-mono tabular-nums whitespace-nowrap">
               Total hours: <span className="font-semibold">{totalHours.toFixed(1)}h</span>
             </div>
-            <div className={`text-xs mt-1 font-mono tabular-nums whitespace-nowrap ${totalHours > maxHours ? 'text-red-700' : 'text-gray-700'}`}>
+            <div className={`text-xs mt-1 font-mono tabular-nums whitespace-nowrap ${totalHours > maxHours ? 'text-red-700' : 'text-zinc-600'}`}>
               Available to book: <span className="font-semibold">{maxHours}h</span>
             </div>
-            <div className="text-xs text-gray-500 mt-2 h-4">
+            <div className="text-xs text-zinc-500 mt-2 h-4">
               {loadingAvailability ? 'Checking availability...' : <span className="invisible">Checking availability...</span>}
             </div>
           </div>
@@ -428,8 +428,8 @@ export default function ProjectBookingPage() {
 
       <div className="flex-1 min-h-0">
         {!selectedEmployee ? (
-          <div className="h-full rounded-lg border border-gray-200 bg-gray-50 flex items-center justify-center">
-            <div className="text-sm text-gray-600">Select a team member to view the schedule</div>
+          <div className="h-full rounded-md border border-zinc-200 bg-zinc-50 flex items-center justify-center">
+            <div className="text-sm text-zinc-600">Select a team member to view the schedule</div>
           </div>
         ) : (
           <div className="h-full">
