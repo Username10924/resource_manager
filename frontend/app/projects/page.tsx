@@ -18,6 +18,7 @@ import Modal from "@/components/Modal";
 import Input from "@/components/Input";
 import { formatMonth, getMonthsList, formatRangeDuration } from "@/lib/utils";
 import { SkeletonProjectsPage, Skeleton } from "@/components/Skeleton";
+import * as XLSX from "xlsx";
 import { VisualScheduleTimeline } from "@/components/VisualScheduleTimeline";
 import type { VisualScheduleItem } from "@/components/VisualScheduleTimeline";
 
@@ -52,6 +53,7 @@ export default function ProjectsPage() {
   const [activeTab, setActiveTab] = useState<"projects" | "bookings">("projects");
   const [allBookings, setAllBookings] = useState<any[]>([]);
   const [loadingBookings, setLoadingBookings] = useState(false);
+  const [isBulkImportModalOpen, setIsBulkImportModalOpen] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -197,7 +199,17 @@ export default function ProjectsPage() {
             </h1>
             <p className="mt-2 text-sm text-zinc-600">Manage projects and resource bookings</p>
           </div>
-          <Button onClick={() => setIsCreateModalOpen(true)}>Create Project</Button>
+          <div className="flex gap-2">
+            <Button variant="secondary" onClick={() => setIsBulkImportModalOpen(true)}>
+              <span className="flex items-center gap-2">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                </svg>
+                Bulk Import
+              </span>
+            </Button>
+            <Button onClick={() => setIsCreateModalOpen(true)}>Create Project</Button>
+          </div>
         </div>
       </div>
 
@@ -491,6 +503,13 @@ export default function ProjectsPage() {
 
       {/* Projects Grid */}
       <div className="hidden">{/* Placeholder for removed duplicate */}</div>
+
+      {/* Bulk Import Modal */}
+      <BulkImportModal
+        isOpen={isBulkImportModalOpen}
+        onClose={() => setIsBulkImportModalOpen(false)}
+        onImport={loadData}
+      />
 
       {/* Create Project Modal */}
       <CreateProjectModal
@@ -2356,6 +2375,371 @@ function ProjectDetailsModal({
 
         <div className="flex justify-end pt-4 border-t border-zinc-200">
           <Button onClick={onClose}>Close</Button>
+        </div>
+      </div>
+    </Modal>
+  );
+}
+
+type BulkRow = {
+  name: string;
+  business_unit: string;
+  project_manager: string;
+  start_date: string;
+  end_date: string;
+  progress: number;
+  completed: boolean;
+  // resolved after matching
+  solution_architect_id: number | null;
+  project_code: string;
+  error: string | null;
+};
+
+function BulkImportModal({
+  isOpen,
+  onClose,
+  onImport,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  onImport: () => void;
+}) {
+  const [rows, setRows] = useState<BulkRow[]>([]);
+  const [employees, setEmployees] = useState<Employee[]>([]);
+  const [allProjects, setAllProjects] = useState<Project[]>([]);
+  const [importing, setImporting] = useState(false);
+  const [importResults, setImportResults] = useState<{ success: number; failed: number; errors: string[] } | null>(null);
+  const [fileName, setFileName] = useState("");
+
+  useEffect(() => {
+    if (isOpen) {
+      loadData();
+      setRows([]);
+      setImportResults(null);
+      setFileName("");
+    }
+  }, [isOpen]);
+
+  const loadData = async () => {
+    try {
+      const [emps, projs] = await Promise.all([employeeAPI.getAll(), projectAPI.getAll()]);
+      setEmployees(emps);
+      setAllProjects(projs);
+    } catch (error) {
+      console.error("Error loading data for bulk import:", error);
+    }
+  };
+
+  const getDepartmentPrefix = (department: string): string => {
+    const departmentMap: Record<string, string> = {
+      Finance: "FIN", Engineering: "ENG", IT: "IT", Marketing: "MKT",
+      Sales: "SAL", HR: "HR", "Human Resources": "HR", Operations: "OPS",
+      Product: "PRD", Design: "DES", Legal: "LEG", "Customer Support": "SUP", Research: "RES",
+    };
+    if (departmentMap[department]) return departmentMap[department];
+    return department.substring(0, 3).toUpperCase();
+  };
+
+  const generateProjectCode = (employeeId: number, existingCodes: string[]): string => {
+    const emp = employees.find((e) => e.id === employeeId);
+    if (!emp || !emp.department) return "UNK-001";
+    const prefix = getDepartmentPrefix(emp.department);
+    const prefixPattern = new RegExp(`^${prefix}-(\\d+)$`);
+    let maxNumber = 0;
+    // Check both existing DB projects and already-generated codes in this batch
+    const allCodes = [
+      ...allProjects.map((p) => (p as any).project_code || ""),
+      ...existingCodes,
+    ];
+    allCodes.forEach((code) => {
+      const match = code.match(prefixPattern);
+      if (match && match[1]) {
+        const num = parseInt(match[1], 10);
+        if (num > maxNumber) maxNumber = num;
+      }
+    });
+    return `${prefix}-${String(maxNumber + 1).padStart(3, "0")}`;
+  };
+
+  const findEmployee = (name: string): Employee | null => {
+    if (!name) return null;
+    const normalised = name.trim().toLowerCase();
+    // Exact match first
+    const exact = employees.find((e) => e.full_name.toLowerCase() === normalised);
+    if (exact) return exact;
+    // Partial match - name contains or is contained
+    const partial = employees.find(
+      (e) =>
+        e.full_name.toLowerCase().includes(normalised) ||
+        normalised.includes(e.full_name.toLowerCase())
+    );
+    return partial || null;
+  };
+
+  const parseExcelDate = (value: any): string => {
+    if (!value) return "";
+    // If it's already a string that looks like a date
+    if (typeof value === "string") {
+      const d = new Date(value);
+      if (!isNaN(d.getTime())) {
+        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+      }
+      return "";
+    }
+    // xlsx parses Excel dates as numbers (serial date)
+    if (typeof value === "number") {
+      const d = XLSX.SSF.parse_date_code(value);
+      if (d) {
+        return `${d.y}-${String(d.m).padStart(2, "0")}-${String(d.d).padStart(2, "0")}`;
+      }
+    }
+    return "";
+  };
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setFileName(file.name);
+    setImportResults(null);
+
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      const data = new Uint8Array(evt.target?.result as ArrayBuffer);
+      const workbook = XLSX.read(data, { type: "array", cellDates: false });
+      const sheet = workbook.Sheets[workbook.SheetNames[0]];
+      const jsonData = XLSX.utils.sheet_to_json<any>(sheet, { defval: "" });
+
+      // Map column names (case-insensitive, trimmed)
+      const generatedCodes: string[] = [];
+      const parsed: BulkRow[] = jsonData.map((row: any) => {
+        // Normalize keys for flexible matching
+        const normalizedRow: Record<string, any> = {};
+        Object.keys(row).forEach((k) => {
+          normalizedRow[k.trim().toLowerCase()] = row[k];
+        });
+
+        const name = (normalizedRow["project name"] || "").toString().trim();
+        const bu = (normalizedRow["bu/division"] || normalizedRow["bu"] || normalizedRow["division"] || normalizedRow["business unit"] || "").toString().trim();
+        const pm = (normalizedRow["project manager"] || "").toString().trim();
+        const startDate = parseExcelDate(normalizedRow["est. start date"] || normalizedRow["est start date"] || normalizedRow["start date"] || "");
+        const endDate = parseExcelDate(normalizedRow["est. delivery date"] || normalizedRow["est delivery date"] || normalizedRow["delivery date"] || normalizedRow["end date"] || "");
+        const progressRaw = normalizedRow["completion %"] || normalizedRow["completion"] || 0;
+        const progress = Math.min(100, Math.max(0, Math.round(Number(String(progressRaw).replace("%", "")) || 0)));
+        const completedRaw = (normalizedRow["completed"] || "").toString().trim().toLowerCase();
+        const completed = completedRaw === "yes" || completedRaw === "true" || completedRaw === "1" || completedRaw === "completed";
+
+        const matchedEmployee = findEmployee(pm);
+        let projectCode = "";
+        if (matchedEmployee) {
+          projectCode = generateProjectCode(matchedEmployee.id, generatedCodes);
+          generatedCodes.push(projectCode);
+        }
+
+        let error: string | null = null;
+        if (!name) error = "Missing project name";
+        else if (!matchedEmployee) error = `Project manager "${pm}" not found`;
+
+        return {
+          name,
+          business_unit: bu,
+          project_manager: pm,
+          start_date: startDate,
+          end_date: endDate,
+          progress,
+          completed,
+          solution_architect_id: matchedEmployee?.id || null,
+          project_code: projectCode,
+          error,
+        };
+      });
+
+      setRows(parsed.filter((r) => r.name)); // filter out completely empty rows
+    };
+    reader.readAsArrayBuffer(file);
+    // Reset input so same file can be re-selected
+    e.target.value = "";
+  };
+
+  const handleImport = async () => {
+    const validRows = rows.filter((r) => !r.error);
+    if (validRows.length === 0) return;
+
+    setImporting(true);
+    let success = 0;
+    let failed = 0;
+    const errors: string[] = [];
+
+    for (const row of validRows) {
+      try {
+        const payload = {
+          project_code: row.project_code,
+          name: row.name,
+          business_unit: row.business_unit || null,
+          description: row.name, // use name as description since sheet doesn't have one
+          solution_architect_id: row.solution_architect_id!,
+          start_date: row.start_date || null,
+          end_date: row.end_date || null,
+        };
+        const response = await projectAPI.create(payload);
+        const projectId = response.project?.id || response.id;
+
+        // If completed or has progress, update the project
+        if (projectId && (row.completed || row.progress > 0)) {
+          await projectAPI.update(projectId, {
+            progress: row.completed ? 100 : row.progress,
+            status: row.completed ? "completed" : row.progress > 0 ? "active" : "planned",
+          });
+        }
+        success++;
+      } catch (error) {
+        failed++;
+        errors.push(`"${row.name}": ${(error as Error).message}`);
+      }
+    }
+
+    setImportResults({ success, failed, errors });
+    setImporting(false);
+    if (success > 0) onImport();
+  };
+
+  const validCount = rows.filter((r) => !r.error).length;
+  const errorCount = rows.filter((r) => r.error).length;
+
+  return (
+    <Modal isOpen={isOpen} onClose={onClose} title="Bulk Import Projects" size="5xl">
+      <div className="space-y-4">
+        {/* File Upload Area */}
+        {rows.length === 0 && !importResults && (
+          <div>
+            <label
+              className="flex flex-col items-center justify-center w-full h-48 border-2 border-dashed border-zinc-300 rounded-lg cursor-pointer hover:border-zinc-400 hover:bg-zinc-50 transition-colors"
+            >
+              <svg className="w-10 h-10 text-zinc-400 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              <span className="text-sm font-medium text-zinc-700">Click to upload Excel file</span>
+              <span className="text-xs text-zinc-500 mt-1">.xlsx or .xls</span>
+              <input
+                type="file"
+                accept=".xlsx,.xls"
+                onChange={handleFileUpload}
+                className="hidden"
+              />
+            </label>
+            <div className="mt-3 p-3 bg-zinc-50 rounded-lg border border-zinc-200">
+              <p className="text-xs font-medium text-zinc-700 mb-1">Expected columns:</p>
+              <p className="text-xs text-zinc-500">BU/Division, Project Name, Project Manager, Est. Start Date, Est. Delivery Date, Completion %, Completed</p>
+            </div>
+          </div>
+        )}
+
+        {/* Preview Table */}
+        {rows.length > 0 && !importResults && (
+          <>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-zinc-700">
+                  <span className="font-medium">{fileName}</span> &mdash; {rows.length} row{rows.length !== 1 ? "s" : ""} found
+                </p>
+                <p className="text-xs text-zinc-500 mt-0.5">
+                  <span className="text-emerald-600 font-medium">{validCount} valid</span>
+                  {errorCount > 0 && <span className="text-red-600 font-medium ml-2">{errorCount} with errors</span>}
+                </p>
+              </div>
+              <label className="text-xs text-zinc-500 hover:text-zinc-700 cursor-pointer underline">
+                Choose different file
+                <input type="file" accept=".xlsx,.xls" onChange={handleFileUpload} className="hidden" />
+              </label>
+            </div>
+            <div className="overflow-x-auto max-h-96 overflow-y-auto border border-zinc-200 rounded-lg">
+              <table className="w-full text-sm">
+                <thead className="bg-zinc-50 sticky top-0">
+                  <tr>
+                    <th className="px-3 py-2 text-left text-xs font-medium text-zinc-600">#</th>
+                    <th className="px-3 py-2 text-left text-xs font-medium text-zinc-600">Project Code</th>
+                    <th className="px-3 py-2 text-left text-xs font-medium text-zinc-600">Project Name</th>
+                    <th className="px-3 py-2 text-left text-xs font-medium text-zinc-600">BU/Division</th>
+                    <th className="px-3 py-2 text-left text-xs font-medium text-zinc-600">Project Manager</th>
+                    <th className="px-3 py-2 text-left text-xs font-medium text-zinc-600">Start Date</th>
+                    <th className="px-3 py-2 text-left text-xs font-medium text-zinc-600">End Date</th>
+                    <th className="px-3 py-2 text-left text-xs font-medium text-zinc-600">Progress</th>
+                    <th className="px-3 py-2 text-left text-xs font-medium text-zinc-600">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-zinc-100">
+                  {rows.map((row, idx) => (
+                    <tr key={idx} className={row.error ? "bg-red-50" : "hover:bg-zinc-50"}>
+                      <td className="px-3 py-2 text-zinc-400">{idx + 1}</td>
+                      <td className="px-3 py-2 font-mono text-xs">{row.project_code || "—"}</td>
+                      <td className="px-3 py-2 font-medium text-zinc-900">{row.name}</td>
+                      <td className="px-3 py-2 text-zinc-600">{row.business_unit || "—"}</td>
+                      <td className="px-3 py-2">
+                        {row.error ? (
+                          <span className="text-red-600 text-xs">{row.error}</span>
+                        ) : (
+                          <span className="text-zinc-700">{row.project_manager}</span>
+                        )}
+                      </td>
+                      <td className="px-3 py-2 text-zinc-600">{row.start_date || "—"}</td>
+                      <td className="px-3 py-2 text-zinc-600">{row.end_date || "—"}</td>
+                      <td className="px-3 py-2 text-zinc-600">{row.progress}%</td>
+                      <td className="px-3 py-2">
+                        <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
+                          row.completed
+                            ? "bg-zinc-100 text-zinc-700 border border-zinc-200"
+                            : row.progress > 0
+                            ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                            : "bg-zinc-100 text-zinc-600 border border-zinc-200"
+                        }`}>
+                          {row.completed ? "completed" : row.progress > 0 ? "active" : "planned"}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
+        )}
+
+        {/* Import Results */}
+        {importResults && (
+          <div className="space-y-3">
+            <div className="flex items-center gap-3 p-4 rounded-lg bg-zinc-50 border border-zinc-200">
+              <div className="flex-1">
+                <p className="text-sm font-medium text-zinc-900">Import Complete</p>
+                <p className="text-xs text-zinc-600 mt-1">
+                  <span className="text-emerald-600 font-medium">{importResults.success} created</span>
+                  {importResults.failed > 0 && (
+                    <span className="text-red-600 font-medium ml-2">{importResults.failed} failed</span>
+                  )}
+                </p>
+              </div>
+            </div>
+            {importResults.errors.length > 0 && (
+              <div className="max-h-40 overflow-y-auto p-3 bg-red-50 border border-red-200 rounded-lg">
+                <p className="text-xs font-medium text-red-700 mb-1">Errors:</p>
+                {importResults.errors.map((err, i) => (
+                  <p key={i} className="text-xs text-red-600">{err}</p>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Actions */}
+        <div className="flex justify-end gap-2 pt-2">
+          <Button variant="secondary" onClick={onClose}>
+            {importResults ? "Close" : "Cancel"}
+          </Button>
+          {rows.length > 0 && !importResults && (
+            <Button
+              onClick={handleImport}
+              disabled={validCount === 0 || importing}
+            >
+              {importing ? "Importing..." : `Import ${validCount} Project${validCount !== 1 ? "s" : ""}`}
+            </Button>
+          )}
         </div>
       </div>
     </Modal>

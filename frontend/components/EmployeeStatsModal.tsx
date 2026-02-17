@@ -2,8 +2,8 @@ import { useEffect, useState } from 'react';
 import Modal from './Modal';
 import { Card, CardContent, CardHeader, CardTitle } from './Card';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, Cell } from 'recharts';
-import { FaBriefcase, FaEnvelope, FaBuilding, FaProjectDiagram, FaChevronRight } from 'react-icons/fa';
-import { employeeAPI, settingsAPI, type Reservation, type Settings } from '@/lib/api';
+import { FaBriefcase, FaBuilding, FaProjectDiagram, FaChevronRight, FaUserTie } from 'react-icons/fa';
+import { employeeAPI, settingsAPI, userAPI, type Reservation, type Settings } from '@/lib/api';
 import { calculateMonthlyBookingHours, calculateWorkingDays } from '@/lib/utils';
 
 interface EmployeeStatsModalProps {
@@ -80,6 +80,7 @@ export default function EmployeeStatsModal({ isOpen, onClose, employee, size = '
   const [loadingProjects, setLoadingProjects] = useState(false);
   const [monthlyReservations, setMonthlyReservations] = useState<MonthlyReservation[]>([]);
   const [loadingReservations, setLoadingReservations] = useState(false);
+  const [lineManagerName, setLineManagerName] = useState<string>('N/A');
   const [settings, setSettings] = useState<Settings>({ work_hours_per_day: 6, work_days_per_month: 20, months_in_year: 12 });
 
   useEffect(() => {
@@ -96,6 +97,35 @@ export default function EmployeeStatsModal({ isOpen, onClose, employee, size = '
       fetchSettings();
     }
   }, [isOpen]);
+
+  useEffect(() => {
+    const fetchLineManagerName = async () => {
+      if (!isOpen || !employee) return;
+
+      if (employee.line_manager_name) {
+        setLineManagerName(employee.line_manager_name);
+        return;
+      }
+
+      if (!employee.line_manager_id) {
+        setLineManagerName('N/A');
+        return;
+      }
+
+      try {
+        const users = await userAPI.getAll();
+        const manager = Array.isArray(users)
+          ? users.find((user: any) => user.id === employee.line_manager_id)
+          : null;
+        setLineManagerName(manager?.full_name || `ID: ${employee.line_manager_id}`);
+      } catch (error) {
+        console.error('Error fetching line manager:', error);
+        setLineManagerName(`ID: ${employee.line_manager_id}`);
+      }
+    };
+
+    fetchLineManagerName();
+  }, [isOpen, employee]);
 
   if (!employee) return null;
 
@@ -230,8 +260,8 @@ export default function EmployeeStatsModal({ isOpen, onClose, employee, size = '
                 {employee.department}
               </span>
               <span className="flex items-center gap-1">
-                <FaEnvelope className="text-zinc-900" />
-                {employee.email}
+                <FaUserTie className="text-zinc-900" />
+                {lineManagerName}
               </span>
             </div>
           </div>
