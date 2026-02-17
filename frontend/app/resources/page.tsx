@@ -148,7 +148,7 @@ export default function ResourcesPage() {
                       }
                     });
 
-                    return totalAvailable;
+                    return Math.round(totalAvailable);
                   })()}
                 </div>
               </CardContent>
