@@ -10,21 +10,20 @@ class Employee:
         self.position = kwargs.get('position')
         self.line_manager_id = kwargs.get('line_manager_id')
         self.total_hours_per_day = kwargs.get('total_hours_per_day', 6)
-        self.available_days_per_year = kwargs.get('available_days_per_year', 240)
         self.status = kwargs.get('status', 'active')
         self.created_at = kwargs.get('created_at')
         self.updated_at = kwargs.get('updated_at')
     
     @staticmethod
-    def create(full_name: str, department: str, 
-               position: str, line_manager_id: int, available_days_per_year: int = 240) -> 'Employee':
+    def create(full_name: str, department: str,
+               position: str, line_manager_id: int) -> 'Employee':
         query = '''
-            INSERT INTO employees (full_name, department, position, 
-                                  line_manager_id, available_days_per_year)
-            VALUES (?, ?, ?, ?, ?)
+            INSERT INTO employees (full_name, department, position,
+                                  line_manager_id)
+            VALUES (?, ?, ?, ?)
         '''
-        cursor = db.execute(query, (full_name, department, 
-                                   position, line_manager_id, available_days_per_year))
+        cursor = db.execute(query, (full_name, department,
+                                   position, line_manager_id))
         db.commit()
         
         # Initialize schedule for the current year
@@ -86,9 +85,6 @@ class Employee:
         if 'position' in kwargs:
             updates.append('position = ?')
             params.append(kwargs['position'])
-        if 'available_days_per_year' in kwargs:
-            updates.append('available_days_per_year = ?')
-            params.append(kwargs['available_days_per_year'])
         if 'status' in kwargs:
             updates.append('status = ?')
             params.append(kwargs['status'])
@@ -150,7 +146,6 @@ class Employee:
             'position': self.position,
             'line_manager_id': self.line_manager_id,
             'total_hours_per_day': self.total_hours_per_day,
-            'available_days_per_year': self.available_days_per_year,
             'status': self.status,
             'created_at': self.created_at,
             'updated_at': self.updated_at

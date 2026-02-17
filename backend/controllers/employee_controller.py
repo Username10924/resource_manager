@@ -24,8 +24,7 @@ class EmployeeController:
             full_name=employee_data['full_name'],
             department=employee_data['department'],
             position=employee_data['position'],
-            line_manager_id=employee_data['line_manager_id'],
-            available_days_per_year=employee_data.get('available_days_per_year', 240)
+            line_manager_id=employee_data['line_manager_id']
         )
         
         return {'success': True, 'employee': employee.to_dict()}
@@ -120,7 +119,7 @@ class EmployeeController:
         
         try:
             # Only allow updating specific fields
-            allowed_fields = ['full_name', 'department', 'position', 'available_days_per_year']
+            allowed_fields = ['full_name', 'department', 'position']
             update_data = {k: v for k, v in employee_data.items() if k in allowed_fields}
             
             if not update_data:

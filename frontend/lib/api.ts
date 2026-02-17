@@ -274,7 +274,6 @@ export type Employee = {
   department: string;
   line_manager_id: number | null;
   total_hours_per_day: number;
-  available_days_per_year: number;
   status: string;
   created_at: string;
   updated_at: string;

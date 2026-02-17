@@ -175,9 +175,6 @@ export default function ResourcesPage() {
                     <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-zinc-500">
                       Department
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-zinc-500">
-                      Available Days/Year
-                    </th>
                     <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-zinc-500">
                       Actions
                     </th>
@@ -194,9 +191,6 @@ export default function ResourcesPage() {
                       </td>
                       <td className="whitespace-nowrap px-6 py-4 text-sm text-zinc-600">
                         {employee.department}
-                      </td>
-                      <td className="whitespace-nowrap px-6 py-4 text-sm text-zinc-600">
-                        {employee.available_days_per_year}
                       </td>
                       <td className="whitespace-nowrap px-6 py-4 text-right text-sm">
                         <div className="flex items-center justify-end gap-2">
@@ -608,7 +602,6 @@ function AddEmployeeModal({
     department: '',
     position: '',
     line_manager_id: user?.id || 1,
-    available_days_per_year: 220,
   });
   const [isDepartmentOpen, setIsDepartmentOpen] = useState(false);
 
@@ -630,7 +623,7 @@ function AddEmployeeModal({
       toast.success(`${formData.full_name} has been added successfully`);
       onAdd();
       onClose();
-      setFormData({ full_name: '', department: '', position: '', line_manager_id: user?.id || 1, available_days_per_year: 220 });
+      setFormData({ full_name: '', department: '', position: '', line_manager_id: user?.id || 1 });
     } catch (error) {
       console.error('Error creating employee:', error);
       toast.error('Failed to add employee. Please try again.');
@@ -707,16 +700,6 @@ function AddEmployeeModal({
           onChange={(e) => setFormData({ ...formData, position: e.target.value })}
           required
         />
-        <Input
-          type="number"
-          label="Available Days per Year"
-          value={formData.available_days_per_year}
-          onChange={(e) => setFormData({ ...formData, available_days_per_year: parseInt(e.target.value) })}
-          min="0"
-          max="365"
-          required
-        />
-
         <div className="flex justify-end gap-3 pt-4">
           <Button type="button" variant="secondary" onClick={onClose}>
             Cancel
@@ -743,7 +726,6 @@ function EditEmployeeModal({
     full_name: employee.full_name,
     department: employee.department,
     position: employee.position,
-    available_days_per_year: employee.available_days_per_year,
   });
   const [isDepartmentOpen, setIsDepartmentOpen] = useState(false);
 
@@ -764,7 +746,6 @@ function EditEmployeeModal({
       full_name: employee.full_name,
       department: employee.department,
       position: employee.position,
-      available_days_per_year: employee.available_days_per_year,
     });
   }, [employee]);
 
@@ -851,16 +832,6 @@ function EditEmployeeModal({
           onChange={(e) => setFormData({ ...formData, position: e.target.value })}
           required
         />
-        <Input
-          type="number"
-          label="Available Days per Year"
-          value={formData.available_days_per_year}
-          onChange={(e) => setFormData({ ...formData, available_days_per_year: parseInt(e.target.value) })}
-          min="0"
-          max="365"
-          required
-        />
-
         <div className="flex justify-end gap-3 pt-4">
           <Button type="button" variant="secondary" onClick={onClose}>
             Cancel

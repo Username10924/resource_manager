@@ -7,10 +7,12 @@ import {
   employeeAPI,
   dashboardAPI,
   userAPI,
+  settingsAPI,
   Project,
   Employee,
   Booking,
   User,
+  Settings,
 } from "@/lib/api";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/Card";
 import Button from "@/components/Button";
@@ -1621,6 +1623,7 @@ function BookingModal({
   const [loadingAvailability, setLoadingAvailability] = useState(false);
   const [searchFilter, setSearchFilter] = useState("");
   const [timelineItems, setTimelineItems] = useState<VisualScheduleItem[]>([]);
+  const [settings, setSettings] = useState<Settings>({ work_hours_per_day: 6, work_days_per_month: 20, months_in_year: 12 });
 
   // Initialize with default dates
   const getDefaultDates = () => {
@@ -1647,6 +1650,7 @@ function BookingModal({
   useEffect(() => {
     if (isOpen) {
       loadEmployees();
+      settingsAPI.getSettings().then(setSettings).catch(() => {});
       // Reset to default dates when modal opens
       setBookingData({
         hoursPerDay: '' as any,
@@ -1766,14 +1770,14 @@ function BookingModal({
 
   // Calculate max hours based on availability data (accounting for existing bookings/reservations)
   const maxHoursFromAvailability = employeeAvailability?.availability?.available_hours ?? null;
-  const totalMaxHours = workingDays * 6; // 6 hours per working day (theoretical max)
+  const totalMaxHours = workingDays * settings.work_hours_per_day;
   const maxHours =
     maxHoursFromAvailability !== null
       ? Math.min(totalMaxHours, maxHoursFromAvailability)
       : totalMaxHours;
 
   // Calculate max hours per day
-  const maxHoursPerDay = workingDays > 0 ? maxHours / workingDays : 6;
+  const maxHoursPerDay = workingDays > 0 ? maxHours / workingDays : settings.work_hours_per_day;
 
   // Get utilized hours info for display
   const utilizedHours = employeeAvailability?.availability?.total_utilized_hours ?? 0;
@@ -1807,11 +1811,11 @@ function BookingModal({
     if (totalHours > maxHours) {
       if (utilizedHours > 0) {
         alert(
-          `Cannot book ${totalHours} hours (${bookingData.hoursPerDay} hrs/day × ${workingDays} days). Employee only has ${maxHours} hours available in this period.\n\nAlready utilized: ${utilizedHours} hours (${bookedHours} booked + ${reservedHours} reserved)\nMaximum capacity: ${totalMaxHours} hours (${workingDays} working days × 6 hrs/day)`
+          `Cannot book ${totalHours} hours (${bookingData.hoursPerDay} hrs/day × ${workingDays} days). Employee only has ${maxHours} hours available in this period.\n\nAlready utilized: ${utilizedHours} hours (${bookedHours} booked + ${reservedHours} reserved)\nMaximum capacity: ${totalMaxHours} hours (${workingDays} working days × ${settings.work_hours_per_day} hrs/day)`
         );
       } else {
         alert(
-          `Cannot book ${totalHours} hours (${bookingData.hoursPerDay} hrs/day × ${workingDays} days). Maximum ${maxHours} hours for ${workingDays} working days (6hrs/day).`
+          `Cannot book ${totalHours} hours (${bookingData.hoursPerDay} hrs/day × ${workingDays} days). Maximum ${maxHours} hours for ${workingDays} working days (${settings.work_hours_per_day}hrs/day).`
         );
       }
       return;
@@ -2135,7 +2139,7 @@ function BookingModal({
                         {new Date(bookingData.endDate).toLocaleDateString()})
                       </div>
                       <div className="text-xs text-zinc-700 mt-1">
-                        Maximum capacity: {totalMaxHours} hours (6 hrs/day)
+                        Maximum capacity: {totalMaxHours} hours ({settings.work_hours_per_day} hrs/day)
                       </div>
                       {utilizedHours > 0 && employeeAvailability?.availability && (
                         <div className="mt-2 pt-2 border-t border-amber-200">
@@ -2175,7 +2179,7 @@ function BookingModal({
                       setBookingData({ ...bookingData, hoursPerDay: parseFloat(e.target.value) || 0 })
                     }
                     min="0"
-                    max="6"
+                    max={settings.work_hours_per_day.toString()}
                     step="0.5"
                     placeholder="Enter hours per day"
                   />

@@ -101,7 +101,7 @@ class ProjectController:
             working_days = 0
             current = start
             while current <= end:
-                if current.weekday() < 5:  # Monday=0 to Friday=4
+                if current.weekday() not in (4, 5):  # Weekend = Friday(4) + Saturday(5)
                     working_days += 1
                 current += timedelta(days=1)
             return working_days

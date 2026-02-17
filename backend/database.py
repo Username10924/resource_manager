@@ -50,7 +50,6 @@ class Database:
                 position TEXT NOT NULL,
                 line_manager_id INTEGER NOT NULL,
                 total_hours_per_day INTEGER DEFAULT 6,
-                available_days_per_year INTEGER DEFAULT 240,
                 status TEXT DEFAULT 'active' CHECK(status IN ('active', 'inactive', 'on_leave')),
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,

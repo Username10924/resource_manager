@@ -16,13 +16,11 @@ class EmployeeCreate(BaseModel):
     department: str
     position: str
     line_manager_id: int
-    available_days_per_year: int = 240
 
 class EmployeeUpdate(BaseModel):
     full_name: Optional[str] = None
     department: Optional[str] = None
     position: Optional[str] = None
-    available_days_per_year: Optional[int] = None
 
 class EmployeeResponse(BaseModel):
     id: int
@@ -30,7 +28,6 @@ class EmployeeResponse(BaseModel):
     department: str
     position: str
     line_manager_id: int
-    available_days_per_year: int
     status: str
 
 class ScheduleUpdate(BaseModel):
@@ -340,8 +337,8 @@ async def get_employee_availability_for_date_range(
         working_days = 0
         current = start_date
         while current <= end_date:
-            # Count weekdays (Monday=0 to Friday=4 in Python's weekday())
-            if current.weekday() < 5:
+            # Weekend = Friday(4) + Saturday(5)
+            if current.weekday() not in (4, 5):
                 working_days += 1
             current += timedelta(days=1)
         return working_days

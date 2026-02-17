@@ -10,7 +10,7 @@ import { SkeletonProjectsPage, Skeleton } from '@/components/Skeleton';
 import { VisualScheduleTimeline } from '@/components/VisualScheduleTimeline';
 import type { VisualScheduleItem } from '@/components/VisualScheduleTimeline';
 import TimelineDateRangePicker from '@/components/TimelineDateRangePicker';
-import { dashboardAPI, employeeAPI, projectAPI, type Employee, type Project } from '@/lib/api';
+import { dashboardAPI, employeeAPI, projectAPI, settingsAPI, type Employee, type Project, type Settings } from '@/lib/api';
 
 export default function ProjectBookingPage() {
   const router = useRouter();
@@ -29,6 +29,7 @@ export default function ProjectBookingPage() {
   const [viewYear, setViewYear] = useState(() => new Date().getFullYear());
 
   const [searchFilter, setSearchFilter] = useState('');
+  const [settings, setSettings] = useState<Settings>({ work_hours_per_day: 6, work_days_per_month: 20, months_in_year: 12 });
 
   const getDefaultDates = () => {
     const today = new Date();
@@ -76,7 +77,8 @@ export default function ProjectBookingPage() {
     const load = async () => {
       setLoading(true);
       try {
-        const [proj, emps] = await Promise.all([projectAPI.getById(projectId), employeeAPI.getAll()]);
+        const [proj, emps, fetchedSettings] = await Promise.all([projectAPI.getById(projectId), employeeAPI.getAll(), settingsAPI.getSettings()]);
+        setSettings(fetchedSettings);
         setProject(proj);
         setEmployees(Array.isArray(emps) ? emps : []);
         const defaults = getDefaultDatesWithinBounds(proj.start_date || null, proj.end_date || null);
@@ -190,7 +192,7 @@ export default function ProjectBookingPage() {
   const totalHours = workingDays * (bookingData.hoursPerDay || 0);
 
   const maxHoursFromAvailability = employeeAvailability?.availability?.available_hours ?? null;
-  const totalMaxHours = workingDays * 6;
+  const totalMaxHours = workingDays * settings.work_hours_per_day;
   const maxHours =
     maxHoursFromAvailability !== null ? Math.min(totalMaxHours, maxHoursFromAvailability) : totalMaxHours;
 
@@ -234,11 +236,11 @@ export default function ProjectBookingPage() {
     if (totalHours > maxHours) {
       if (utilizedHours > 0) {
         alert(
-          `Cannot book ${totalHours} hours (${bookingData.hoursPerDay} hrs/day × ${workingDays} days). Employee only has ${maxHours} hours available in this period.\n\nAlready utilized: ${utilizedHours} hours (${bookedHours} booked + ${reservedHours} reserved)\nMaximum capacity: ${totalMaxHours} hours (${workingDays} working days × 6 hrs/day)`
+          `Cannot book ${totalHours} hours (${bookingData.hoursPerDay} hrs/day × ${workingDays} days). Employee only has ${maxHours} hours available in this period.\n\nAlready utilized: ${utilizedHours} hours (${bookedHours} booked + ${reservedHours} reserved)\nMaximum capacity: ${totalMaxHours} hours (${workingDays} working days × ${settings.work_hours_per_day} hrs/day)`
         );
       } else {
         alert(
-          `Cannot book ${totalHours} hours (${bookingData.hoursPerDay} hrs/day × ${workingDays} days). Maximum ${maxHours} hours for ${workingDays} working days (6hrs/day).`
+          `Cannot book ${totalHours} hours (${bookingData.hoursPerDay} hrs/day × ${workingDays} days). Maximum ${maxHours} hours for ${workingDays} working days (${settings.work_hours_per_day}hrs/day).`
         );
       }
       return;
@@ -404,9 +406,9 @@ export default function ProjectBookingPage() {
             value={bookingData.hoursPerDay}
             onChange={(e) => setBookingData({ ...bookingData, hoursPerDay: parseFloat(e.target.value) || 0 })}
             min="0"
-            max="6"
+            max={settings.work_hours_per_day.toString()}
             step="0.5"
-            placeholder="e.g., 6"
+            placeholder={`e.g., ${settings.work_hours_per_day}`}
           />
 
           <div className="rounded-md bg-zinc-50 border border-zinc-200 p-3">

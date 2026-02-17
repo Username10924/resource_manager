@@ -1,5 +1,5 @@
 from typing import Dict, Any, List, Tuple, Optional
-from datetime import datetime
+from datetime import datetime, date, timedelta
 from models.employee import Employee
 from models.project import Project
 from models.user import User
@@ -49,6 +49,59 @@ class DashboardController:
                 'utilization_rate': 0
             }
         
+        # Helper: count working days in a date range (weekend = Fri + Sat)
+        def count_working_days(start_d, end_d):
+            working = 0
+            current = start_d
+            while current <= end_d:
+                if current.weekday() not in (4, 5):  # Friday=4, Saturday=5
+                    working += 1
+                current += timedelta(days=1)
+            return working
+
+        # Helper: pro-rate booking hours into a specific month
+        def prorate_booking_hours_for_month(b_start, b_end, booked_hours, month, year):
+            month_start = date(year, month, 1)
+            if month == 12:
+                month_end = date(year, 12, 31)
+            else:
+                month_end = date(year, month + 1, 1) - timedelta(days=1)
+
+            overlap_start = max(b_start, month_start)
+            overlap_end = min(b_end, month_end)
+
+            if overlap_start > overlap_end:
+                return 0.0
+
+            booking_total_wd = count_working_days(b_start, b_end)
+            if booking_total_wd == 0:
+                return 0.0
+
+            overlap_wd = count_working_days(overlap_start, overlap_end)
+            return (booked_hours / booking_total_wd) * overlap_wd
+
+        # Helper: pro-rate reservation hours into a specific month
+        def prorate_reservation_hours_for_month(r_start, r_end, hours_per_day, month, year):
+            month_start = date(year, month, 1)
+            if month == 12:
+                month_end = date(year, 12, 31)
+            else:
+                month_end = date(year, month + 1, 1) - timedelta(days=1)
+
+            overlap_start = max(r_start, month_start)
+            overlap_end = min(r_end, month_end)
+
+            if overlap_start > overlap_end:
+                return 0.0
+
+            overlap_wd = count_working_days(overlap_start, overlap_end)
+            return hours_per_day * overlap_wd
+
+        def parse_date(d):
+            if isinstance(d, date):
+                return d
+            return datetime.strptime(str(d), '%Y-%m-%d').date()
+
         # Process each employee
         for emp in employees:
             # Department grouping
@@ -59,63 +112,70 @@ class DashboardController:
                     'total_available_hours': 0,
                     'employees': []
                 }
-            
+
             dashboard_data['departments'][dept]['count'] += 1
-            
-            # Get employee schedule with both project bookings AND reservations
-            query = f'''
-                SELECT es.*, 
-                       COALESCE(
-                           (SELECT SUM(pb.booked_hours) 
-                            FROM project_bookings pb
-                            WHERE pb.employee_id = es.employee_id
-                              AND pb.status != 'cancelled'
-                              AND strftime('%Y', pb.start_date) = CAST(es.year AS TEXT)
-                              AND CAST(strftime('%m', pb.start_date) AS INTEGER) <= es.month
-                              AND CAST(strftime('%m', pb.end_date) AS INTEGER) >= es.month
-                           ), 0
-                       ) as project_booked_hours,
-                       COALESCE(
-                           (SELECT SUM(er.reserved_hours_per_day * {work_days_per_month})
-                            FROM employee_reservations er
-                            WHERE er.employee_id = es.employee_id
-                              AND er.status = 'active'
-                              AND strftime('%Y', er.start_date) = CAST(es.year AS TEXT)
-                              AND CAST(strftime('%m', er.start_date) AS INTEGER) <= es.month
-                              AND CAST(strftime('%m', er.end_date) AS INTEGER) >= es.month
-                           ), 0
-                       ) as reserved_hours,
-                       COALESCE(
-                           (SELECT SUM(pb.booked_hours) 
-                            FROM project_bookings pb
-                            WHERE pb.employee_id = es.employee_id
-                              AND pb.status != 'cancelled'
-                              AND strftime('%Y', pb.start_date) = CAST(es.year AS TEXT)
-                              AND CAST(strftime('%m', pb.start_date) AS INTEGER) <= es.month
-                              AND CAST(strftime('%m', pb.end_date) AS INTEGER) >= es.month
-                           ), 0
-                       ) + COALESCE(
-                           (SELECT SUM(er.reserved_hours_per_day * {work_days_per_month})
-                            FROM employee_reservations er
-                            WHERE er.employee_id = es.employee_id
-                              AND er.status = 'active'
-                              AND strftime('%Y', er.start_date) = CAST(es.year AS TEXT)
-                              AND CAST(strftime('%m', er.start_date) AS INTEGER) <= es.month
-                              AND CAST(strftime('%m', er.end_date) AS INTEGER) >= es.month
-                           ), 0
-                       ) as booked_hours
+
+            # Get base schedule data (no booking/reservation subqueries)
+            schedule_query = '''
+                SELECT es.*
                 FROM employee_schedules es
                 WHERE es.employee_id = ? AND es.year = ?
                 ORDER BY es.month
             '''
-            schedule_data = db.fetch_all(query, (emp.id, current_year))
-            
+            schedule_data = db.fetch_all(schedule_query, (emp.id, current_year))
+
+            # Fetch bookings that overlap with this year (handles cross-year)
+            year_start = f'{current_year}-01-01'
+            year_end = f'{current_year}-12-31'
+            bookings_query = '''
+                SELECT pb.start_date, pb.end_date, pb.booked_hours
+                FROM project_bookings pb
+                WHERE pb.employee_id = ?
+                  AND pb.status != 'cancelled'
+                  AND pb.start_date <= ?
+                  AND pb.end_date >= ?
+            '''
+            emp_bookings = db.fetch_all(bookings_query, (emp.id, year_end, year_start))
+
+            # Fetch reservations that overlap with this year (handles cross-year)
+            reservations_query = '''
+                SELECT er.start_date, er.end_date, er.reserved_hours_per_day
+                FROM employee_reservations er
+                WHERE er.employee_id = ?
+                  AND er.status = 'active'
+                  AND er.start_date <= ?
+                  AND er.end_date >= ?
+            '''
+            emp_reservations = db.fetch_all(reservations_query, (emp.id, year_end, year_start))
+
+            # Enrich each month's schedule with pro-rated booking & reservation hours
+            for sched in schedule_data:
+                m = sched['month']
+
+                pro_rated_booked = 0.0
+                for b in emp_bookings:
+                    pro_rated_booked += prorate_booking_hours_for_month(
+                        parse_date(b['start_date']), parse_date(b['end_date']),
+                        b['booked_hours'], m, current_year
+                    )
+
+                pro_rated_reserved = 0.0
+                for r in emp_reservations:
+                    pro_rated_reserved += prorate_reservation_hours_for_month(
+                        parse_date(r['start_date']), parse_date(r['end_date']),
+                        r['reserved_hours_per_day'], m, current_year
+                    )
+
+                sched['project_booked_hours'] = round(pro_rated_booked, 1)
+                sched['reserved_hours'] = round(pro_rated_reserved, 1)
+                sched['booked_hours'] = round(pro_rated_booked + pro_rated_reserved, 1)
+
             emp_data = emp.to_dict()
             emp_data['schedule'] = schedule_data
-            
+
             # Add to department
             dashboard_data['departments'][dept]['employees'].append(emp_data)
-            
+
             # Update monthly summary and department totals
             for sched in schedule_data:
                 month = sched['month']
@@ -124,18 +184,18 @@ class DashboardController:
                 base_available = (work_hours_per_day - reserved_hours_per_day) * work_days_per_month
                 project_booked = sched['project_booked_hours'] or 0
                 reserved = sched['reserved_hours'] or 0
-                
+
                 # Total utilized = project bookings + reservations
                 total_utilized = project_booked + reserved
-                
+
                 # Actual available = base available - all utilized hours
                 actual_available = base_available - total_utilized
-                
+
                 dashboard_data['monthly_summary'][month]['total_available'] += actual_available
                 dashboard_data['monthly_summary'][month]['total_booked'] += total_utilized
                 dashboard_data['monthly_summary'][month]['total_capacity'] += monthly_capacity
                 dashboard_data['monthly_summary'][month]['employee_count'] += 1
-                
+
                 # Add to department's total available hours (only for current month)
                 if month == current_month:
                     dashboard_data['departments'][dept]['total_available_hours'] += actual_available
