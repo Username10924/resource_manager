@@ -11,7 +11,7 @@ public_router = APIRouter(prefix="/api/settings", tags=["settings"])
 
 class SettingsUpdate(BaseModel):
     work_hours_per_day: int = Field(ge=1, le=24, description="Work hours per day (1-24)")
-    work_days_per_month: int = Field(ge=1, le=31, description="Work days per month (1-31)")
+    work_days_per_month: float = Field(ge=1, le=31, description="Work days per month (1-31)")
     months_in_year: int = Field(ge=1, le=12, description="Months in year (1-12)")
 
 class PasswordVerify(BaseModel):

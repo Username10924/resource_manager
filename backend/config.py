@@ -19,8 +19,8 @@ APP_CONFIG = {
 }
 
 # business rules
-WORK_HOURS_PER_DAY = 6
-WORK_DAYS_PER_MONTH = 20
+WORK_HOURS_PER_DAY = 7
+WORK_DAYS_PER_MONTH = 18.5
 MONTHS_IN_YEAR = 12
 
 # Site access password

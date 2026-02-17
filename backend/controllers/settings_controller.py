@@ -10,8 +10,8 @@ class SettingsController:
         config_path = Path(__file__).parent.parent / "config.py"
         
         settings = {
-            'work_hours_per_day': 6,
-            'work_days_per_month': 20,
+            'work_hours_per_day': 7,
+            'work_days_per_month': 18.5,
             'months_in_year': 12
         }
         
@@ -21,13 +21,13 @@ class SettingsController:
                 
             # Extract values using regex
             work_hours_match = re.search(r'WORK_HOURS_PER_DAY\s*=\s*(\d+)', content)
-            work_days_match = re.search(r'WORK_DAYS_PER_MONTH\s*=\s*(\d+)', content)
+            work_days_match = re.search(r'WORK_DAYS_PER_MONTH\s*=\s*(\d+\.?\d*)', content)
             months_match = re.search(r'MONTHS_IN_YEAR\s*=\s*(\d+)', content)
             
             if work_hours_match:
                 settings['work_hours_per_day'] = int(work_hours_match.group(1))
             if work_days_match:
-                settings['work_days_per_month'] = int(work_days_match.group(1))
+                settings['work_days_per_month'] = float(work_days_match.group(1))
             if months_match:
                 settings['months_in_year'] = int(months_match.group(1))
                 
@@ -42,12 +42,12 @@ class SettingsController:
         return SettingsController.get_settings()['work_hours_per_day']
     
     @staticmethod
-    def get_work_days_per_month() -> int:
+    def get_work_days_per_month() -> float:
         """Get work days per month dynamically"""
         return SettingsController.get_settings()['work_days_per_month']
     
     @staticmethod
-    def get_monthly_capacity() -> int:
+    def get_monthly_capacity() -> float:
         """Get monthly capacity (hours_per_day * days_per_month)"""
         settings = SettingsController.get_settings()
         return settings['work_hours_per_day'] * settings['work_days_per_month']
@@ -77,7 +77,7 @@ class SettingsController:
             
             if 'work_days_per_month' in settings:
                 content = re.sub(
-                    r'WORK_DAYS_PER_MONTH\s*=\s*\d+',
+                    r'WORK_DAYS_PER_MONTH\s*=\s*\d+\.?\d*',
                     f'WORK_DAYS_PER_MONTH = {settings["work_days_per_month"]}',
                     content
                 )
