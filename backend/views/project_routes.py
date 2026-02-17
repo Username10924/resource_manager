@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, Query, UploadFile, File
 from typing import List, Optional, Dict, Any
-from pydantic import BaseModel, validator
+from pydantic import BaseModel, Field as PydanticField, validator
 from datetime import date, datetime
 import shutil
 import os
@@ -73,7 +73,7 @@ class ProjectCreate(BaseModel):
     solution_architect_id: int
     start_date: Optional[date] = None
     end_date: Optional[date] = None
-    priority: Optional[int] = Field(default=1, ge=1, le=12)
+    priority: Optional[int] = PydanticField(default=1, ge=1, le=12)
 
 class ProjectUpdate(BaseModel):
     name: Optional[str] = None
@@ -84,7 +84,7 @@ class ProjectUpdate(BaseModel):
     solution_architect_id: Optional[int] = None
     start_date: Optional[date] = None
     end_date: Optional[date] = None
-    priority: Optional[int] = Field(default=None, ge=1, le=12)
+    priority: Optional[int] = PydanticField(default=None, ge=1, le=12)
 
 class BookingRequest(BaseModel):
     employee_id: int
