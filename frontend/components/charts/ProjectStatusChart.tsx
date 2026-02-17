@@ -76,7 +76,7 @@ export default function ProjectStatusChart({ data }: ProjectStatusChartProps) {
             boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)',
             fontSize: '13px',
           }}
-          formatter={(value: number, name: string) => [`${value} project${value !== 1 ? 's' : ''}`, name]}
+          formatter={(value: number | undefined, name: string | undefined) => value !== undefined ? [`${value} project${value !== 1 ? 's' : ''}`, name || ''] : ['', '']}
         />
         <Legend
           verticalAlign="bottom"

@@ -249,13 +249,14 @@ export const projectAPI = {
 
 // Dashboard API
 export const dashboardAPI = {
-  getResourceStats: (managerId?: number) => 
+  getResourceStats: (managerId?: number) =>
     fetchAPI(`/dashboard/resources${managerId ? `?manager_id=${managerId}` : ''}`),
   getProjectStats: () => fetchAPI("/dashboard/projects"),
+  getAllReservations: () => fetchAPI("/dashboard/all-reservations"),
   // Get all bookings for an employee
   getEmployeeBookings: (employeeId: number, year?: number) => {
     const currentYear = year || new Date().getFullYear();
-    return fetchAPI(`/projects/all-bookings`).then((bookings: any[]) => 
+    return fetchAPI(`/projects/all-bookings`).then((bookings: any[]) =>
       bookings.filter(b => b.employee_id === employeeId)
     );
   },

@@ -119,24 +119,30 @@ class Employee:
     def get_schedule(self, year: int = None) -> List[Dict[str, Any]]:
         if year is None:
             year = datetime.now().year
-        
+
         query = '''
-            SELECT * FROM employee_schedules 
-            WHERE employee_id = ? AND year = ? 
+            SELECT * FROM employee_schedules
+            WHERE employee_id = ? AND year = ?
             ORDER BY month
         '''
         rows = db.fetch_all(query, (self.id, year))
-        return rows
-    
+        # Dynamically compute available_hours_per_month using live settings
+        from models.schedule import EmployeeSchedule
+        return EmployeeSchedule.enrich_schedule_dicts(rows)
+
     def get_monthly_schedule(self, month: int, year: int = None) -> Optional[Dict[str, Any]]:
         if year is None:
             year = datetime.now().year
-        
+
         query = '''
-            SELECT * FROM employee_schedules 
+            SELECT * FROM employee_schedules
             WHERE employee_id = ? AND month = ? AND year = ?
         '''
-        return db.fetch_one(query, (self.id, month, year))
+        row = db.fetch_one(query, (self.id, month, year))
+        if row:
+            from models.schedule import EmployeeSchedule
+            EmployeeSchedule.enrich_schedule_dicts([row])
+        return row
     
     def to_dict(self) -> Dict[str, Any]:
         return {

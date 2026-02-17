@@ -124,6 +124,11 @@ class DashboardController:
             '''
             schedule_data = db.fetch_all(schedule_query, (emp.id, current_year))
 
+            # Dynamically compute available_hours_per_month using live settings
+            for sched in schedule_data:
+                reserved = sched.get('reserved_hours_per_day') or 0
+                sched['available_hours_per_month'] = max(0, (work_hours_per_day - reserved) * work_days_per_month)
+
             # Fetch bookings that overlap with this year (handles cross-year)
             year_start = f'{current_year}-01-01'
             year_end = f'{current_year}-12-31'

@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Query
-from typing import Dict, Any, Optional
+from typing import Dict, Any, List, Optional
 
 from controllers.dashboard_controller import DashboardController
 
@@ -18,6 +18,30 @@ async def get_projects_dashboard(
 ):
     """Get projects dashboard data - public endpoint"""
     return DashboardController.get_projects_dashboard(architect_id)
+
+@router.get("/all-reservations", response_model=List[Dict[str, Any]])
+async def get_all_reservations():
+    """Get all active reservations with employee department info"""
+    from database import db
+
+    query = '''
+        SELECT
+            er.id,
+            er.employee_id,
+            er.start_date,
+            er.end_date,
+            er.reserved_hours_per_day,
+            er.reason,
+            er.status,
+            e.full_name,
+            e.department
+        FROM employee_reservations er
+        JOIN employees e ON er.employee_id = e.id
+        WHERE er.status = 'active'
+        ORDER BY er.start_date DESC
+    '''
+    rows = db.fetch_all(query)
+    return [dict(r) for r in rows]
 
 @router.get("/bookings/overview", response_model=Dict[str, Any])
 async def get_bookings_overview(

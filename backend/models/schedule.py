@@ -13,6 +13,17 @@ class EmployeeSchedule:
         self.available_hours_per_month = kwargs.get('available_hours_per_month', 0)
         self.created_at = kwargs.get('created_at')
         self.updated_at = kwargs.get('updated_at')
+
+    @staticmethod
+    def enrich_schedule_dicts(rows):
+        """Add dynamically computed available_hours_per_month to raw schedule dicts using live settings."""
+        settings = SettingsController.get_settings()
+        whpd = settings['work_hours_per_day']
+        wdpm = settings['work_days_per_month']
+        for row in rows:
+            reserved = row.get('reserved_hours_per_day') or 0
+            row['available_hours_per_month'] = max(0, (whpd - reserved) * wdpm)
+        return rows
     
     @staticmethod
     def get_by_id(schedule_id: int) -> Optional['EmployeeSchedule']:
@@ -38,7 +49,8 @@ class EmployeeSchedule:
             WHERE es.employee_id = ? AND es.year = ?
             ORDER BY es.month
         '''
-        return db.fetch_all(query, (employee_id, year))
+        rows = db.fetch_all(query, (employee_id, year))
+        return EmployeeSchedule.enrich_schedule_dicts(rows)
     
     @staticmethod
     def get_team_schedule(manager_id: int, month: int, year: int) -> List[Dict[str, Any]]:

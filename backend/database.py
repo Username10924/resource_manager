@@ -58,6 +58,7 @@ class Database:
         ''')
         
         # Employee schedule table (monthly breakdown)
+        # available_hours_per_month is computed dynamically in Python using live settings
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS employee_schedules (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -65,7 +66,6 @@ class Database:
                 month INTEGER NOT NULL CHECK(month BETWEEN 1 AND 12),
                 year INTEGER NOT NULL,
                 reserved_hours_per_day REAL DEFAULT 0,
-                available_hours_per_month REAL GENERATED ALWAYS AS ((6 - reserved_hours_per_day) * 20) VIRTUAL,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 UNIQUE(employee_id, month, year),
@@ -189,6 +189,34 @@ class Database:
             
             self.conn.commit()
             print("Migration completed successfully!")
+
+        # Remove hardcoded GENERATED column from employee_schedules
+        cursor.execute("SELECT sql FROM sqlite_master WHERE type='table' AND name='employee_schedules'")
+        es_result = cursor.fetchone()
+        if es_result and 'GENERATED ALWAYS AS' in es_result[0]:
+            print("Migrating employee_schedules to remove hardcoded GENERATED column...")
+            cursor.execute('''
+                CREATE TABLE employee_schedules_new (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    employee_id INTEGER NOT NULL,
+                    month INTEGER NOT NULL CHECK(month BETWEEN 1 AND 12),
+                    year INTEGER NOT NULL,
+                    reserved_hours_per_day REAL DEFAULT 0,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    UNIQUE(employee_id, month, year),
+                    FOREIGN KEY (employee_id) REFERENCES employees (id)
+                )
+            ''')
+            cursor.execute('''
+                INSERT INTO employee_schedules_new (id, employee_id, month, year, reserved_hours_per_day, created_at, updated_at)
+                SELECT id, employee_id, month, year, reserved_hours_per_day, created_at, updated_at
+                FROM employee_schedules
+            ''')
+            cursor.execute('DROP TABLE employee_schedules')
+            cursor.execute('ALTER TABLE employee_schedules_new RENAME TO employee_schedules')
+            self.conn.commit()
+            print("employee_schedules migration completed!")
 
         # Add business_unit to projects table if missing
         cursor.execute('PRAGMA table_info(projects)')

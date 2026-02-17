@@ -63,6 +63,7 @@ export default function DashboardPage() {
   const [resourceData, setResourceData] = useState<ResourceDashboard | null>(null);
   const [projectData, setProjectData] = useState<ProjectDashboard | null>(null);
   const [allBookings, setAllBookings] = useState<any[]>([]);
+  const [allReservations, setAllReservations] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const [selectedEmployee, setSelectedEmployee] = useState<any>(null);
@@ -103,17 +104,19 @@ export default function DashboardPage() {
     setError("");
 
     try {
-      if (viewMode === "resources") {
-        // Fetch dashboard data first
+      if (viewMode === "resources" || viewMode === "employees") {
+        // Fetch dashboard data + bookings + reservations
         const data = await dashboardAPI.getResourceStats();
 
-        // Fetch bookings separately with error handling
         let bookings: any[] = [];
+        let reservations: any[] = [];
         try {
-          bookings = await projectAPI.getAllBookings();
-        } catch (bookingError) {
-          console.error("Error fetching bookings, continuing with empty bookings:", bookingError);
-          // Continue with empty bookings array
+          [bookings, reservations] = await Promise.all([
+            projectAPI.getAllBookings(),
+            dashboardAPI.getAllReservations(),
+          ]);
+        } catch (fetchError) {
+          console.error("Error fetching bookings/reservations, continuing with empty arrays:", fetchError);
         }
 
         // Process all employees with correct monthly booking calculations
@@ -134,6 +137,7 @@ export default function DashboardPage() {
 
         setResourceData(processedData);
         setAllBookings(bookings);
+        setAllReservations(reservations);
       } else {
         const data = await dashboardAPI.getProjectStats();
         setProjectData(data);
@@ -616,14 +620,55 @@ export default function DashboardPage() {
           </div>
 
           {/* Employees by Department */}
-          {Object.entries(resourceData.departments).map(([dept, data]) => (
+          {Object.entries(resourceData.departments).map(([dept, data]) => {
+            // Compute department-level stats from allBookings and allReservations
+            const deptEmployeeIds = new Set(data.employees.map((e: any) => e.id));
+
+            const deptBookings = allBookings.filter(
+              (b) => deptEmployeeIds.has(b.employee_id) && (b.status || "").toLowerCase() !== "cancelled"
+            );
+            const deptTotalBookedHours = Math.round(
+              deptBookings.reduce((sum: number, b: any) => sum + (b.booked_hours || 0), 0)
+            );
+            const deptProjectCount = new Set(deptBookings.map((b: any) => b.project_id)).size;
+
+            const deptReservations = allReservations.filter(
+              (r: any) => deptEmployeeIds.has(r.employee_id)
+            );
+            const deptReservationCount = deptReservations.length;
+            const deptReservationHours = Math.round(
+              deptReservations.reduce((sum: number, r: any) => {
+                const start = new Date(r.start_date + "T00:00:00");
+                const end = new Date(r.end_date + "T00:00:00");
+                let workDays = 0;
+                const cur = new Date(start);
+                while (cur <= end) {
+                  if (cur.getDay() !== 5 && cur.getDay() !== 6) workDays++;
+                  cur.setDate(cur.getDate() + 1);
+                }
+                return sum + (r.reserved_hours_per_day || 0) * workDays;
+              }, 0)
+            );
+
+            return (
             <Card key={dept} className="bg-white border border-zinc-200">
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-lg font-semibold text-zinc-900">{dept}</CardTitle>
-                  <span className="text-sm font-medium text-zinc-500 bg-zinc-100 px-3 py-1 rounded-full">
-                    {data.count} employee{data.count !== 1 ? "s" : ""}
-                  </span>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-xs font-medium text-zinc-600 bg-zinc-100 px-2.5 py-1 rounded-full">
+                      {data.count} employee{data.count !== 1 ? "s" : ""}
+                    </span>
+                    <span className="text-xs font-medium text-blue-700 bg-blue-50 px-2.5 py-1 rounded-full">
+                      {deptTotalBookedHours.toLocaleString()}h booked
+                    </span>
+                    <span className="text-xs font-medium text-violet-700 bg-violet-50 px-2.5 py-1 rounded-full">
+                      {deptProjectCount} project{deptProjectCount !== 1 ? "s" : ""}
+                    </span>
+                    <span className="text-xs font-medium text-amber-700 bg-amber-50 px-2.5 py-1 rounded-full">
+                      {deptReservationCount} reservation{deptReservationCount !== 1 ? "s" : ""} ({deptReservationHours.toLocaleString()}h)
+                    </span>
+                  </div>
                 </div>
               </CardHeader>
               <CardContent>
@@ -727,7 +772,8 @@ export default function DashboardPage() {
                 </div>
               </CardContent>
             </Card>
-          ))}
+            );
+          })}
         </div>
       )}
 
