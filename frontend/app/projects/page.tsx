@@ -55,6 +55,12 @@ export default function ProjectsPage() {
   const [loadingBookings, setLoadingBookings] = useState(false);
   const [isBulkImportModalOpen, setIsBulkImportModalOpen] = useState(false);
 
+  // Search & filter state
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [businessUnitFilter, setBusinessUnitFilter] = useState<string>("all");
+  const [sortBy, setSortBy] = useState<"name" | "status" | "progress" | "recent">("recent");
+
   useEffect(() => {
     loadData();
   }, []);
@@ -185,6 +191,50 @@ export default function ProjectsPage() {
     }
   };
 
+  // Filtered & sorted projects
+  const filteredProjects = projects
+    .filter((project) => {
+      // Search filter
+      if (searchQuery) {
+        const q = searchQuery.toLowerCase();
+        const matchesSearch =
+          project.name.toLowerCase().includes(q) ||
+          project.description?.toLowerCase().includes(q) ||
+          ((project as any).project_code || "").toLowerCase().includes(q) ||
+          ((project as any).business_unit || "").toLowerCase().includes(q);
+        if (!matchesSearch) return false;
+      }
+      // Status filter
+      if (statusFilter !== "all" && project.status.toLowerCase() !== statusFilter) return false;
+      // Business unit filter
+      if (businessUnitFilter !== "all" && ((project as any).business_unit || "") !== businessUnitFilter) return false;
+      return true;
+    })
+    .sort((a, b) => {
+      switch (sortBy) {
+        case "name":
+          return a.name.localeCompare(b.name);
+        case "status":
+          return a.status.localeCompare(b.status);
+        case "progress":
+          return b.progress - a.progress;
+        case "recent":
+        default:
+          return new Date(b.updated_at || b.created_at).getTime() - new Date(a.updated_at || a.created_at).getTime();
+      }
+    });
+
+  // Unique business units from data
+  const activeBusinessUnits = Array.from(
+    new Set(projects.map((p) => (p as any).business_unit).filter(Boolean))
+  ).sort();
+
+  // Active filter count
+  const activeFilterCount =
+    (statusFilter !== "all" ? 1 : 0) +
+    (businessUnitFilter !== "all" ? 1 : 0) +
+    (searchQuery ? 1 : 0);
+
   if (loading) {
     return <SkeletonProjectsPage />;
   }
@@ -215,39 +265,59 @@ export default function ProjectsPage() {
 
       {/* Stats Grid */}
       {stats && (
-        <div className="mb-8 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-          <Card>
-            <CardContent className="py-6">
-              <div className="text-sm font-medium text-zinc-600">Total Projects</div>
-              <div className="mt-2 text-3xl font-bold text-zinc-900">
-                {stats.total_projects || 0}
+        <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="rounded-lg border border-zinc-200 bg-white p-5">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-zinc-100">
+                <svg className="h-5 w-5 text-zinc-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                </svg>
               </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="py-6">
-              <div className="text-sm font-medium text-zinc-600">Active Projects</div>
-              <div className="mt-2 text-3xl font-bold text-green-600">
-                {stats.active_projects || 0}
+              <div>
+                <div className="text-2xl font-bold text-zinc-900">{stats.total_projects || 0}</div>
+                <div className="text-xs text-zinc-500">Total Projects</div>
               </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="py-6">
-              <div className="text-sm font-medium text-zinc-600">Total Bookings</div>
-              <div className="mt-2 text-3xl font-bold text-zinc-600">
-                {stats.total_bookings || 0}
+            </div>
+          </div>
+          <div className="rounded-lg border border-zinc-200 bg-white p-5">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-50">
+                <svg className="h-5 w-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
               </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="py-6">
-              <div className="text-sm font-medium text-zinc-600">Avg Progress</div>
-              <div className="mt-2 text-3xl font-bold text-zinc-900">
-                {stats.avg_progress || 0}%
+              <div>
+                <div className="text-2xl font-bold text-emerald-600">{stats.active_projects || 0}</div>
+                <div className="text-xs text-zinc-500">Active Projects</div>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
+          <div className="rounded-lg border border-zinc-200 bg-white p-5">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-zinc-100">
+                <svg className="h-5 w-5 text-zinc-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+              </div>
+              <div>
+                <div className="text-2xl font-bold text-zinc-700">{stats.total_bookings || 0}</div>
+                <div className="text-xs text-zinc-500">Total Bookings</div>
+              </div>
+            </div>
+          </div>
+          <div className="rounded-lg border border-zinc-200 bg-white p-5">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-zinc-100">
+                <svg className="h-5 w-5 text-zinc-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                </svg>
+              </div>
+              <div>
+                <div className="text-2xl font-bold text-zinc-900">{stats.avg_progress || 0}%</div>
+                <div className="text-xs text-zinc-500">Avg Progress</div>
+              </div>
+            </div>
+          </div>
         </div>
       )}
 
@@ -256,40 +326,31 @@ export default function ProjectsPage() {
         <nav className="-mb-px flex space-x-8">
           <button
             onClick={() => setActiveTab("projects")}
-            className={`whitespace-nowrap border-b-2 py-4 px-1 text-sm font-medium transition-colors ${
+            className={`whitespace-nowrap border-b-2 py-3 px-1 text-sm font-medium transition-colors ${
               activeTab === "projects"
-                ? "border-zinc-400 text-zinc-700"
+                ? "border-zinc-900 text-zinc-900"
                 : "border-transparent text-zinc-500 hover:border-zinc-300 hover:text-zinc-700"
             }`}
           >
             <div className="flex items-center gap-2">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
-                />
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
               </svg>
               Projects
+              <span className="rounded-full bg-zinc-100 px-2 py-0.5 text-xs font-medium text-zinc-600">{projects.length}</span>
             </div>
           </button>
           <button
             onClick={() => setActiveTab("bookings")}
-            className={`whitespace-nowrap border-b-2 py-4 px-1 text-sm font-medium transition-colors ${
+            className={`whitespace-nowrap border-b-2 py-3 px-1 text-sm font-medium transition-colors ${
               activeTab === "bookings"
-                ? "border-zinc-400 text-zinc-700"
+                ? "border-zinc-900 text-zinc-900"
                 : "border-transparent text-zinc-500 hover:border-zinc-300 hover:text-zinc-700"
             }`}
           >
             <div className="flex items-center gap-2">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"
-                />
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
               </svg>
               Manage Bookings
             </div>
@@ -299,112 +360,198 @@ export default function ProjectsPage() {
 
       {/* Tab Content */}
       {activeTab === "projects" && (
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-          {projects.map((project) => (
-            <div
-              key={project.id}
-              className="cursor-pointer"
-              onClick={() => openProjectDetails(project)}
-            >
-              <Card className="transition-all hover:shadow-sm">
-                <CardHeader>
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <CardTitle>{project.name}</CardTitle>
-                      {(project as any).project_code && (
-                        <div className="mt-1">
-                          <span className="inline-flex items-center gap-1 text-xs font-mono font-semibold text-zinc-700 bg-zinc-100 px-2.5 py-1 rounded-md border border-zinc-200">
-                            <svg
-                              className="w-3 h-3"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14"
-                              />
-                            </svg>
+        <div className="space-y-4">
+          {/* Search & Filters Bar */}
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            {/* Search */}
+            <div className="relative flex-1 max-w-md">
+              <svg className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+              <input
+                type="text"
+                placeholder="Search projects by name, code, or description..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full rounded-lg border border-zinc-200 bg-white py-2 pl-10 pr-4 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-400 focus:outline-none focus:ring-1 focus:ring-zinc-400 transition-all"
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery("")}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600"
+                >
+                  <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              )}
+            </div>
+
+            {/* Filters */}
+            <div className="flex flex-wrap items-center gap-2">
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className="rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-700 focus:border-zinc-400 focus:outline-none focus:ring-1 focus:ring-zinc-400"
+              >
+                <option value="all">All Statuses</option>
+                <option value="active">Active</option>
+                <option value="planning">Planning</option>
+                <option value="on-hold">On Hold</option>
+                <option value="completed">Completed</option>
+              </select>
+
+              <select
+                value={businessUnitFilter}
+                onChange={(e) => setBusinessUnitFilter(e.target.value)}
+                className="rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-700 focus:border-zinc-400 focus:outline-none focus:ring-1 focus:ring-zinc-400"
+              >
+                <option value="all">All Business Units</option>
+                {activeBusinessUnits.map((unit) => (
+                  <option key={unit} value={unit}>{unit}</option>
+                ))}
+              </select>
+
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value as any)}
+                className="rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-700 focus:border-zinc-400 focus:outline-none focus:ring-1 focus:ring-zinc-400"
+              >
+                <option value="recent">Most Recent</option>
+                <option value="name">Name A-Z</option>
+                <option value="status">Status</option>
+                <option value="progress">Progress</option>
+              </select>
+
+              {activeFilterCount > 0 && (
+                <button
+                  onClick={() => {
+                    setSearchQuery("");
+                    setStatusFilter("all");
+                    setBusinessUnitFilter("all");
+                    setSortBy("recent");
+                  }}
+                  className="flex items-center gap-1 rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2 text-xs font-medium text-zinc-600 hover:bg-zinc-100 transition-colors"
+                >
+                  <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                  Clear filters ({activeFilterCount})
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Results count */}
+          <div className="text-xs text-zinc-400">
+            Showing {filteredProjects.length} of {projects.length} projects
+          </div>
+
+          {/* Project Cards */}
+          {filteredProjects.length === 0 ? (
+            <div className="rounded-lg border border-dashed border-zinc-300 bg-zinc-50 p-12 text-center">
+              <svg className="mx-auto h-10 w-10 text-zinc-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+              <div className="mt-3 text-sm text-zinc-500">No projects match your filters</div>
+              <button
+                onClick={() => {
+                  setSearchQuery("");
+                  setStatusFilter("all");
+                  setBusinessUnitFilter("all");
+                }}
+                className="mt-2 text-sm font-medium text-zinc-700 hover:text-zinc-900 underline underline-offset-2"
+              >
+                Clear all filters
+              </button>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+              {filteredProjects.map((project) => (
+                <div
+                  key={project.id}
+                  className="group cursor-pointer rounded-lg border border-zinc-200 bg-white p-5 transition-all hover:border-zinc-300 hover:shadow-sm"
+                  onClick={() => openProjectDetails(project)}
+                >
+                  {/* Top row: name + status */}
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <h3 className="text-sm font-semibold text-zinc-900 truncate">{project.name}</h3>
+                        {(project as any).project_code && (
+                          <span className="shrink-0 text-[11px] font-mono font-semibold text-zinc-500 bg-zinc-100 px-1.5 py-0.5 rounded">
                             {(project as any).project_code}
                           </span>
-                        </div>
-                      )}
-                      <p className="mt-2 text-sm text-zinc-600 line-clamp-2">
-                        {project.description}
-                      </p>
-                      {(project as any).business_unit && (
-                        <p className="mt-2 text-xs text-zinc-500">
-                          Business Unit: <span className="font-medium text-zinc-700">{(project as any).business_unit}</span>
-                        </p>
-                      )}
+                        )}
+                      </div>
+                      <p className="mt-1 text-xs text-zinc-500 line-clamp-1">{project.description}</p>
                     </div>
-                    <span
-                      className={`ml-3 rounded-full px-3 py-1 text-xs font-medium ${getStatusColor(
-                        project.status
-                      )}`}
-                    >
+                    <span className={`shrink-0 rounded-full px-2.5 py-1 text-[11px] font-medium capitalize ${getStatusColor(project.status)}`}>
                       {project.status}
                     </span>
                   </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {/* Progress Bar */}
-                    <div>
-                      <div className="mb-1 flex items-center justify-between text-sm">
-                        <span className="text-zinc-600">Progress</span>
-                        <span className="font-medium text-zinc-900">{project.progress}%</span>
-                      </div>
-                      <div className="h-2 w-full overflow-hidden rounded-full bg-zinc-200">
-                        <div
-                          className="h-full rounded-full bg-zinc-900 transition-all"
-                          style={{ width: `${project.progress}%` }}
-                        />
-                      </div>
-                    </div>
 
-                    {/* Actions */}
-                    <div className="flex gap-2">
-                      <Button
-                        variant="secondary"
-                        size="sm"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          openEditModal(project);
-                        }}
-                        className="flex-1"
-                      >
-                        Edit Project
-                      </Button>
-                      <Button
-                        size="sm"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          openBookingModal(project);
-                        }}
-                        className="flex-1"
-                      >
-                        Book Resources
-                      </Button>
-                      <Button
-                        variant="secondary"
-                        size="sm"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          openDeleteModal(project);
-                        }}
-                        className="bg-red-100 text-red-800 hover:bg-red-200"
-                      >
-                        Delete
-                      </Button>
+                  {/* Meta row */}
+                  {(project as any).business_unit && (
+                    <div className="mt-2 text-[11px] text-zinc-400">
+                      {(project as any).business_unit}
+                    </div>
+                  )}
+
+                  {/* Progress Bar */}
+                  <div className="mt-3">
+                    <div className="mb-1 flex items-center justify-between">
+                      <span className="text-[11px] text-zinc-500">Progress</span>
+                      <span className="text-[11px] font-semibold text-zinc-700">{project.progress}%</span>
+                    </div>
+                    <div className="h-1.5 w-full overflow-hidden rounded-full bg-zinc-100">
+                      <div
+                        className={`h-full rounded-full transition-all ${
+                          project.progress >= 100
+                            ? "bg-emerald-500"
+                            : project.progress >= 50
+                            ? "bg-zinc-900"
+                            : "bg-zinc-400"
+                        }`}
+                        style={{ width: `${project.progress}%` }}
+                      />
                     </div>
                   </div>
-                </CardContent>
-              </Card>
+
+                  {/* Actions */}
+                  <div className="mt-3 flex gap-2 pt-3 border-t border-zinc-100">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        openEditModal(project);
+                      }}
+                      className="flex-1 rounded-md border border-zinc-200 bg-white px-3 py-1.5 text-xs font-medium text-zinc-700 hover:bg-zinc-50 transition-colors"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        openBookingModal(project);
+                      }}
+                      className="flex-1 rounded-md bg-zinc-900 px-3 py-1.5 text-xs font-medium text-white hover:bg-zinc-800 transition-colors"
+                    >
+                      Book Resources
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        openDeleteModal(project);
+                      }}
+                      className="rounded-md border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-medium text-red-700 hover:bg-red-100 transition-colors"
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </div>
+              ))}
             </div>
-          ))}
+          )}
         </div>
       )}
 
