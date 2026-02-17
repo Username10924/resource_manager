@@ -73,6 +73,7 @@ class ProjectCreate(BaseModel):
     solution_architect_id: int
     start_date: Optional[date] = None
     end_date: Optional[date] = None
+    priority: Optional[int] = Field(default=1, ge=1, le=12)
 
 class ProjectUpdate(BaseModel):
     name: Optional[str] = None
@@ -83,6 +84,7 @@ class ProjectUpdate(BaseModel):
     solution_architect_id: Optional[int] = None
     start_date: Optional[date] = None
     end_date: Optional[date] = None
+    priority: Optional[int] = Field(default=None, ge=1, le=12)
 
 class BookingRequest(BaseModel):
     employee_id: int

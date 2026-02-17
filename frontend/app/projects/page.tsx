@@ -512,11 +512,19 @@ export default function ProjectsPage() {
                   </div>
 
                   {/* Meta row */}
-                  {(project as any).business_unit && (
-                    <div className="mt-2 text-[11px] text-zinc-400">
-                      {(project as any).business_unit}
-                    </div>
-                  )}
+                  <div className="mt-2 flex items-center gap-2 text-[11px] text-zinc-400">
+                    {(project as any).business_unit && (
+                      <span>{(project as any).business_unit}</span>
+                    )}
+                    {(project as any).priority && (
+                      <>
+                        {(project as any).business_unit && <span>·</span>}
+                        <span className="inline-flex items-center gap-1 rounded bg-zinc-100 px-1.5 py-0.5 text-[11px] font-medium text-zinc-600">
+                          P{(project as any).priority}
+                        </span>
+                      </>
+                    )}
+                  </div>
 
                   {/* Progress Bar */}
                   <div className="mt-3">
@@ -784,6 +792,7 @@ function CreateProjectModal({
     solution_architect_id: 0, // Will be set to first employee
     start_date: "",
     end_date: "",
+    priority: 1,
   });
 
   useEffect(() => {
@@ -931,6 +940,7 @@ function CreateProjectModal({
         solution_architect_id: 0,
         start_date: "",
         end_date: "",
+        priority: 1,
       });
       setAttachments([]);
     } catch (error) {
@@ -989,6 +999,22 @@ function CreateProjectModal({
             onChange={(e) => setFormData({ ...formData, description: e.target.value })}
             required
           />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-zinc-900 mb-1">Priority</label>
+          <select
+            value={formData.priority}
+            onChange={(e) => setFormData({ ...formData, priority: parseInt(e.target.value) })}
+            className="block w-full rounded-md border border-zinc-200 px-3 py-2 text-sm focus:border-zinc-400 focus:ring-1 focus:ring-zinc-400 focus:outline-none"
+          >
+            {Array.from({ length: 12 }, (_, i) => i + 1).map((n) => (
+              <option key={n} value={n}>
+                {n}
+              </option>
+            ))}
+          </select>
+          <p className="mt-1 text-xs text-zinc-500">1 = highest priority, 12 = lowest</p>
         </div>
 
         <div>
@@ -1234,6 +1260,7 @@ function EditProjectModal({
     description: project.description,
     status: project.status,
     progress: project.progress,
+    priority: (project as any).priority || 1,
     solution_architect_id: (project as any).solution_architect_id || 0,
     start_date: (project as any).start_date || "",
     end_date: (project as any).end_date || "",
@@ -1249,6 +1276,7 @@ function EditProjectModal({
         description: project.description,
         status: project.status,
         progress: project.progress,
+        priority: (project as any).priority || 1,
         solution_architect_id: (project as any).solution_architect_id || 0,
         start_date: (project as any).start_date || "",
         end_date: (project as any).end_date || "",
@@ -1503,18 +1531,35 @@ function EditProjectModal({
           </div>
         </div>
 
-        <div>
-          <label className="block text-sm font-medium text-zinc-900 mb-1">Status</label>
-          <select
-            className="block w-full rounded-md border border-zinc-200 px-3 py-2 text-sm focus:border-zinc-400 focus:ring-1 focus:ring-zinc-400 focus:outline-none"
-            value={formData.status}
-            onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-          >
-            <option value="planning">Planning</option>
-            <option value="active">Active</option>
-            <option value="on-hold">On Hold</option>
-            <option value="completed">Completed</option>
-          </select>
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-zinc-900 mb-1">Status</label>
+            <select
+              className="block w-full rounded-md border border-zinc-200 px-3 py-2 text-sm focus:border-zinc-400 focus:ring-1 focus:ring-zinc-400 focus:outline-none"
+              value={formData.status}
+              onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+            >
+              <option value="planning">Planning</option>
+              <option value="active">Active</option>
+              <option value="on-hold">On Hold</option>
+              <option value="completed">Completed</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-zinc-900 mb-1">Priority</label>
+            <select
+              value={formData.priority}
+              onChange={(e) => setFormData({ ...formData, priority: parseInt(e.target.value) })}
+              className="block w-full rounded-md border border-zinc-200 px-3 py-2 text-sm focus:border-zinc-400 focus:ring-1 focus:ring-zinc-400 focus:outline-none"
+            >
+              {Array.from({ length: 12 }, (_, i) => i + 1).map((n) => (
+                <option key={n} value={n}>
+                  {n}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
 
         <Input
@@ -2381,11 +2426,17 @@ function ProjectDetailsModal({
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-3 gap-4">
             <div>
               <h3 className="text-sm font-semibold text-zinc-900 mb-1">Status</h3>
               <span className="inline-block rounded-full px-3 py-1 text-xs font-medium bg-zinc-100 text-zinc-900">
                 {project.status}
+              </span>
+            </div>
+            <div>
+              <h3 className="text-sm font-semibold text-zinc-900 mb-1">Priority</h3>
+              <span className="inline-block rounded bg-zinc-100 px-2.5 py-1 text-xs font-semibold text-zinc-900">
+                {(project as any).priority || 1}
               </span>
             </div>
             <div>

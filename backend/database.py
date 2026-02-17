@@ -103,6 +103,7 @@ class Database:
                 solution_architect_id INTEGER NOT NULL,
                 start_date DATE,
                 end_date DATE,
+                priority INTEGER DEFAULT 1 CHECK(priority BETWEEN 1 AND 12),
                 attachments TEXT, -- JSON string of file paths
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -226,6 +227,15 @@ class Database:
             cursor.execute('ALTER TABLE projects ADD COLUMN business_unit TEXT')
             self.conn.commit()
             print("Projects migration completed successfully!")
+
+        # Add priority to projects table if missing
+        cursor.execute('PRAGMA table_info(projects)')
+        project_columns = [row[1] for row in cursor.fetchall()]
+        if 'priority' not in project_columns:
+            print("Migrating projects table to add priority column...")
+            cursor.execute('ALTER TABLE projects ADD COLUMN priority INTEGER DEFAULT 1')
+            self.conn.commit()
+            print("Projects priority migration completed successfully!")
     
     # query helpers
     def execute(self, query: str, params: Tuple = ()) -> sqlite3.Cursor:

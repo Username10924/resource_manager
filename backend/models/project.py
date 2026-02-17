@@ -15,6 +15,7 @@ class Project:
         self.solution_architect_id = kwargs.get('solution_architect_id')
         self.start_date = kwargs.get('start_date')
         self.end_date = kwargs.get('end_date')
+        self.priority = kwargs.get('priority', 1)
         self.attachments = json.loads(kwargs['attachments']) if kwargs.get('attachments') else []
         self.created_at = kwargs.get('created_at')
         self.updated_at = kwargs.get('updated_at')
@@ -22,15 +23,15 @@ class Project:
     @staticmethod
     def create(project_code: str, name: str, description: str,
                solution_architect_id: int, business_unit: str = None, start_date: date = None,
-               end_date: date = None, attachments: List[str] = None) -> 'Project':
+               end_date: date = None, attachments: List[str] = None, priority: int = 1) -> 'Project':
         attachments_json = json.dumps(attachments or [])
         query = '''
-            INSERT INTO projects (project_code, name, business_unit, description, solution_architect_id, 
-                                 start_date, end_date, attachments)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO projects (project_code, name, business_unit, description, solution_architect_id,
+                                 start_date, end_date, priority, attachments)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
         '''
         cursor = db.execute(query, (project_code, name, business_unit, description, solution_architect_id,
-                                   start_date, end_date, attachments_json))
+                                   start_date, end_date, priority, attachments_json))
         db.commit()
         return Project.get_by_id(cursor.lastrowid)
     
@@ -102,6 +103,9 @@ class Project:
         if 'solution_architect_id' in kwargs:
             updates.append('solution_architect_id = ?')
             params.append(kwargs['solution_architect_id'])
+        if 'priority' in kwargs:
+            updates.append('priority = ?')
+            params.append(kwargs['priority'])
         if 'attachments' in kwargs:
             attachments_json = json.dumps(kwargs['attachments'])
             updates.append('attachments = ?')
@@ -235,6 +239,7 @@ class Project:
             'solution_architect_id': self.solution_architect_id,
             'start_date': format_date(self.start_date),
             'end_date': format_date(self.end_date),
+            'priority': self.priority,
             'attachments': self.attachments,
             'created_at': self.created_at,
             'updated_at': self.updated_at
