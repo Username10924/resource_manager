@@ -36,13 +36,13 @@ export default function SettingsPage() {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<"config" | "password" | "users">("config");
   const [settings, setSettings] = useState<Settings>({
-    work_hours_per_day: 6,
-    work_days_per_month: 20,
+    work_hours_per_day: 7,
+    work_days_per_month: 18.5,
     months_in_year: 12,
   });
   const [originalSettings, setOriginalSettings] = useState<Settings>({
-    work_hours_per_day: 6,
-    work_days_per_month: 20,
+    work_hours_per_day: 7,
+    work_days_per_month: 18.5,
     months_in_year: 12,
   });
   const [loading, setLoading] = useState(true);
@@ -155,7 +155,7 @@ export default function SettingsPage() {
   };
 
   const handleChange = (field: keyof Settings, value: string) => {
-    const numValue = parseInt(value);
+    const numValue = parseFloat(value);
     if (!isNaN(numValue) && numValue > 0) {
       setSettings((prev) => ({
         ...prev,
@@ -471,6 +471,7 @@ export default function SettingsPage() {
                       type="number"
                       min="1"
                       max="31"
+                      step="0.5"
                       value={settings.work_days_per_month}
                       onChange={(e) => handleChange("work_days_per_month", e.target.value)}
                       className="max-w-xs"

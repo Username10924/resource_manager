@@ -276,7 +276,7 @@ function ScheduleModal({
 }) {
   const [reservations, setReservations] = useState<Reservation[]>([]);
   const [bookings, setBookings] = useState<any[]>([]);
-  const [settings, setSettings] = useState<Settings>({ work_hours_per_day: 6, work_days_per_month: 20, months_in_year: 12 });
+  const [settings, setSettings] = useState<Settings>({ work_hours_per_day: 7, work_days_per_month: 18.5, months_in_year: 12 });
   const today = new Date().toISOString().split('T')[0];
   const nextMonth = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 

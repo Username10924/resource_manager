@@ -81,7 +81,7 @@ export default function EmployeeStatsModal({ isOpen, onClose, employee, size = '
   const [monthlyReservations, setMonthlyReservations] = useState<MonthlyReservation[]>([]);
   const [loadingReservations, setLoadingReservations] = useState(false);
   const [lineManagerName, setLineManagerName] = useState<string>('N/A');
-  const [settings, setSettings] = useState<Settings>({ work_hours_per_day: 6, work_days_per_month: 20, months_in_year: 12 });
+  const [settings, setSettings] = useState<Settings>({ work_hours_per_day: 7, work_days_per_month: 18.5, months_in_year: 12 });
 
   useEffect(() => {
     const fetchSettings = async () => {
