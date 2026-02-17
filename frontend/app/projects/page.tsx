@@ -61,6 +61,7 @@ export default function ProjectsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [businessUnitFilter, setBusinessUnitFilter] = useState<string>("all");
+  const [yearFilter, setYearFilter] = useState<string>("all");
   const [sortBy, setSortBy] = useState<"name" | "status" | "progress" | "recent">("recent");
 
   useEffect(() => {
@@ -210,6 +211,11 @@ export default function ProjectsPage() {
       if (statusFilter !== "all" && project.status.toLowerCase() !== statusFilter) return false;
       // Business unit filter
       if (businessUnitFilter !== "all" && ((project as any).business_unit || "") !== businessUnitFilter) return false;
+      // Year filter (based on start_date)
+      if (yearFilter !== "all") {
+        const startYear = project.start_date ? new Date(project.start_date + "T00:00:00").getFullYear().toString() : "";
+        if (startYear !== yearFilter) return false;
+      }
       return true;
     })
     .sort((a, b) => {
@@ -235,6 +241,7 @@ export default function ProjectsPage() {
   const activeFilterCount =
     (statusFilter !== "all" ? 1 : 0) +
     (businessUnitFilter !== "all" ? 1 : 0) +
+    (yearFilter !== "all" ? 1 : 0) +
     (searchQuery ? 1 : 0);
 
   if (loading) {
@@ -415,6 +422,16 @@ export default function ProjectsPage() {
               </select>
 
               <select
+                value={yearFilter}
+                onChange={(e) => setYearFilter(e.target.value)}
+                className="rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-700 focus:border-zinc-400 focus:outline-none focus:ring-1 focus:ring-zinc-400"
+              >
+                <option value="all">All Years</option>
+                <option value="2025">2025</option>
+                <option value="2026">2026</option>
+              </select>
+
+              <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value as any)}
                 className="rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-700 focus:border-zinc-400 focus:outline-none focus:ring-1 focus:ring-zinc-400"
@@ -431,6 +448,7 @@ export default function ProjectsPage() {
                     setSearchQuery("");
                     setStatusFilter("all");
                     setBusinessUnitFilter("all");
+                    setYearFilter("all");
                     setSortBy("recent");
                   }}
                   className="flex items-center gap-1 rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2 text-xs font-medium text-zinc-600 hover:bg-zinc-100 transition-colors"
