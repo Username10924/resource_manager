@@ -71,6 +71,7 @@ export default function DashboardPage() {
   const [projectBookings, setProjectBookings] = useState<Booking[]>([]);
   const [isProjectModalOpen, setIsProjectModalOpen] = useState(false);
   const [settings, setSettings] = useState<Settings>({ work_hours_per_day: 6, work_days_per_month: 20, months_in_year: 12 });
+  const [projectListYear, setProjectListYear] = useState<string>("all");
   const { user } = useAuth();
 
   const formatHours = (value: number) => {
@@ -484,11 +485,50 @@ export default function DashboardPage() {
           {/* Projects List */}
           <Card className="bg-white border border-zinc-200">
             <CardHeader>
-              <CardTitle className="text-lg font-semibold text-zinc-900">All Projects</CardTitle>
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-lg font-semibold text-zinc-900">All Projects</CardTitle>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-medium text-zinc-600">Year:</span>
+                  <div className="flex rounded-lg border border-zinc-200 bg-zinc-50 p-0.5 gap-0.5">
+                    {["all", ...Array.from(new Set(
+                      projectData.projects
+                        .map((p: any) => p.start_date ? new Date(p.start_date + "T00:00:00").getFullYear() : null)
+                        .filter(Boolean)
+                    )).sort((a: any, b: any) => a - b)].map((year) => (
+                      <button
+                        key={String(year)}
+                        onClick={() => setProjectListYear(String(year))}
+                        className={`rounded-md px-3 py-1.5 text-sm font-medium transition-all ${
+                          projectListYear === String(year)
+                            ? "bg-blue-600 text-white shadow-sm"
+                            : "text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100"
+                        }`}
+                      >
+                        {year === "all" ? "All" : year}
+                      </button>
+                    ))}
+                  </div>
+                  <span className="ml-1 text-xs text-zinc-400">
+                    {projectData.projects.filter((p: any) => {
+                      if (projectListYear === "all") return true;
+                      if (!p.start_date) return false;
+                      return new Date(p.start_date + "T00:00:00").getFullYear().toString() === projectListYear;
+                    }).length} project{projectData.projects.filter((p: any) => {
+                      if (projectListYear === "all") return true;
+                      if (!p.start_date) return false;
+                      return new Date(p.start_date + "T00:00:00").getFullYear().toString() === projectListYear;
+                    }).length !== 1 ? "s" : ""}
+                  </span>
+                </div>
+              </div>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {projectData.projects.map((project: any) => (
+                {projectData.projects.filter((project: any) => {
+                  if (projectListYear === "all") return true;
+                  if (!project.start_date) return false;
+                  return new Date(project.start_date + "T00:00:00").getFullYear().toString() === projectListYear;
+                }).map((project: any) => (
                   <div
                     key={project.id}
                     onClick={() => handleProjectClick(project)}

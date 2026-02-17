@@ -6,6 +6,8 @@ type RoadmapProject = {
   id: number;
   name: string;
   status?: string;
+  progress?: number;
+  business_unit?: string | null;
   start_date: string | null;
   end_date: string | null;
 };
@@ -14,6 +16,8 @@ type ParsedProject = {
   id: number;
   name: string;
   status: string;
+  progress: number;
+  businessUnit: string;
   start: Date;
   end: Date;
 };
@@ -58,29 +62,46 @@ function getMonthRange(start: Date, end: Date): Date[] {
   return result;
 }
 
-function statusBarColor(status: string): string {
+function statusBarBg(status: string): string {
   switch (status) {
     case "active":
-      return "bg-emerald-500";
+      return "#2563eb"; // blue-600
     case "completed":
-      return "bg-zinc-400";
+      return "#059669"; // emerald-600
     case "planned":
     case "planning":
-      return "bg-amber-400";
+      return "#d97706"; // amber-600
     case "on_hold":
     case "on-hold":
-      return "bg-orange-500";
+      return "#ea580c"; // orange-600
     default:
-      return "bg-red-400";
+      return "#dc2626"; // red-600
+  }
+}
+
+function statusBarTrackBg(status: string): string {
+  switch (status) {
+    case "active":
+      return "#93c5fd"; // blue-300
+    case "completed":
+      return "#6ee7b7"; // emerald-300
+    case "planned":
+    case "planning":
+      return "#fcd34d"; // amber-300
+    case "on_hold":
+    case "on-hold":
+      return "#fdba74"; // orange-300
+    default:
+      return "#fca5a5"; // red-300
   }
 }
 
 function statusBadgeClass(status: string): string {
   switch (status) {
     case "active":
-      return "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200";
+      return "bg-blue-50 text-blue-700 ring-1 ring-blue-200";
     case "completed":
-      return "bg-zinc-100 text-zinc-600 ring-1 ring-zinc-200";
+      return "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200";
     case "planned":
     case "planning":
       return "bg-amber-50 text-amber-700 ring-1 ring-amber-200";
@@ -118,6 +139,8 @@ export default function ProjectRoadmapGantt({ projects }: { projects: RoadmapPro
           id: project.id,
           name: project.name,
           status: (project.status || "unknown").toLowerCase(),
+          progress: project.progress ?? 0,
+          businessUnit: project.business_unit || "",
           start,
           end,
         } as ParsedProject;
@@ -207,7 +230,7 @@ export default function ProjectRoadmapGantt({ projects }: { projects: RoadmapPro
               onClick={() => setSelectedYear(year)}
               className={`rounded-md px-3.5 py-1.5 text-sm font-medium transition-all ${
                 selectedYear === year
-                  ? "bg-zinc-900 text-white shadow-sm"
+                  ? "bg-blue-600 text-white shadow-sm"
                   : "text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100"
               }`}
             >
@@ -221,18 +244,22 @@ export default function ProjectRoadmapGantt({ projects }: { projects: RoadmapPro
       </div>
 
       {/* Legend */}
-      <div className="flex flex-wrap items-center gap-3">
+      <div className="flex flex-wrap items-center gap-4">
         {[
-          { status: "active", label: "Active", color: "bg-emerald-500" },
-          { status: "planning", label: "Planning", color: "bg-amber-400" },
+          { status: "active", label: "Active", color: "bg-blue-600" },
+          { status: "planning", label: "Planning", color: "bg-amber-500" },
           { status: "on-hold", label: "On Hold", color: "bg-orange-500" },
-          { status: "completed", label: "Completed", color: "bg-zinc-400" },
+          { status: "completed", label: "Completed", color: "bg-emerald-600" },
         ].map((item) => (
           <div key={item.status} className="flex items-center gap-1.5 text-xs text-zinc-600">
-            <div className={`h-2.5 w-2.5 rounded-sm ${item.color}`} />
+            <div className={`h-2.5 w-6 rounded-sm ${item.color}`} />
             {item.label}
           </div>
         ))}
+        <div className="flex items-center gap-1.5 text-xs text-zinc-400 ml-2">
+          <div className="h-px w-4 bg-red-400" />
+          Today
+        </div>
       </div>
 
       {rows.length === 0 ? (
@@ -280,7 +307,7 @@ export default function ProjectRoadmapGantt({ projects }: { projects: RoadmapPro
                       <div
                         key={`${month.getFullYear()}-${month.getMonth()}`}
                         className={`border-r border-zinc-200 px-1 py-2 text-center text-[11px] font-medium ${
-                          isCurrentMonth ? "bg-zinc-100 text-zinc-900 font-semibold" : "text-zinc-500"
+                          isCurrentMonth ? "bg-blue-50 text-blue-700 font-semibold" : "text-zinc-500"
                         }`}
                       >
                         {month.toLocaleDateString(undefined, { month: "short" })}
@@ -301,6 +328,14 @@ export default function ProjectRoadmapGantt({ projects }: { projects: RoadmapPro
 
               const barLeft = startIndex * CELL_WIDTH + 2;
               const barWidth = span * CELL_WIDTH - 4;
+
+              const progressWidth = Math.round((project.progress / 100) * barWidth);
+
+              // Build the label that goes inside the bar
+              const barLabel = [
+                project.progress > 0 ? `${project.progress}%` : null,
+                project.businessUnit || null,
+              ].filter(Boolean).join(" · ");
 
               return (
                 <div
@@ -349,12 +384,42 @@ export default function ProjectRoadmapGantt({ projects }: { projects: RoadmapPro
                       />
                     )}
 
-                    {/* Project bar */}
+                    {/* Project bar: track (lighter) + filled progress (darker) */}
                     <div
-                      className={`absolute top-4 h-6 rounded-md shadow-sm ${statusBarColor(project.status)}`}
-                      style={{ left: barLeft, width: barWidth }}
-                      title={`${project.name} (${formatMonthYear(project.start)} – ${formatMonthYear(project.end)})`}
-                    />
+                      className="absolute top-3 h-8 rounded-md overflow-hidden"
+                      style={{
+                        left: barLeft,
+                        width: barWidth,
+                        backgroundColor: statusBarTrackBg(project.status),
+                      }}
+                      title={`${project.name}${project.businessUnit ? ` — ${project.businessUnit}` : ""} (${project.progress}% complete, ${formatMonthYear(project.start)} – ${formatMonthYear(project.end)})`}
+                    >
+                      {/* Filled progress portion */}
+                      <div
+                        className="absolute inset-y-0 left-0 rounded-l-md"
+                        style={{
+                          width: progressWidth,
+                          backgroundColor: statusBarBg(project.status),
+                        }}
+                      />
+
+                      {/* Label inside the bar */}
+                      {barWidth >= 48 && barLabel && (
+                        <div
+                          className="absolute inset-0 flex items-center px-2 z-[1]"
+                        >
+                          <span
+                            className="truncate text-[10px] font-semibold leading-none"
+                            style={{
+                              color: progressWidth > barWidth * 0.5 ? "#fff" : "#1f2937",
+                              textShadow: progressWidth > barWidth * 0.5 ? "0 1px 2px rgba(0,0,0,0.2)" : "none",
+                            }}
+                          >
+                            {barLabel}
+                          </span>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
               );

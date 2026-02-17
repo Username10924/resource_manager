@@ -8,11 +8,11 @@ interface ProjectStatusChartProps {
 }
 
 const STATUS_COLORS: Record<string, string> = {
-  'Active': '#18181b',
-  'Completed': '#a1a1aa',
-  'Planned': '#71717a',
-  'On Hold': '#d4d4d8',
-  'Cancelled': '#ef4444',
+  'Active': '#2563eb',     // blue-600
+  'Completed': '#059669',  // emerald-600
+  'Planned': '#d97706',    // amber-600
+  'On Hold': '#ea580c',    // orange-600
+  'Cancelled': '#dc2626',  // red-600
 };
 
 const renderCustomizedLabel = ({
@@ -22,6 +22,7 @@ const renderCustomizedLabel = ({
   innerRadius,
   outerRadius,
   percent,
+  value,
 }: any) => {
   if (percent < 0.05) return null;
 
@@ -35,12 +36,12 @@ const renderCustomizedLabel = ({
       x={x}
       y={y}
       fill="white"
-      textAnchor={x > cx ? 'start' : 'end'}
+      textAnchor="middle"
       dominantBaseline="central"
       fontSize={13}
       fontWeight={600}
     >
-      {`${(percent * 100).toFixed(0)}%`}
+      {value}
     </text>
   );
 };
@@ -55,26 +56,34 @@ export default function ProjectStatusChart({ data }: ProjectStatusChartProps) {
           cy="50%"
           labelLine={false}
           label={renderCustomizedLabel}
-          outerRadius={100}
-          fill="#18181b"
+          outerRadius={105}
+          innerRadius={50}
+          fill="#2563eb"
           dataKey="value"
+          paddingAngle={3}
+          strokeWidth={2}
+          stroke="#fff"
         >
-          {data.map((entry, index) => (
-            <Cell key={`cell-${index}`} fill={STATUS_COLORS[entry.name] || '#71717a'} />
+          {data.map((entry) => (
+            <Cell key={`cell-${entry.name}`} fill={STATUS_COLORS[entry.name] || '#6b7280'} />
           ))}
         </Pie>
         <Tooltip
           contentStyle={{
             backgroundColor: 'white',
-            border: '1px solid #e4e4e7',
-            borderRadius: '6px',
-            boxShadow: '0 1px 3px 0 rgb(0 0 0 / 0.1)',
+            border: '1px solid #e5e7eb',
+            borderRadius: '8px',
+            boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)',
             fontSize: '13px',
           }}
+          formatter={(value: number, name: string) => [`${value} project${value !== 1 ? 's' : ''}`, name]}
         />
         <Legend
           verticalAlign="bottom"
           height={36}
+          iconType="circle"
+          iconSize={8}
+          formatter={(value) => <span style={{ color: '#374151', fontSize: '12px' }}>{value}</span>}
         />
       </PieChart>
     </ResponsiveContainer>
