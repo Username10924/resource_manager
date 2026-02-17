@@ -815,6 +815,8 @@ export default function DashboardPage() {
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         employee={selectedEmployee}
+        allBookings={allBookings}
+        allReservations={allReservations}
       />
 
       {/* Project Details Modal */}

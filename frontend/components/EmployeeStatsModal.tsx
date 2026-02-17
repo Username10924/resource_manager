@@ -10,6 +10,8 @@ interface EmployeeStatsModalProps {
   isOpen: boolean;
   onClose: () => void;
   employee: any;
+  allBookings?: any[];
+  allReservations?: any[];
   size?: 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '5xl';
 }
 
@@ -74,7 +76,7 @@ function calculateMonthlyReservationHours(
   return { hours, workingDays };
 }
 
-export default function EmployeeStatsModal({ isOpen, onClose, employee, size = '5xl' }: EmployeeStatsModalProps) {
+export default function EmployeeStatsModal({ isOpen, onClose, employee, allBookings = [], allReservations = [], size = '5xl' }: EmployeeStatsModalProps) {
   const [selectedMonth, setSelectedMonth] = useState<{ month: number; year: number; monthName: string } | null>(null);
   const [projectBookings, setProjectBookings] = useState<ProjectBooking[]>([]);
   const [loadingProjects, setLoadingProjects] = useState(false);
@@ -241,6 +243,12 @@ export default function EmployeeStatsModal({ isOpen, onClose, employee, size = '
   const totalCapacity = monthlyCapacity * monthlyData.length;
   const avgUtilization = clampPercent(totalCapacity > 0 ? (totalUtilized / totalCapacity) * 100 : 0);
 
+  const empBookings = allBookings.filter(
+    (b) => b.employee_id === employee.id && (b.status || '').toLowerCase() !== 'cancelled'
+  );
+  const empProjectCount = new Set(empBookings.map((b: any) => b.project_id)).size;
+  const empReservationCount = allReservations.filter((r: any) => r.employee_id === employee.id).length;
+
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Employee Statistics" size={size}>
       <div className="space-y-6">
@@ -267,7 +275,7 @@ export default function EmployeeStatsModal({ isOpen, onClose, employee, size = '
           </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <Card>
             <CardContent className="pt-4">
               <div className="text-center">
@@ -297,6 +305,22 @@ export default function EmployeeStatsModal({ isOpen, onClose, employee, size = '
               <div className="text-center">
                 <div className="text-sm font-medium text-zinc-600">Avg Utilization</div>
                 <div className="mt-1 text-2xl font-bold text-zinc-900">{avgUtilization.toFixed(1)}%</div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-4">
+              <div className="text-center">
+                <div className="text-sm font-medium text-zinc-600">Projects</div>
+                <div className="mt-1 text-2xl font-bold text-zinc-900">{empProjectCount}</div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-4">
+              <div className="text-center">
+                <div className="text-sm font-medium text-zinc-600">Reservations</div>
+                <div className="mt-1 text-2xl font-bold text-zinc-900">{empReservationCount}</div>
               </div>
             </CardContent>
           </Card>
