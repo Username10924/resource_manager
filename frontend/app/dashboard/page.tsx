@@ -711,6 +711,30 @@ export default function DashboardPage() {
                     const utilization = totalCapacity > 0 ? (totalUtilized / totalCapacity) * 100 : 0;
                     const utilizationCapped = Math.min(100, Math.max(0, utilization));
 
+                    // Per-employee project & reservation stats
+                    const empBookings = allBookings.filter(
+                      (b) => b.employee_id === emp.id && (b.status || "").toLowerCase() !== "cancelled"
+                    );
+                    const empProjectCount = new Set(empBookings.map((b: any) => b.project_id)).size;
+
+                    const empReservations = allReservations.filter(
+                      (r: any) => r.employee_id === emp.id
+                    );
+                    const empReservationCount = empReservations.length;
+                    const empReservationHours = Math.round(
+                      empReservations.reduce((sum: number, r: any) => {
+                        const start = new Date(r.start_date + "T00:00:00");
+                        const end = new Date(r.end_date + "T00:00:00");
+                        let workDays = 0;
+                        const cur = new Date(start);
+                        while (cur <= end) {
+                          if (cur.getDay() !== 5 && cur.getDay() !== 6) workDays++;
+                          cur.setDate(cur.getDate() + 1);
+                        }
+                        return sum + (r.reserved_hours_per_day || 0) * workDays;
+                      }, 0)
+                    );
+
                     return (
                       <button
                         key={emp.id}
@@ -761,7 +785,16 @@ export default function DashboardPage() {
                           </div>
                         </div>
 
-                        <div className="mt-4 pt-4 border-t border-zinc-100">
+                        <div className="mt-3 flex flex-wrap gap-1.5">
+                          <span className="text-[11px] font-medium text-violet-700 bg-violet-50 px-2 py-0.5 rounded-full">
+                            {empProjectCount} project{empProjectCount !== 1 ? "s" : ""}
+                          </span>
+                          <span className="text-[11px] font-medium text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full">
+                            {empReservationCount} reservation{empReservationCount !== 1 ? "s" : ""} ({empReservationHours.toLocaleString()}h)
+                          </span>
+                        </div>
+
+                        <div className="mt-3 pt-3 border-t border-zinc-100">
                           <span className="text-xs text-zinc-600 font-medium">
                             Click to view detailed stats →
                           </span>
