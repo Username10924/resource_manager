@@ -567,9 +567,10 @@ export default function DashboardPage() {
               title="AVG UTILIZATION"
               value={`${(() => {
                 const months = Object.values(resourceData.monthly_summary);
+                if (months.length === 0) return "0.0";
                 const avgUtil =
                   months.reduce((sum, m) => sum + m.utilization_rate, 0) / months.length;
-                return avgUtil.toFixed(1);
+                return Math.min(100, Math.max(0, avgUtil)).toFixed(1);
               })()}%`}
             />
           </div>
