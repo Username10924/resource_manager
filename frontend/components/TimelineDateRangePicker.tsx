@@ -21,9 +21,12 @@ export default function TimelineDateRangePicker({
     const yearEnd = parseISODateLocal(`${viewYear}-12-31`);
     if (!yearStart || !yearEnd) return;
 
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const clampedAnchor = clampDate(today, yearStart, yearEnd);
+    let anchor = parseISODateLocal(startDate);
+    if (!anchor) {
+      anchor = new Date();
+      anchor.setHours(0, 0, 0, 0);
+    }
+    const clampedAnchor = clampDate(anchor, yearStart, yearEnd);
 
     const nextEnd = new Date(clampedAnchor);
     if (preset === 'year') {
