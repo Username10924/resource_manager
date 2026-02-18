@@ -26,9 +26,11 @@ export default function ResourcesPage() {
   const [isEditEmployeeModalOpen, setIsEditEmployeeModalOpen] = useState(false);
   const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
   const [loading, setLoading] = useState(true);
+  const [pageSettings, setPageSettings] = useState<Settings>({ work_hours_per_day: 7, work_days_per_month: 18.5, months_in_year: 12 });
 
   useEffect(() => {
     loadData();
+    settingsAPI.getSettings().then(setPageSettings).catch(() => {});
   }, []);
 
   const loadData = async () => {
@@ -122,13 +124,12 @@ export default function ResourcesPage() {
 
         {/* Stats Grid */}
         {stats && (
-          <div className="mb-8 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
             <Card>
-              <CardContent className="py-6">
-                <div className="text-xs font-medium text-zinc-500 uppercase tracking-wide">Available Hours This Month</div>
-                <div className="mt-3 text-4xl font-bold text-zinc-900">
+              <CardContent className="py-5">
+                <div className="text-xs font-medium text-zinc-500 uppercase tracking-wide">Available This Month</div>
+                <div className="mt-2 text-3xl font-bold text-zinc-900">
                   {(() => {
-                    // Calculate actual available hours for current month from all employees
                     const now = new Date();
                     const currentMonth = now.getMonth() + 1;
                     const currentYear = now.getFullYear();
@@ -148,8 +149,99 @@ export default function ResourcesPage() {
                       }
                     });
 
-                    return Math.round(totalAvailable);
+                    return Math.round(totalAvailable).toLocaleString();
                   })()}
+                  <span className="text-base font-medium text-zinc-400 ml-1">h</span>
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="py-5">
+                <div className="text-xs font-medium text-zinc-500 uppercase tracking-wide">Available Until Year-End</div>
+                <div className="mt-2 text-3xl font-bold text-zinc-900">
+                  {(() => {
+                    const now = new Date();
+                    const currentMonth = now.getMonth() + 1;
+                    const currentYear = now.getFullYear();
+                    let total = 0;
+
+                    employees.forEach((emp: Employee) => {
+                      const empSchedule = (emp as any).schedule || [];
+                      empSchedule.forEach((s: any) => {
+                        if (s.year === currentYear && s.month >= currentMonth) {
+                          const capacity = s.available_hours_per_month || 0;
+                          const projectBooked = s.project_booked_hours || 0;
+                          const reserved = s.reserved_hours || 0;
+                          total += Math.max(0, capacity - projectBooked - reserved);
+                        }
+                      });
+                    });
+
+                    return Math.round(total).toLocaleString();
+                  })()}
+                  <span className="text-base font-medium text-zinc-400 ml-1">h</span>
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="py-5">
+                <div className="text-xs font-medium text-zinc-500 uppercase tracking-wide">Project Booked (Year)</div>
+                <div className="mt-2 text-3xl font-bold text-zinc-900">
+                  {(() => {
+                    const currentYear = new Date().getFullYear();
+                    let total = 0;
+                    employees.forEach((emp: Employee) => {
+                      ((emp as any).schedule || []).forEach((s: any) => {
+                        if (s.year === currentYear) total += s.project_booked_hours || 0;
+                      });
+                    });
+                    return Math.round(total).toLocaleString();
+                  })()}
+                  <span className="text-base font-medium text-zinc-400 ml-1">h</span>
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="py-5">
+                <div className="text-xs font-medium text-zinc-500 uppercase tracking-wide">Reserved (Year)</div>
+                <div className="mt-2 text-3xl font-bold text-zinc-900">
+                  {(() => {
+                    const currentYear = new Date().getFullYear();
+                    let total = 0;
+                    employees.forEach((emp: Employee) => {
+                      ((emp as any).schedule || []).forEach((s: any) => {
+                        if (s.year === currentYear) total += s.reserved_hours || 0;
+                      });
+                    });
+                    return Math.round(total).toLocaleString();
+                  })()}
+                  <span className="text-base font-medium text-zinc-400 ml-1">h</span>
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="py-5">
+                <div className="text-xs font-medium text-zinc-500 uppercase tracking-wide">Utilization (Year)</div>
+                <div className="mt-2 text-3xl font-bold text-zinc-900">
+                  {(() => {
+                    const currentYear = new Date().getFullYear();
+                    let totalUtilized = 0;
+                    let totalCapacity = 0;
+                    const monthlyCapacity = pageSettings.work_hours_per_day * pageSettings.work_days_per_month;
+
+                    employees.forEach((emp: Employee) => {
+                      ((emp as any).schedule || []).forEach((s: any) => {
+                        if (s.year === currentYear) {
+                          totalUtilized += (s.project_booked_hours || 0) + (s.reserved_hours || 0);
+                          totalCapacity += monthlyCapacity;
+                        }
+                      });
+                    });
+
+                    const pct = totalCapacity > 0 ? Math.min(100, (totalUtilized / totalCapacity) * 100) : 0;
+                    return pct.toFixed(1);
+                  })()}
+                  <span className="text-base font-medium text-zinc-400 ml-1">%</span>
                 </div>
               </CardContent>
             </Card>
