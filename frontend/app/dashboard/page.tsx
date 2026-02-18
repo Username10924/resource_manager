@@ -248,7 +248,29 @@ export default function DashboardPage() {
 
     const rangeStart = new Date(exportStartDate + "T00:00:00");
     const rangeEnd = new Date(exportEndDate + "T00:00:00");
-    const capacityDays = calculateWorkingDays(rangeStart, rangeEnd);
+
+    // Calculate months in range using business rules (matching dashboard logic)
+    const startYear = rangeStart.getFullYear();
+    const startMonth = rangeStart.getMonth();
+    const endYear = rangeEnd.getFullYear();
+    const endMonth = rangeEnd.getMonth();
+    let monthsInRange = 0;
+    for (let y = startYear; y <= endYear; y++) {
+      const mStart = y === startYear ? startMonth : 0;
+      const mEnd = y === endYear ? endMonth : 11;
+      for (let m = mStart; m <= mEnd; m++) {
+        const daysInMonth = new Date(y, m + 1, 0).getDate();
+        const monthStart = new Date(y, m, 1);
+        const monthEnd = new Date(y, m, daysInMonth);
+        const overlapStart = monthStart > rangeStart ? monthStart : rangeStart;
+        const overlapEnd = monthEnd < rangeEnd ? monthEnd : rangeEnd;
+        if (overlapStart <= overlapEnd) {
+          const fractionOfMonth = (overlapEnd.getDate() - overlapStart.getDate() + 1) / daysInMonth;
+          monthsInRange += fractionOfMonth;
+        }
+      }
+    }
+    const capacity = monthsInRange * settings.work_days_per_month * settings.work_hours_per_day;
 
     const rows: any[] = [];
 
@@ -293,7 +315,6 @@ export default function DashboardPage() {
           totalReservationHours += (r.reserved_hours_per_day || 0) * overlapDays;
         });
 
-        const capacity = capacityDays * settings.work_hours_per_day;
         const utilization = capacity > 0
           ? Math.min(100, (totalProjectHours + totalReservationHours) / capacity * 100)
           : 0;
