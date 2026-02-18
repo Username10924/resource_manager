@@ -307,7 +307,14 @@ export default function DashboardPage() {
           : 0;
 
         const totalBookedHours = totalProjectHours + totalReservationHours;
-        const totalAvailableHours = Math.max(0, 1540 - totalBookedHours);
+        const monthlyCapacity = settings.work_hours_per_day * settings.work_days_per_month;
+        const empSchedule = emp.schedule || [];
+        const totalAvailableHours = empSchedule.reduce((sum: number, s: any) => {
+          const cap = s.available_hours_per_month || monthlyCapacity;
+          const projBooked = s.project_booked_hours || 0;
+          const reserved = s.reserved_hours || 0;
+          return sum + Math.max(0, cap - projBooked - reserved);
+        }, 0);
 
         rows.push({
           "Function": dept,
