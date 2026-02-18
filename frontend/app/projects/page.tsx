@@ -1877,7 +1877,7 @@ function BookingModal({
   const [loadingAvailability, setLoadingAvailability] = useState(false);
   const [searchFilter, setSearchFilter] = useState("");
   const [timelineItems, setTimelineItems] = useState<VisualScheduleItem[]>([]);
-  const [settings, setSettings] = useState<Settings>({ work_hours_per_day: 7, work_days_per_month: 18.5, months_in_year: 12 });
+  const [settings, setSettings] = useState<Settings>({ work_hours_per_day: 7, work_days_per_month: 18.333333333, months_in_year: 12 });
 
   // Initialize with default dates
   const getDefaultDates = () => {

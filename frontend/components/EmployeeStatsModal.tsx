@@ -83,7 +83,7 @@ export default function EmployeeStatsModal({ isOpen, onClose, employee, allBooki
   const [monthlyReservations, setMonthlyReservations] = useState<MonthlyReservation[]>([]);
   const [loadingReservations, setLoadingReservations] = useState(false);
   const [lineManagerName, setLineManagerName] = useState<string>('N/A');
-  const [settings, setSettings] = useState<Settings>({ work_hours_per_day: 7, work_days_per_month: 18.5, months_in_year: 12 });
+  const [settings, setSettings] = useState<Settings>({ work_hours_per_day: 7, work_days_per_month: 18.333333333, months_in_year: 12 });
 
   useEffect(() => {
     const fetchSettings = async () => {
@@ -158,16 +158,11 @@ export default function EmployeeStatsModal({ isOpen, onClose, employee, allBooki
       const capacity = sched.available_hours_per_month || totalCapacity;
       const actualAvailable = Math.max(0, capacity - projectBooked - reserved);
 
-      const isPastMonth =
-        typeof sched.year === 'number' && typeof sched.month === 'number'
-          ? sched.year < nowYear || (sched.year === nowYear && sched.month < nowMonth)
-          : false;
-
       return {
         month: monthNames[sched.month - 1],
         monthNum: sched.month,
         year: sched.year,
-        available: isPastMonth ? 0 : actualAvailable,
+        available: actualAvailable,
         booked: projectBooked,
         reserved: reserved,
         totalUtilized: totalUtilized,

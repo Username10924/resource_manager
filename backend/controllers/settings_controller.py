@@ -11,7 +11,7 @@ class SettingsController:
         
         settings = {
             'work_hours_per_day': 7,
-            'work_days_per_month': 18.5,
+            'work_days_per_month': 18.333333333,
             'months_in_year': 12
         }
         

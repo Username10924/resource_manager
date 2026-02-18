@@ -26,7 +26,7 @@ export default function ResourcesPage() {
   const [isEditEmployeeModalOpen, setIsEditEmployeeModalOpen] = useState(false);
   const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
   const [loading, setLoading] = useState(true);
-  const [pageSettings, setPageSettings] = useState<Settings>({ work_hours_per_day: 7, work_days_per_month: 18.5, months_in_year: 12 });
+  const [pageSettings, setPageSettings] = useState<Settings>({ work_hours_per_day: 7, work_days_per_month: 18.333333333, months_in_year: 12 });
 
   useEffect(() => {
     loadData();
@@ -157,18 +157,16 @@ export default function ResourcesPage() {
             </Card>
             <Card>
               <CardContent className="py-5">
-                <div className="text-xs font-medium text-zinc-500 uppercase tracking-wide">Available Until Year-End</div>
+                <div className="text-xs font-medium text-zinc-500 uppercase tracking-wide">Available (Year)</div>
                 <div className="mt-2 text-3xl font-bold text-zinc-900">
                   {(() => {
-                    const now = new Date();
-                    const currentMonth = now.getMonth() + 1;
-                    const currentYear = now.getFullYear();
+                    const currentYear = new Date().getFullYear();
                     let total = 0;
 
                     employees.forEach((emp: Employee) => {
                       const empSchedule = (emp as any).schedule || [];
                       empSchedule.forEach((s: any) => {
-                        if (s.year === currentYear && s.month >= currentMonth) {
+                        if (s.year === currentYear) {
                           const capacity = s.available_hours_per_month || 0;
                           const projectBooked = s.project_booked_hours || 0;
                           const reserved = s.reserved_hours || 0;
@@ -368,7 +366,7 @@ function ScheduleModal({
 }) {
   const [reservations, setReservations] = useState<Reservation[]>([]);
   const [bookings, setBookings] = useState<any[]>([]);
-  const [settings, setSettings] = useState<Settings>({ work_hours_per_day: 7, work_days_per_month: 18.5, months_in_year: 12 });
+  const [settings, setSettings] = useState<Settings>({ work_hours_per_day: 7, work_days_per_month: 18.333333333, months_in_year: 12 });
   const today = new Date().toISOString().split('T')[0];
   const nextMonth = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 

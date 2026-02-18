@@ -21,7 +21,7 @@ export default function EmployeeSchedulePage() {
   const [employee, setEmployee] = useState<Employee | null>(null);
   const [reservations, setReservations] = useState<Reservation[]>([]);
   const [bookings, setBookings] = useState<any[]>([]);
-  const [settings, setSettings] = useState<Settings>({ work_hours_per_day: 7, work_days_per_month: 18.5, months_in_year: 12 });
+  const [settings, setSettings] = useState<Settings>({ work_hours_per_day: 7, work_days_per_month: 18.333333333, months_in_year: 12 });
 
   const todayISO = useMemo(() => formatISODateLocal(new Date()), []);
   const nextMonthISO = useMemo(() => {

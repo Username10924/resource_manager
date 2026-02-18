@@ -72,7 +72,7 @@ export default function DashboardPage() {
   const [selectedProject, setSelectedProject] = useState<any>(null);
   const [projectBookings, setProjectBookings] = useState<Booking[]>([]);
   const [isProjectModalOpen, setIsProjectModalOpen] = useState(false);
-  const [settings, setSettings] = useState<Settings>({ work_hours_per_day: 7, work_days_per_month: 18.5, months_in_year: 12 });
+  const [settings, setSettings] = useState<Settings>({ work_hours_per_day: 7, work_days_per_month: 18.333333333, months_in_year: 12 });
   const [projectListYear, setProjectListYear] = useState<string>("all");
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [exportStartDate, setExportStartDate] = useState("");
@@ -906,18 +906,9 @@ export default function DashboardPage() {
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
                   {data.employees.map((emp: any) => {
                     const empSchedule = emp.schedule || [];
-                    const now = new Date();
-                    const nowYear = now.getFullYear();
-                    const nowMonth = now.getMonth() + 1;
                     // Calculate actual available hours (remaining after bookings and reservations)
                     const totalAvailable = empSchedule.reduce(
                       (sum: number, s: any) => {
-                        const isPastMonth =
-                          typeof s.year === 'number' && typeof s.month === 'number'
-                            ? s.year < nowYear || (s.year === nowYear && s.month < nowMonth)
-                            : false;
-                        if (isPastMonth) return sum;
-
                         const capacity = s.available_hours_per_month || 0;
                         const projectBooked = s.project_booked_hours || 0;
                         const reserved = s.reserved_hours || 0;

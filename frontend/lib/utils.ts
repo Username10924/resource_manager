@@ -4,7 +4,7 @@ export function calculateAvailableHours(
   otherHours: number
 ): number {
   const TOTAL_HOURS_PER_DAY = 6;
-  const WORK_DAYS_PER_MONTH = 20;
+  const WORK_DAYS_PER_MONTH = 18.333333333;
   
   const usedHours = operationsHours + developmentHours + otherHours;
   const availableHoursPerDay = Math.max(0, TOTAL_HOURS_PER_DAY - usedHours);

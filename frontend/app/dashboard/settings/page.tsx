@@ -37,12 +37,12 @@ export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState<"config" | "password" | "users">("config");
   const [settings, setSettings] = useState<Settings>({
     work_hours_per_day: 7,
-    work_days_per_month: 18.5,
+    work_days_per_month: 18.333333333,
     months_in_year: 12,
   });
   const [originalSettings, setOriginalSettings] = useState<Settings>({
     work_hours_per_day: 7,
-    work_days_per_month: 18.5,
+    work_days_per_month: 18.333333333,
     months_in_year: 12,
   });
   const [loading, setLoading] = useState(true);
