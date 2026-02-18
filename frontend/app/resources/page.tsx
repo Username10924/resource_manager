@@ -606,13 +606,13 @@ function AddEmployeeModal({
   const [isDepartmentOpen, setIsDepartmentOpen] = useState(false);
 
   const departments = [
-    'Project Manager',
+    'DTMO',
     'Business Analyst',
     'Solution Architecture',
     'Development',
     'Integration',
     'Operations',
-    'Analytics',
+    'Data & Analytics',
     'Enterprise Architecture',
   ];
 
@@ -730,13 +730,13 @@ function EditEmployeeModal({
   const [isDepartmentOpen, setIsDepartmentOpen] = useState(false);
 
   const departments = [
-    'Project Manager',
+    'DTMO',
     'Business Analyst',
     'Solution Architecture',
     'Development',
     'Integration',
     'Operations',
-    'Analytics',
+    'Data & Analytics',
     'Enterprise Architecture',
   ];
 
