@@ -1,12 +1,13 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import * as XLSX from "xlsx-js-style";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/Card";
 import Button from "@/components/Button";
 import Modal from "@/components/Modal";
 import { projectAPI, Booking, dashboardAPI, settingsAPI, Settings } from "@/lib/api";
-import { calculateMonthlyBookingHours, formatMonth, processEmployeeScheduleWithBookings } from "@/lib/utils";
+import { calculateMonthlyBookingHours, formatMonth, processEmployeeScheduleWithBookings, calculateWorkingDays } from "@/lib/utils";
 import StatsCard from "@/components/StatsCard";
 import { SkeletonDashboardCharts } from "@/components/Skeleton";
 import UtilizationChart from "@/components/charts/UtilizationChart";
@@ -73,6 +74,9 @@ export default function DashboardPage() {
   const [isProjectModalOpen, setIsProjectModalOpen] = useState(false);
   const [settings, setSettings] = useState<Settings>({ work_hours_per_day: 7, work_days_per_month: 18.5, months_in_year: 12 });
   const [projectListYear, setProjectListYear] = useState<string>("all");
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+  const [exportStartDate, setExportStartDate] = useState("");
+  const [exportEndDate, setExportEndDate] = useState("");
   const { user } = useAuth();
 
   const formatHours = (value: number) => {
@@ -231,6 +235,204 @@ export default function DashboardPage() {
     }
   };
 
+  const handleExportToExcel = () => {
+    if (!exportStartDate || !exportEndDate) {
+      alert("Please select both start and end dates.");
+      return;
+    }
+    if (exportStartDate > exportEndDate) {
+      alert("Start date must be before or equal to end date.");
+      return;
+    }
+    if (!resourceData) return;
+
+    const rangeStart = new Date(exportStartDate + "T00:00:00");
+    const rangeEnd = new Date(exportEndDate + "T00:00:00");
+    const capacityDays = calculateWorkingDays(rangeStart, rangeEnd);
+
+    const rows: any[] = [];
+
+    Object.entries(resourceData.departments).forEach(([dept, deptData]) => {
+      deptData.employees.forEach((emp: any) => {
+        const empBookings = allBookings.filter(
+          (b) =>
+            b.employee_id === emp.id &&
+            (b.status || "").toLowerCase() !== "cancelled" &&
+            b.start_date <= exportEndDate &&
+            b.end_date >= exportStartDate
+        );
+
+        const projectIds = new Set(empBookings.map((b: any) => b.project_id));
+
+        let totalProjectHours = 0;
+        empBookings.forEach((b: any) => {
+          const bStart = new Date(b.start_date + "T00:00:00");
+          const bEnd = new Date(b.end_date + "T00:00:00");
+          const totalDays = calculateWorkingDays(bStart, bEnd);
+          if (totalDays === 0) return;
+          const overlapStart = bStart > rangeStart ? bStart : rangeStart;
+          const overlapEnd = bEnd < rangeEnd ? bEnd : rangeEnd;
+          const overlapDays = calculateWorkingDays(overlapStart, overlapEnd);
+          totalProjectHours += (b.booked_hours || 0) * overlapDays / totalDays;
+        });
+
+        const empReservations = allReservations.filter(
+          (r: any) =>
+            r.employee_id === emp.id &&
+            r.start_date <= exportEndDate &&
+            r.end_date >= exportStartDate
+        );
+
+        let totalReservationHours = 0;
+        empReservations.forEach((r: any) => {
+          const rStart = new Date(r.start_date + "T00:00:00");
+          const rEnd = new Date(r.end_date + "T00:00:00");
+          const overlapStart = rStart > rangeStart ? rStart : rangeStart;
+          const overlapEnd = rEnd < rangeEnd ? rEnd : rangeEnd;
+          const overlapDays = calculateWorkingDays(overlapStart, overlapEnd);
+          totalReservationHours += (r.reserved_hours_per_day || 0) * overlapDays;
+        });
+
+        const capacity = capacityDays * settings.work_hours_per_day;
+        const utilization = capacity > 0
+          ? Math.min(100, (totalProjectHours + totalReservationHours) / capacity * 100)
+          : 0;
+
+        rows.push({
+          "Function": dept,
+          "Employee": emp.full_name,
+          "Number of Projects": projectIds.size,
+          "Total Project Hours": Math.round(totalProjectHours * 10) / 10,
+          "Number of Reservations": empReservations.length,
+          "Total Reservation Hours": Math.round(totalReservationHours * 10) / 10,
+          "Utilization %": Math.round(utilization * 10) / 10,
+        });
+      });
+    });
+
+    // Build workbook with formatted styling
+    const headers = ["Function", "Employee", "Number of Projects", "Total Project Hours", "Number of Reservations", "Total Reservation Hours", "Utilization %"];
+
+    // Title row + blank row + header row + data
+    const titleRow = [`Employee Report: ${exportStartDate} to ${exportEndDate}`];
+    const aoa: any[][] = [titleRow, [], headers, ...rows.map((r) => headers.map((h) => r[h]))];
+
+    const ws = XLSX.utils.aoa_to_sheet(aoa);
+
+    // Column widths
+    ws["!cols"] = [
+      { wch: 22 }, // Function
+      { wch: 28 }, // Employee
+      { wch: 18 }, // Number of Projects
+      { wch: 20 }, // Total Project Hours
+      { wch: 22 }, // Number of Reservations
+      { wch: 24 }, // Total Reservation Hours
+      { wch: 16 }, // Utilization %
+    ];
+
+    // Merge title across all columns
+    ws["!merges"] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: headers.length - 1 } }];
+
+    // Style helpers
+    const headerFill = { fgColor: { rgb: "18181B" } }; // zinc-900
+    const headerFont = { bold: true, color: { rgb: "FFFFFF" }, sz: 11 };
+    const headerAlignment = { horizontal: "center", vertical: "center" };
+    const titleStyle = {
+      font: { bold: true, sz: 14, color: { rgb: "18181B" } },
+      alignment: { horizontal: "left", vertical: "center" },
+    };
+    const borderThin = {
+      top: { style: "thin", color: { rgb: "D4D4D8" } },
+      bottom: { style: "thin", color: { rgb: "D4D4D8" } },
+      left: { style: "thin", color: { rgb: "D4D4D8" } },
+      right: { style: "thin", color: { rgb: "D4D4D8" } },
+    };
+
+    // Apply title style
+    const titleCell = ws["A1"];
+    if (titleCell) {
+      titleCell.s = titleStyle;
+    }
+
+    // Apply header styles (row index 2 = third row, 0-based)
+    headers.forEach((_, ci) => {
+      const addr = XLSX.utils.encode_cell({ r: 2, c: ci });
+      if (!ws[addr]) ws[addr] = { v: headers[ci], t: "s" };
+      ws[addr].s = {
+        fill: headerFill,
+        font: headerFont,
+        alignment: headerAlignment,
+        border: borderThin,
+      };
+    });
+
+    // Color-code data rows
+    const greenFill = { fgColor: { rgb: "DCFCE7" } };  // light green
+    const amberFill = { fgColor: { rgb: "FEF3C7" } };  // light amber
+    const redFill = { fgColor: { rgb: "FEE2E2" } };    // light red
+    const stripeFill = { fgColor: { rgb: "F4F4F5" } }; // zinc-100
+
+    rows.forEach((row, ri) => {
+      const rowIdx = ri + 3; // data starts at row 3 (0-based)
+      const isStripe = ri % 2 === 1;
+
+      headers.forEach((h, ci) => {
+        const addr = XLSX.utils.encode_cell({ r: rowIdx, c: ci });
+        if (!ws[addr]) return;
+
+        const cellStyle: any = {
+          border: borderThin,
+          alignment: { vertical: "center" },
+        };
+
+        // Stripe alternating rows
+        if (isStripe) {
+          cellStyle.fill = stripeFill;
+        }
+
+        // Color-code utilization column
+        if (h === "Utilization %") {
+          const val = row[h] as number;
+          cellStyle.alignment = { horizontal: "center", vertical: "center" };
+          cellStyle.font = { bold: true };
+          if (val >= 75) {
+            cellStyle.fill = greenFill;
+            cellStyle.font = { bold: true, color: { rgb: "166534" } };
+          } else if (val >= 50) {
+            cellStyle.fill = amberFill;
+            cellStyle.font = { bold: true, color: { rgb: "92400E" } };
+          } else if (val > 0) {
+            cellStyle.fill = redFill;
+            cellStyle.font = { bold: true, color: { rgb: "991B1B" } };
+          }
+        }
+
+        // Center-align number columns
+        if (h === "Number of Projects" || h === "Number of Reservations") {
+          cellStyle.alignment = { horizontal: "center", vertical: "center" };
+        }
+
+        // Right-align hours columns
+        if (h === "Total Project Hours" || h === "Total Reservation Hours") {
+          cellStyle.alignment = { horizontal: "right", vertical: "center" };
+          cellStyle.numFmt = "0.0";
+        }
+
+        // Bold the function/department column
+        if (h === "Function") {
+          cellStyle.font = { ...(cellStyle.font || {}), bold: true };
+        }
+
+        ws[addr].s = cellStyle;
+      });
+    });
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Employees");
+    XLSX.writeFile(wb, `employees_${exportStartDate}_to_${exportEndDate}.xlsx`);
+    setIsExportModalOpen(false);
+  };
+
   return (
     <div className="space-y-6">
       {/* Page Header with Greeting */}
@@ -242,7 +444,7 @@ export default function DashboardPage() {
       </div>
 
       {/* View Toggle */}
-      <div className="flex flex-wrap gap-3">
+      <div className="flex flex-wrap items-center gap-3">
         <Button
           onClick={() => setViewMode("resources")}
           variant={viewMode === "resources" ? "primary" : "secondary"}
@@ -261,6 +463,15 @@ export default function DashboardPage() {
         >
           Employees by Department
         </Button>
+        {viewMode === "employees" && (
+          <Button
+            onClick={() => setIsExportModalOpen(true)}
+            variant="secondary"
+            className="ml-auto"
+          >
+            Export to Excel
+          </Button>
+        )}
       </div>
 
       {/* Error Display */}
@@ -598,7 +809,7 @@ export default function DashboardPage() {
       {/* Employees by Department View */}
       {viewMode === "employees" && resourceData && !isLoading && (
         <div className="space-y-6">
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
             <StatsCard
               title="TOTAL EMPLOYEES"
               value={resourceData.total_employees}
@@ -809,6 +1020,74 @@ export default function DashboardPage() {
           })}
         </div>
       )}
+
+      {/* Export to Excel Modal */}
+      <Modal isOpen={isExportModalOpen} onClose={() => setIsExportModalOpen(false)} title="Export to Excel" size="sm">
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-zinc-700 mb-2">Quick Range</label>
+            <div className="flex flex-wrap gap-2">
+              {[
+                { label: "1 Week", days: 7 },
+                { label: "2 Weeks", days: 14 },
+                { label: "3 Weeks", days: 21 },
+                { label: "1 Month", days: 30 },
+              ].map((opt) => {
+                const today = new Date();
+                const end = new Date(today);
+                end.setDate(end.getDate() + opt.days - 1);
+                const startStr = today.toISOString().slice(0, 10);
+                const endStr = end.toISOString().slice(0, 10);
+                const isActive = exportStartDate === startStr && exportEndDate === endStr;
+                return (
+                  <button
+                    key={opt.label}
+                    onClick={() => {
+                      setExportStartDate(startStr);
+                      setExportEndDate(endStr);
+                    }}
+                    className={`rounded-lg px-3 py-1.5 text-sm font-medium transition-all border ${
+                      isActive
+                        ? "bg-zinc-900 text-white border-zinc-900"
+                        : "bg-white text-zinc-600 border-zinc-200 hover:border-zinc-400 hover:text-zinc-900"
+                    }`}
+                  >
+                    {opt.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-sm font-medium text-zinc-700 mb-1">Start Date</label>
+              <input
+                type="date"
+                value={exportStartDate}
+                onChange={(e) => setExportStartDate(e.target.value)}
+                className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-zinc-700 mb-1">End Date</label>
+              <input
+                type="date"
+                value={exportEndDate}
+                onChange={(e) => setExportEndDate(e.target.value)}
+                className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500"
+              />
+            </div>
+          </div>
+          <div className="flex justify-end gap-3 pt-2">
+            <Button variant="secondary" onClick={() => setIsExportModalOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleExportToExcel}>
+              Download
+            </Button>
+          </div>
+        </div>
+      </Modal>
 
       {/* Employee Stats Modal */}
       <EmployeeStatsModal
