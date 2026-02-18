@@ -284,18 +284,28 @@ export default function DashboardPage() {
         );
 
         let totalReservationHours = 0;
+        let operationsHours = 0;
         empReservations.forEach((r: any) => {
           const rStart = new Date(r.start_date + "T00:00:00");
           const rEnd = new Date(r.end_date + "T00:00:00");
           const overlapStart = rStart > rangeStart ? rStart : rangeStart;
           const overlapEnd = rEnd < rangeEnd ? rEnd : rangeEnd;
           const overlapDays = calculateWorkingDays(overlapStart, overlapEnd);
-          totalReservationHours += (r.reserved_hours_per_day || 0) * overlapDays;
+          const hours = (r.reserved_hours_per_day || 0) * overlapDays;
+          totalReservationHours += hours;
+          if ((r.reason || "").toLowerCase().trim() === "operations") {
+            operationsHours += hours;
+          }
         });
 
         const capacity = capacityDays * settings.work_hours_per_day;
         const utilization = capacity > 0
           ? Math.min(100, (totalProjectHours + totalReservationHours) / capacity * 100)
+          : 0;
+
+        const yearlyCapacity = settings.work_hours_per_day * settings.work_days_per_month * 12;
+        const reservationPctOfYear = yearlyCapacity > 0
+          ? totalReservationHours / yearlyCapacity * 100
           : 0;
 
         rows.push({
@@ -305,13 +315,15 @@ export default function DashboardPage() {
           "Total Project Hours": Math.round(totalProjectHours * 10) / 10,
           "Number of Reservations": empReservations.length,
           "Total Reservation Hours": Math.round(totalReservationHours * 10) / 10,
+          "Operations Hours": Math.round(operationsHours * 10) / 10,
+          "Reservation % of Year": Math.round(reservationPctOfYear * 10) / 10,
           "Utilization %": Math.round(utilization * 10) / 10,
         });
       });
     });
 
     // Build workbook with formatted styling
-    const headers = ["Function", "Employee", "Number of Projects", "Total Project Hours", "Number of Reservations", "Total Reservation Hours", "Utilization %"];
+    const headers = ["Function", "Employee", "Number of Projects", "Total Project Hours", "Number of Reservations", "Total Reservation Hours", "Operations Hours", "Reservation % of Year", "Utilization %"];
 
     // Title row + blank row + header row + data
     const titleRow = [`Employee Report: ${exportStartDate} to ${exportEndDate}`];
@@ -327,6 +339,8 @@ export default function DashboardPage() {
       { wch: 20 }, // Total Project Hours
       { wch: 22 }, // Number of Reservations
       { wch: 24 }, // Total Reservation Hours
+      { wch: 18 }, // Operations Hours
+      { wch: 22 }, // Reservation % of Year
       { wch: 16 }, // Utilization %
     ];
 
@@ -412,8 +426,14 @@ export default function DashboardPage() {
           cellStyle.alignment = { horizontal: "center", vertical: "center" };
         }
 
+        // Style reservation % of year column
+        if (h === "Reservation % of Year") {
+          cellStyle.alignment = { horizontal: "center", vertical: "center" };
+          cellStyle.numFmt = "0.0";
+        }
+
         // Right-align hours columns
-        if (h === "Total Project Hours" || h === "Total Reservation Hours") {
+        if (h === "Total Project Hours" || h === "Total Reservation Hours" || h === "Operations Hours") {
           cellStyle.alignment = { horizontal: "right", vertical: "center" };
           cellStyle.numFmt = "0.0";
         }
