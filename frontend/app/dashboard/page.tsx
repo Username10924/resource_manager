@@ -475,6 +475,68 @@ export default function DashboardPage() {
       });
     });
 
+    // --- Department Utilization Summary Table ---
+    const deptMap: Record<string, { totalBooked: number; totalCapacity: number }> = {};
+    rows.forEach((row: any) => {
+      const dept = row["Function"];
+      if (!deptMap[dept]) deptMap[dept] = { totalBooked: 0, totalCapacity: 0 };
+      deptMap[dept].totalBooked += (row["Total Project Hours"] || 0) + (row["Total Reservation Hours"] || 0);
+      deptMap[dept].totalCapacity += row["Total Bookable Hours"] || 0;
+    });
+
+    const deptRows = Object.entries(deptMap).map(([dept, d]) => ({
+      dept,
+      utilization: d.totalCapacity > 0 ? Math.round(Math.min(100, d.totalBooked / d.totalCapacity * 100) * 10) / 10 : 0,
+    }));
+
+    const summaryStartRow = rows.length + 3 + 2; // after data rows + 2 blank rows
+    const summaryHeaders = ["Department", "Utilization %"];
+
+    // Write summary title
+    const summaryTitleAddr = XLSX.utils.encode_cell({ r: summaryStartRow, c: 0 });
+    ws[summaryTitleAddr] = { v: "Department Utilization Summary", t: "s", s: { font: { bold: true, sz: 13, color: { rgb: "18181B" } } } };
+    // Merge summary title across 2 columns
+    if (!ws["!merges"]) ws["!merges"] = [];
+    ws["!merges"].push({ s: { r: summaryStartRow, c: 0 }, e: { r: summaryStartRow, c: 1 } });
+
+    // Write summary headers
+    const summaryHeaderRow = summaryStartRow + 1;
+    summaryHeaders.forEach((h, ci) => {
+      const addr = XLSX.utils.encode_cell({ r: summaryHeaderRow, c: ci });
+      ws[addr] = { v: h, t: "s", s: { fill: headerFill, font: headerFont, alignment: headerAlignment, border: borderThin } };
+    });
+
+    // Write summary data rows
+    deptRows.forEach((dr, ri) => {
+      const rowIdx = summaryHeaderRow + 1 + ri;
+      const isStripe = ri % 2 === 1;
+
+      // Department cell
+      const deptAddr = XLSX.utils.encode_cell({ r: rowIdx, c: 0 });
+      ws[deptAddr] = { v: dr.dept, t: "s", s: { font: { bold: true }, border: borderThin, alignment: { vertical: "center" }, ...(isStripe ? { fill: stripeFill } : {}) } };
+
+      // Utilization cell with color-coding
+      const utilAddr = XLSX.utils.encode_cell({ r: rowIdx, c: 1 });
+      const utilStyle: any = { border: borderThin, alignment: { horizontal: "center", vertical: "center" }, font: { bold: true } };
+      if (isStripe) utilStyle.fill = stripeFill;
+      if (dr.utilization >= 75) {
+        utilStyle.fill = greenFill;
+        utilStyle.font = { bold: true, color: { rgb: "166534" } };
+      } else if (dr.utilization >= 50) {
+        utilStyle.fill = amberFill;
+        utilStyle.font = { bold: true, color: { rgb: "92400E" } };
+      } else if (dr.utilization > 0) {
+        utilStyle.fill = redFill;
+        utilStyle.font = { bold: true, color: { rgb: "991B1B" } };
+      }
+      ws[utilAddr] = { v: dr.utilization, t: "n", s: utilStyle };
+    });
+
+    // Update sheet range to include summary table
+    const lastRow = summaryHeaderRow + deptRows.length;
+    const lastCol = headers.length - 1;
+    ws["!ref"] = XLSX.utils.encode_range({ s: { r: 0, c: 0 }, e: { r: lastRow, c: lastCol } });
+
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Employees");
     XLSX.writeFile(wb, `employees_${exportStartDate}_to_${exportEndDate}.xlsx`);
