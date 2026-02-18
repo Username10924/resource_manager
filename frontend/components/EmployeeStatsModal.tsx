@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import Modal from './Modal';
 import { Card, CardContent, CardHeader, CardTitle } from './Card';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, Cell } from 'recharts';
-import { FaBriefcase, FaBuilding, FaProjectDiagram, FaChevronRight, FaUserTie } from 'react-icons/fa';
+import { FaBriefcase, FaBuilding, FaProjectDiagram, FaChevronRight, FaUserTie, FaClock } from 'react-icons/fa';
 import { employeeAPI, settingsAPI, userAPI, type Reservation, type Settings } from '@/lib/api';
 import { calculateMonthlyBookingHours, calculateWorkingDays } from '@/lib/utils';
 
@@ -266,6 +266,25 @@ export default function EmployeeStatsModal({ isOpen, onClose, employee, allBooki
   });
   const employeeProjects = Array.from(projectsMap.values()).sort((a, b) => b.total_hours - a.total_hours);
 
+  // Employee reservations for the compact reservation view
+  const employeeReservations = allReservations
+    .filter((r: any) => r.employee_id === employee.id)
+    .map((r: any) => {
+      const start = parseDateOnlyToLocal(r.start_date);
+      const end = parseDateOnlyToLocal(r.end_date);
+      const workDays = calculateWorkingDays(start, end);
+      return {
+        id: r.id,
+        reason: r.reason?.trim() || 'Reserved',
+        status: r.status || 'active',
+        start_date: r.start_date,
+        end_date: r.end_date,
+        hours_per_day: r.reserved_hours_per_day || 0,
+        total_hours: (r.reserved_hours_per_day || 0) * workDays,
+      };
+    })
+    .sort((a, b) => b.total_hours - a.total_hours);
+
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Employee Statistics" size={size}>
       <div className="space-y-6">
@@ -382,6 +401,49 @@ export default function EmployeeStatsModal({ isOpen, onClose, employee, allBooki
                       <div className="flex items-center justify-between text-xs text-zinc-500">
                         <span>{startLabel} - {endLabel}</span>
                         <span className="font-semibold text-zinc-900">{formatHours(proj.total_hours)}</span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {employeeReservations.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <FaClock className="text-zinc-500" />
+                Enrolled Reservations
+                <span className="text-xs font-normal text-zinc-500 bg-zinc-100 px-2 py-0.5 rounded-full ml-1">{employeeReservations.length}</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                {employeeReservations.map((res) => {
+                  const statusColors: Record<string, string> = {
+                    active: 'bg-emerald-100 text-emerald-700',
+                    cancelled: 'bg-red-100 text-red-700',
+                  };
+                  const statusClass = statusColors[res.status] || 'bg-zinc-100 text-zinc-600';
+                  const startLabel = parseDateOnlyToLocal(res.start_date).toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+                  const endLabel = parseDateOnlyToLocal(res.end_date).toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+
+                  return (
+                    <div key={res.id} className="rounded-lg border border-zinc-200 p-3 bg-white hover:border-zinc-300 transition-colors">
+                      <div className="flex items-start justify-between gap-2 mb-2">
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-semibold text-zinc-900 truncate">{res.reason}</p>
+                          <p className="text-xs text-zinc-500">{res.hours_per_day}h/day</p>
+                        </div>
+                        <span className={`shrink-0 inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium ${statusClass}`}>
+                          {res.status}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between text-xs text-zinc-500">
+                        <span>{startLabel} - {endLabel}</span>
+                        <span className="font-semibold text-zinc-900">{formatHours(res.total_hours)}</span>
                       </div>
                     </div>
                   );
