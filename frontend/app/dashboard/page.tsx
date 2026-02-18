@@ -304,6 +304,9 @@ export default function DashboardPage() {
           : 0;
 
         const yearlyCapacity = settings.work_hours_per_day * settings.work_days_per_month * 12;
+        const projectPctOfYear = yearlyCapacity > 0
+          ? totalProjectHours / yearlyCapacity * 100
+          : 0;
         const reservationPctOfYear = yearlyCapacity > 0
           ? totalReservationHours / yearlyCapacity * 100
           : 0;
@@ -313,6 +316,7 @@ export default function DashboardPage() {
           "Employee": emp.full_name,
           "Number of Projects": projectIds.size,
           "Total Project Hours": Math.round(totalProjectHours * 10) / 10,
+          "Project % of Year": Math.round(projectPctOfYear * 10) / 10,
           "Number of Reservations": empReservations.length,
           "Total Reservation Hours": Math.round(totalReservationHours * 10) / 10,
           "Operations Hours": Math.round(operationsHours * 10) / 10,
@@ -323,7 +327,7 @@ export default function DashboardPage() {
     });
 
     // Build workbook with formatted styling
-    const headers = ["Function", "Employee", "Number of Projects", "Total Project Hours", "Number of Reservations", "Total Reservation Hours", "Operations Hours", "Reservation % of Year", "Utilization %"];
+    const headers = ["Function", "Employee", "Number of Projects", "Total Project Hours", "Number of Reservations", "Total Reservation Hours", "Operations Hours", "Project % of Year", "Reservation % of Year", "Utilization %"];
 
     // Title row + blank row + header row + data
     const titleRow = [`Employee Report: ${exportStartDate} to ${exportEndDate}`];
@@ -340,6 +344,7 @@ export default function DashboardPage() {
       { wch: 22 }, // Number of Reservations
       { wch: 24 }, // Total Reservation Hours
       { wch: 18 }, // Operations Hours
+      { wch: 20 }, // Project % of Year
       { wch: 22 }, // Reservation % of Year
       { wch: 16 }, // Utilization %
     ];
@@ -427,7 +432,7 @@ export default function DashboardPage() {
         }
 
         // Style reservation % of year column
-        if (h === "Reservation % of Year") {
+        if (h === "Project % of Year" || h === "Reservation % of Year") {
           cellStyle.alignment = { horizontal: "center", vertical: "center" };
           cellStyle.numFmt = "0.0";
         }
