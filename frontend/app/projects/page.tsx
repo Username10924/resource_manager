@@ -622,7 +622,10 @@ export default function ProjectsPage() {
                         Date Range
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-zinc-600">
-                        Hours
+                        Hours/Day
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-zinc-600">
+                        Total Hours
                       </th>
                       <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-zinc-600">
                         Actions
@@ -653,8 +656,13 @@ export default function ProjectsPage() {
                           </div>
                         </td>
                         <td className="whitespace-nowrap px-6 py-4 text-sm text-zinc-900">
+                          {(() => {
+                            const wd = calculateWorkingDays(booking.start_date, booking.end_date);
+                            return wd > 0 ? `${(booking.booked_hours / wd).toFixed(1)}h` : '—';
+                          })()}
+                        </td>
+                        <td className="whitespace-nowrap px-6 py-4 text-sm text-zinc-900">
                           {booking.booked_hours}h
-                          <span className="text-xs text-zinc-500 ml-1">(total)</span>
                         </td>
                         <td className="whitespace-nowrap px-6 py-4 text-right text-sm">
                           <Button
@@ -2965,6 +2973,21 @@ function BulkImportModal({
       </div>
     </Modal>
   );
+}
+
+function calculateWorkingDays(startDate: string, endDate: string): number {
+  if (!startDate || !endDate) return 0;
+  const start = new Date(startDate + 'T00:00:00');
+  const end = new Date(endDate + 'T00:00:00');
+  if (end < start) return 0;
+  let days = 0;
+  const current = new Date(start);
+  while (current <= end) {
+    const dow = current.getDay();
+    if (dow !== 5 && dow !== 6) days++;
+    current.setDate(current.getDate() + 1);
+  }
+  return days;
 }
 
 function startOfWeekISO(date: Date): string {
