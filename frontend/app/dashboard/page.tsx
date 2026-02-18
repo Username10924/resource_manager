@@ -1052,35 +1052,37 @@ export default function DashboardPage() {
           <div>
             <label className="block text-sm font-medium text-zinc-700 mb-2">Quick Range</label>
             <div className="flex flex-wrap gap-2">
-              {[
-                { label: "1 Week", days: 7 },
-                { label: "2 Weeks", days: 14 },
-                { label: "3 Weeks", days: 21 },
-                { label: "1 Month", days: 30 },
-              ].map((opt) => {
+              {(() => {
                 const today = new Date();
-                const end = new Date(today);
-                end.setDate(end.getDate() + opt.days - 1);
-                const startStr = today.toISOString().slice(0, 10);
-                const endStr = end.toISOString().slice(0, 10);
-                const isActive = exportStartDate === startStr && exportEndDate === endStr;
-                return (
-                  <button
-                    key={opt.label}
-                    onClick={() => {
-                      setExportStartDate(startStr);
-                      setExportEndDate(endStr);
-                    }}
-                    className={`rounded-lg px-3 py-1.5 text-sm font-medium transition-all border ${
-                      isActive
-                        ? "bg-zinc-900 text-white border-zinc-900"
-                        : "bg-white text-zinc-600 border-zinc-200 hover:border-zinc-400 hover:text-zinc-900"
-                    }`}
-                  >
-                    {opt.label}
-                  </button>
-                );
-              })}
+                const year = today.getFullYear();
+                const todayStr = today.toISOString().slice(0, 10);
+                const yearStartStr = `${year}-01-01`;
+                const yearEndStr = `${year}-12-31`;
+                const options = [
+                  { label: "This Year", startStr: yearStartStr, endStr: yearEndStr },
+                  { label: "Year from Today", startStr: todayStr, endStr: yearEndStr },
+                  { label: "1 Month", startStr: todayStr, endStr: new Date(today.getFullYear(), today.getMonth() + 1, today.getDate() - 1).toISOString().slice(0, 10) },
+                ];
+                return options.map((opt) => {
+                  const isActive = exportStartDate === opt.startStr && exportEndDate === opt.endStr;
+                  return (
+                    <button
+                      key={opt.label}
+                      onClick={() => {
+                        setExportStartDate(opt.startStr);
+                        setExportEndDate(opt.endStr);
+                      }}
+                      className={`rounded-lg px-3 py-1.5 text-sm font-medium transition-all border ${
+                        isActive
+                          ? "bg-zinc-900 text-white border-zinc-900"
+                          : "bg-white text-zinc-600 border-zinc-200 hover:border-zinc-400 hover:text-zinc-900"
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  );
+                });
+              })()}
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3">
