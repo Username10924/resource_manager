@@ -249,6 +249,28 @@ export default function EmployeeStatsModal({ isOpen, onClose, employee, allBooki
   const empProjectCount = new Set(empBookings.map((b: any) => b.project_id)).size;
   const empReservationCount = allReservations.filter((r: any) => r.employee_id === employee.id).length;
 
+  // Group bookings by project for the compact project view
+  const projectsMap = new Map<number, { project_id: number; project_name: string; project_code: string; project_status: string; total_hours: number; start_date: string; end_date: string }>();
+  empBookings.forEach((b: any) => {
+    const existing = projectsMap.get(b.project_id);
+    if (existing) {
+      existing.total_hours += b.booked_hours || 0;
+      if (b.start_date < existing.start_date) existing.start_date = b.start_date;
+      if (b.end_date > existing.end_date) existing.end_date = b.end_date;
+    } else {
+      projectsMap.set(b.project_id, {
+        project_id: b.project_id,
+        project_name: b.project_name || `Project #${b.project_id}`,
+        project_code: b.project_code || '',
+        project_status: b.project_status || 'active',
+        total_hours: b.booked_hours || 0,
+        start_date: b.start_date,
+        end_date: b.end_date,
+      });
+    }
+  });
+  const employeeProjects = Array.from(projectsMap.values()).sort((a, b) => b.total_hours - a.total_hours);
+
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Employee Statistics" size={size}>
       <div className="space-y-6">
@@ -325,6 +347,54 @@ export default function EmployeeStatsModal({ isOpen, onClose, employee, allBooki
             </CardContent>
           </Card>
         </div>
+
+        {employeeProjects.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <FaProjectDiagram className="text-zinc-500" />
+                Enrolled Projects
+                <span className="text-xs font-normal text-zinc-500 bg-zinc-100 px-2 py-0.5 rounded-full ml-1">{employeeProjects.length}</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                {employeeProjects.map((proj) => {
+                  const statusColors: Record<string, string> = {
+                    active: 'bg-emerald-100 text-emerald-700',
+                    completed: 'bg-zinc-100 text-zinc-600',
+                    planned: 'bg-yellow-100 text-yellow-700',
+                    on_hold: 'bg-orange-100 text-orange-700',
+                    cancelled: 'bg-red-100 text-red-700',
+                  };
+                  const statusClass = statusColors[proj.project_status] || 'bg-zinc-100 text-zinc-600';
+                  const startLabel = parseDateOnlyToLocal(proj.start_date).toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+                  const endLabel = parseDateOnlyToLocal(proj.end_date).toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+
+                  return (
+                    <div key={proj.project_id} className="rounded-lg border border-zinc-200 p-3 bg-white hover:border-zinc-300 transition-colors">
+                      <div className="flex items-start justify-between gap-2 mb-2">
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-semibold text-zinc-900 truncate">{proj.project_name}</p>
+                          {proj.project_code && (
+                            <p className="text-xs text-zinc-500">{proj.project_code}</p>
+                          )}
+                        </div>
+                        <span className={`shrink-0 inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium ${statusClass}`}>
+                          {proj.project_status.replace('_', ' ')}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between text-xs text-zinc-500">
+                        <span>{startLabel} - {endLabel}</span>
+                        <span className="font-semibold text-zinc-900">{formatHours(proj.total_hours)}</span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         <Card>
           <CardHeader>
