@@ -237,33 +237,13 @@ class Database:
             self.conn.commit()
             print("Projects priority migration completed successfully!")
 
-        # Rename departments: Analytics -> Data & Analytics, Project Manager -> DTMO
-        cursor.execute("SELECT COUNT(*) FROM employees WHERE department = 'Analytics'")
+        # Rename department: Solution Architect -> Solution Architecture
+        cursor.execute("SELECT COUNT(*) FROM employees WHERE department = 'Solution Architect'")
         if cursor.fetchone()[0] > 0:
-            print("Migrating department 'Analytics' -> 'Data & Analytics'...")
-            cursor.execute("UPDATE employees SET department = 'Data & Analytics', updated_at = CURRENT_TIMESTAMP WHERE department = 'Analytics'")
+            print("Migrating department 'Solution Architect' -> 'Solution Architecture'...")
+            cursor.execute("UPDATE employees SET department = 'Solution Architecture', updated_at = CURRENT_TIMESTAMP WHERE department = 'Solution Architect'")
             self.conn.commit()
-            print("Analytics department rename completed!")
-
-        cursor.execute("SELECT COUNT(*) FROM employees WHERE department = 'Project Manager'")
-        if cursor.fetchone()[0] > 0:
-            print("Migrating department 'Project Manager' -> 'DTMO'...")
-            cursor.execute("UPDATE employees SET department = 'DTMO', updated_at = CURRENT_TIMESTAMP WHERE department = 'Project Manager'")
-            self.conn.commit()
-            print("Project Manager department rename completed!")
-
-        # Reassign line manager for Julian Paglione and Tan Mutalib to Fawad
-        cursor.execute("SELECT id FROM users WHERE full_name LIKE '%Fawad%' LIMIT 1")
-        fawad_row = cursor.fetchone()
-        if fawad_row:
-            fawad_id = fawad_row[0]
-            cursor.execute(
-                "UPDATE employees SET line_manager_id = ?, updated_at = CURRENT_TIMESTAMP WHERE full_name IN ('Julian Paglione', 'Tan Mutalib') AND line_manager_id != ?",
-                (fawad_id, fawad_id)
-            )
-            if cursor.rowcount > 0:
-                print(f"Reassigned Julian Paglione and Tan Mutalib to Fawad (user id={fawad_id})")
-                self.conn.commit()
+            print("Solution Architect department rename completed!")
     
     # query helpers
     def execute(self, query: str, params: Tuple = ()) -> sqlite3.Cursor:
