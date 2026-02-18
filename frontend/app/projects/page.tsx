@@ -55,6 +55,12 @@ export default function ProjectsPage() {
   const [activeTab, setActiveTab] = useState<"projects" | "bookings">("projects");
   const [allBookings, setAllBookings] = useState<any[]>([]);
   const [loadingBookings, setLoadingBookings] = useState(false);
+  const [allReservations, setAllReservations] = useState<any[]>([]);
+  const [loadingReservations, setLoadingReservations] = useState(false);
+  const [bookingSearchQuery, setBookingSearchQuery] = useState("");
+  const [bookingTypeFilter, setBookingTypeFilter] = useState<"all" | "booking" | "reservation">("all");
+  const [bookingSortColumn, setBookingSortColumn] = useState("start_date");
+  const [bookingSortDirection, setBookingSortDirection] = useState<"asc" | "desc">("desc");
   const [isBulkImportModalOpen, setIsBulkImportModalOpen] = useState(false);
 
   // Search & filter state
@@ -71,6 +77,7 @@ export default function ProjectsPage() {
   useEffect(() => {
     if (activeTab === "bookings" && projects.length > 0) {
       loadAllBookings();
+      loadAllReservations();
     }
   }, [activeTab, projects]);
 
@@ -136,6 +143,33 @@ export default function ProjectsPage() {
     } catch (error) {
       console.error("Error deleting booking:", error);
       alert("Failed to delete booking: " + (error as Error).message);
+    }
+  };
+
+  const loadAllReservations = async () => {
+    setLoadingReservations(true);
+    try {
+      const reservations = await dashboardAPI.getAllReservations();
+      setAllReservations(reservations);
+    } catch (error) {
+      console.error("Error loading reservations:", error);
+      setAllReservations([]);
+    } finally {
+      setLoadingReservations(false);
+    }
+  };
+
+  const handleDeleteReservation = async (employeeId: number, reservationId: number) => {
+    const confirmed = window.confirm("Are you sure you want to delete this reservation?");
+    if (!confirmed) return;
+
+    try {
+      await employeeAPI.deleteReservation(employeeId, reservationId);
+      loadAllReservations();
+      loadData();
+    } catch (error) {
+      console.error("Error deleting reservation:", error);
+      alert("Failed to delete reservation: " + (error as Error).message);
     }
   };
 
@@ -243,6 +277,106 @@ export default function ProjectsPage() {
     (businessUnitFilter !== "all" ? 1 : 0) +
     (yearFilter !== "all" ? 1 : 0) +
     (searchQuery ? 1 : 0);
+
+  // Unified booking + reservation rows
+  const unifiedBookingRows = [
+    ...allBookings.map((b) => {
+      const wd = calculateWorkingDays(b.start_date, b.end_date);
+      return {
+        type: "booking" as const,
+        id: b.id,
+        key: `booking-${b.id}`,
+        full_name: b.full_name || "",
+        department: b.department || "",
+        project_name: b.project_name || "",
+        project_code: b.project_code || "",
+        reason: "",
+        start_date: b.start_date,
+        end_date: b.end_date,
+        hours_per_day: wd > 0 ? b.booked_hours / wd : 0,
+        total_hours: b.booked_hours,
+        employee_id: b.employee_id,
+      };
+    }),
+    ...allReservations.map((r) => {
+      const wd = calculateWorkingDays(r.start_date, r.end_date);
+      return {
+        type: "reservation" as const,
+        id: r.id,
+        key: `reservation-${r.id}`,
+        full_name: r.full_name || "",
+        department: r.department || "",
+        project_name: "",
+        project_code: "",
+        reason: r.reason || "",
+        start_date: r.start_date,
+        end_date: r.end_date,
+        hours_per_day: r.reserved_hours_per_day,
+        total_hours: r.reserved_hours_per_day * wd,
+        employee_id: r.employee_id,
+      };
+    }),
+  ];
+
+  const filteredAndSortedBookings = unifiedBookingRows
+    .filter((row) => {
+      if (bookingTypeFilter !== "all" && row.type !== bookingTypeFilter) return false;
+      if (bookingSearchQuery) {
+        const q = bookingSearchQuery.toLowerCase();
+        const searchable = [row.full_name, row.project_name, row.project_code, row.reason, row.department]
+          .join(" ")
+          .toLowerCase();
+        if (!searchable.includes(q)) return false;
+      }
+      return true;
+    })
+    .sort((a, b) => {
+      const col = bookingSortColumn;
+      let aVal: any = (a as any)[col];
+      let bVal: any = (b as any)[col];
+      if (col === "start_date" || col === "end_date") {
+        aVal = aVal || "";
+        bVal = bVal || "";
+      }
+      if (typeof aVal === "string") aVal = aVal.toLowerCase();
+      if (typeof bVal === "string") bVal = bVal.toLowerCase();
+      if (aVal < bVal) return bookingSortDirection === "asc" ? -1 : 1;
+      if (aVal > bVal) return bookingSortDirection === "asc" ? 1 : -1;
+      return 0;
+    });
+
+  const handleBookingSortClick = (column: string) => {
+    if (bookingSortColumn === column) {
+      setBookingSortDirection((d) => (d === "asc" ? "desc" : "asc"));
+    } else {
+      setBookingSortColumn(column);
+      setBookingSortDirection("asc");
+    }
+  };
+
+  const renderSortableHeader = (column: string, label: string, align: "left" | "right" = "left") => (
+    <th
+      className={`px-6 py-3 text-${align} text-xs font-medium uppercase tracking-wider text-zinc-600 cursor-pointer select-none hover:text-zinc-900 transition-colors`}
+      onClick={() => handleBookingSortClick(column)}
+    >
+      <span className="inline-flex items-center gap-1">
+        {label}
+        {bookingSortColumn === column ? (
+          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            {bookingSortDirection === "asc" ? (
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+            ) : (
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            )}
+          </svg>
+        ) : (
+          <svg className="w-3 h-3 opacity-30" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
+          </svg>
+        )}
+      </span>
+    </th>
+  );
 
   if (loading) {
     return <SkeletonProjectsPage />;
@@ -586,89 +720,137 @@ export default function ProjectsPage() {
       {activeTab === "bookings" && (
         <Card>
           <CardHeader>
-            <CardTitle>All Bookings</CardTitle>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <CardTitle>All Bookings & Reservations</CardTitle>
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                {/* Search */}
+                <div className="relative">
+                  <svg className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
+                  <input
+                    type="text"
+                    placeholder="Search by name, project, reason..."
+                    value={bookingSearchQuery}
+                    onChange={(e) => setBookingSearchQuery(e.target.value)}
+                    className="w-full sm:w-64 rounded-lg border border-zinc-200 bg-white py-2 pl-10 pr-8 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-400 focus:outline-none focus:ring-1 focus:ring-zinc-400 transition-all"
+                  />
+                  {bookingSearchQuery && (
+                    <button
+                      onClick={() => setBookingSearchQuery("")}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600"
+                    >
+                      <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  )}
+                </div>
+                {/* Type filter */}
+                <select
+                  value={bookingTypeFilter}
+                  onChange={(e) => setBookingTypeFilter(e.target.value as any)}
+                  className="rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-700 focus:border-zinc-400 focus:outline-none focus:ring-1 focus:ring-zinc-400"
+                >
+                  <option value="all">All Types</option>
+                  <option value="booking">Bookings Only</option>
+                  <option value="reservation">Reservations Only</option>
+                </select>
+                {/* Results count */}
+                <span className="text-xs text-zinc-500 whitespace-nowrap">
+                  Showing {filteredAndSortedBookings.length} of {unifiedBookingRows.length} entries
+                </span>
+              </div>
+            </div>
           </CardHeader>
           <CardContent className="p-0">
-            {loadingBookings ? (
+            {(loadingBookings || loadingReservations) ? (
               <div className="p-8 text-center">
-                <div className="text-sm text-zinc-600">Loading bookings...</div>
+                <div className="text-sm text-zinc-600">Loading bookings & reservations...</div>
               </div>
-            ) : !allBookings || allBookings.length === 0 ? (
+            ) : unifiedBookingRows.length === 0 ? (
               <div className="p-8 text-center">
                 <div className="text-sm text-zinc-600">
-                  No bookings found
+                  No bookings or reservations found
                   <div className="mt-2 text-xs text-zinc-500">
-                    {allBookings === null
-                      ? "Error loading bookings"
-                      : "No bookings have been created yet"}
+                    No bookings or reservations have been created yet
                   </div>
                 </div>
+              </div>
+            ) : filteredAndSortedBookings.length === 0 ? (
+              <div className="p-8 text-center">
+                <div className="text-sm text-zinc-600">No results match your filters</div>
               </div>
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead className="border-b border-zinc-200 bg-zinc-50">
                     <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-zinc-600">
-                        Project
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-zinc-600">
-                        Employee
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-zinc-600">
-                        Department
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-zinc-600">
-                        Date Range
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-zinc-600">
-                        Hours/Day
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-zinc-600">
-                        Total Hours
-                      </th>
+                      {renderSortableHeader("type", "Type")}
+                      {renderSortableHeader("project_name", "Project / Reason")}
+                      {renderSortableHeader("full_name", "Employee")}
+                      {renderSortableHeader("department", "Department")}
+                      {renderSortableHeader("start_date", "Date Range")}
+                      {renderSortableHeader("hours_per_day", "Hours/Day")}
+                      {renderSortableHeader("total_hours", "Total Hours")}
                       <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-zinc-600">
                         Actions
                       </th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-zinc-200 bg-white">
-                    {allBookings.map((booking) => (
-                      <tr key={booking.id} className="hover:bg-zinc-50">
+                    {filteredAndSortedBookings.map((row) => (
+                      <tr key={row.key} className="hover:bg-zinc-50">
                         <td className="whitespace-nowrap px-6 py-4">
-                          <div className="text-sm font-medium text-zinc-900">
-                            {booking.project_name}
-                          </div>
-                          <div className="text-xs text-zinc-500">{booking.project_code}</div>
+                          {row.type === "booking" ? (
+                            <span className="inline-flex items-center rounded-full bg-zinc-100 px-2.5 py-0.5 text-xs font-medium text-zinc-700">
+                              Booking
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-medium text-amber-700">
+                              Reservation
+                            </span>
+                          )}
                         </td>
                         <td className="whitespace-nowrap px-6 py-4">
-                          <div className="text-sm text-zinc-900">{booking.full_name}</div>
+                          {row.type === "booking" ? (
+                            <>
+                              <div className="text-sm font-medium text-zinc-900">{row.project_name}</div>
+                              <div className="text-xs text-zinc-500">{row.project_code}</div>
+                            </>
+                          ) : (
+                            <div className="text-sm italic text-zinc-700">{row.reason}</div>
+                          )}
+                        </td>
+                        <td className="whitespace-nowrap px-6 py-4">
+                          <div className="text-sm text-zinc-900">{row.full_name}</div>
                         </td>
                         <td className="whitespace-nowrap px-6 py-4 text-sm text-zinc-600">
-                          {booking.department}
+                          {row.department}
                         </td>
                         <td className="whitespace-nowrap px-6 py-4">
                           <div className="text-sm text-zinc-900">
-                            {new Date(booking.start_date + "T00:00:00").toLocaleDateString()}
+                            {new Date(row.start_date + "T00:00:00").toLocaleDateString()}
                           </div>
                           <div className="text-xs text-zinc-500">
-                            to {new Date(booking.end_date + "T00:00:00").toLocaleDateString()}
+                            to {new Date(row.end_date + "T00:00:00").toLocaleDateString()}
                           </div>
                         </td>
                         <td className="whitespace-nowrap px-6 py-4 text-sm text-zinc-900">
-                          {(() => {
-                            const wd = calculateWorkingDays(booking.start_date, booking.end_date);
-                            return wd > 0 ? `${(booking.booked_hours / wd).toFixed(1)}h` : '—';
-                          })()}
+                          {row.hours_per_day > 0 ? `${row.hours_per_day.toFixed(1)}h` : "—"}
                         </td>
                         <td className="whitespace-nowrap px-6 py-4 text-sm text-zinc-900">
-                          {booking.booked_hours}h
+                          {row.total_hours > 0 ? `${Math.round(row.total_hours)}h` : "—"}
                         </td>
                         <td className="whitespace-nowrap px-6 py-4 text-right text-sm">
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => handleDeleteBooking(booking.id)}
+                            onClick={() =>
+                              row.type === "booking"
+                                ? handleDeleteBooking(row.id)
+                                : handleDeleteReservation(row.employee_id, row.id)
+                            }
                             className="text-red-600 hover:text-red-700 hover:bg-red-50"
                           >
                             Delete
