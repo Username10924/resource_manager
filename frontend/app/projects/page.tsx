@@ -1539,10 +1539,11 @@ function EditProjectModal({
               value={formData.status}
               onChange={(e) => setFormData({ ...formData, status: e.target.value })}
             >
-              <option value="planning">Planning</option>
+              <option value="planned">Planned</option>
               <option value="active">Active</option>
-              <option value="on-hold">On Hold</option>
+              <option value="on_hold">On Hold</option>
               <option value="completed">Completed</option>
+              <option value="cancelled">Cancelled</option>
             </select>
           </div>
 
