@@ -284,18 +284,13 @@ export default function DashboardPage() {
         );
 
         let totalReservationHours = 0;
-        let operationsHours = 0;
         empReservations.forEach((r: any) => {
           const rStart = new Date(r.start_date + "T00:00:00");
           const rEnd = new Date(r.end_date + "T00:00:00");
           const overlapStart = rStart > rangeStart ? rStart : rangeStart;
           const overlapEnd = rEnd < rangeEnd ? rEnd : rangeEnd;
           const overlapDays = calculateWorkingDays(overlapStart, overlapEnd);
-          const hours = (r.reserved_hours_per_day || 0) * overlapDays;
-          totalReservationHours += hours;
-          if ((r.reason || "").toLowerCase().trim() === "operations") {
-            operationsHours += hours;
-          }
+          totalReservationHours += (r.reserved_hours_per_day || 0) * overlapDays;
         });
 
         const capacity = capacityDays * settings.work_hours_per_day;
@@ -311,15 +306,20 @@ export default function DashboardPage() {
           ? totalReservationHours / yearlyCapacity * 100
           : 0;
 
+        const totalBookedHours = totalProjectHours + totalReservationHours;
+        const totalAvailableHours = Math.max(0, 1540 - totalBookedHours);
+
         rows.push({
           "Function": dept,
           "Employee": emp.full_name,
+          "Total Bookable Hours": 1540,
+          "Total Available Hours": Math.round(totalAvailableHours * 10) / 10,
+          "Total Booked Hours": Math.round(totalBookedHours * 10) / 10,
           "Number of Projects": projectIds.size,
           "Total Project Hours": Math.round(totalProjectHours * 10) / 10,
           "Project % of Year": Math.round(projectPctOfYear * 10) / 10,
           "Number of Reservations": empReservations.length,
           "Total Reservation Hours": Math.round(totalReservationHours * 10) / 10,
-          "Operations Hours": Math.round(operationsHours * 10) / 10,
           "Reservation % of Year": Math.round(reservationPctOfYear * 10) / 10,
           "Utilization %": Math.round(utilization * 10) / 10,
         });
@@ -327,7 +327,7 @@ export default function DashboardPage() {
     });
 
     // Build workbook with formatted styling
-    const headers = ["Function", "Employee", "Number of Projects", "Total Project Hours", "Number of Reservations", "Total Reservation Hours", "Operations Hours", "Project % of Year", "Reservation % of Year", "Utilization %"];
+    const headers = ["Function", "Employee", "Total Bookable Hours", "Total Available Hours", "Total Booked Hours", "Number of Projects", "Total Project Hours", "Project % of Year", "Number of Reservations", "Total Reservation Hours", "Reservation % of Year", "Utilization %"];
 
     // Title row + blank row + header row + data
     const titleRow = [`Employee Report: ${exportStartDate} to ${exportEndDate}`];
@@ -339,12 +339,14 @@ export default function DashboardPage() {
     ws["!cols"] = [
       { wch: 22 }, // Function
       { wch: 28 }, // Employee
+      { wch: 20 }, // Total Bookable Hours
+      { wch: 22 }, // Total Available Hours
+      { wch: 20 }, // Total Booked Hours
       { wch: 18 }, // Number of Projects
       { wch: 20 }, // Total Project Hours
+      { wch: 20 }, // Project % of Year
       { wch: 22 }, // Number of Reservations
       { wch: 24 }, // Total Reservation Hours
-      { wch: 18 }, // Operations Hours
-      { wch: 20 }, // Project % of Year
       { wch: 22 }, // Reservation % of Year
       { wch: 16 }, // Utilization %
     ];
@@ -438,7 +440,7 @@ export default function DashboardPage() {
         }
 
         // Right-align hours columns
-        if (h === "Total Project Hours" || h === "Total Reservation Hours" || h === "Operations Hours") {
+        if (h === "Total Bookable Hours" || h === "Total Available Hours" || h === "Total Booked Hours" || h === "Total Project Hours" || h === "Total Reservation Hours") {
           cellStyle.alignment = { horizontal: "right", vertical: "center" };
           cellStyle.numFmt = "0.0";
         }
