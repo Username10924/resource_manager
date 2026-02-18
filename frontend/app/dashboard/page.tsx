@@ -174,8 +174,8 @@ export default function DashboardPage() {
     if (!resourceData) return [];
     return Object.entries(resourceData.monthly_summary).map(([month, data]) => ({
       month: monthNames[parseInt(month) - 1],
-      available: Math.max(0, data.total_available || 0),
-      utilized: data.total_booked, // Note: This is total utilized (booked + reserved)
+      available: Math.round(Math.max(0, data.total_available || 0)),
+      utilized: Math.round(data.total_booked || 0), // Note: This is total utilized (booked + reserved)
       utilization: Math.min(100, Math.max(0, data.utilization_rate)),
     }));
   };
