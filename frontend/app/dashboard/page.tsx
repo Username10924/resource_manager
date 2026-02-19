@@ -78,6 +78,8 @@ export default function DashboardPage() {
   const [exportStartDate, setExportStartDate] = useState("");
   const [exportEndDate, setExportEndDate] = useState("");
   const [isProjectExportModalOpen, setIsProjectExportModalOpen] = useState(false);
+  const [projectExportStartDate, setProjectExportStartDate] = useState("");
+  const [projectExportEndDate, setProjectExportEndDate] = useState("");
   const { user } = useAuth();
 
   const formatHours = (value: number) => {
@@ -549,26 +551,58 @@ export default function DashboardPage() {
   };
 
   const handleProjectExportToExcel = () => {
+    if (!projectExportStartDate || !projectExportEndDate) {
+      alert("Please select both start and end dates.");
+      return;
+    }
+    if (projectExportStartDate > projectExportEndDate) {
+      alert("Start date must be before or equal to end date.");
+      return;
+    }
     if (!projectData) return;
+
+    const rangeStart = new Date(projectExportStartDate + "T00:00:00");
+    const rangeEnd = new Date(projectExportEndDate + "T00:00:00");
+
+    // Filter projects that overlap with the selected date range
+    const filteredProjects = projectData.projects.filter((proj: any) => {
+      if (!proj.start_date && !proj.end_date) return true; // include projects without dates
+      const pStart = proj.start_date || proj.end_date;
+      const pEnd = proj.end_date || proj.start_date;
+      return pStart <= projectExportEndDate && pEnd >= projectExportStartDate;
+    });
 
     // Gather all unique resource names across all projects for dynamic columns
     const projectRows: any[] = [];
     const allResourceNames = new Set<string>();
 
-    projectData.projects.forEach((proj: any) => {
+    filteredProjects.forEach((proj: any) => {
       const projBookings = allBookings.filter(
-        (b: any) => b.project_id === proj.id && (b.status || "").toLowerCase() !== "cancelled"
+        (b: any) =>
+          b.project_id === proj.id &&
+          (b.status || "").toLowerCase() !== "cancelled" &&
+          b.start_date <= projectExportEndDate &&
+          b.end_date >= projectExportStartDate
       );
 
-      // Group bookings by employee
+      // Group bookings by employee, pro-rating hours to the selected range
       const empMap: Record<string, number> = {};
       projBookings.forEach((b: any) => {
+        const bStart = new Date(b.start_date + "T00:00:00");
+        const bEnd = new Date(b.end_date + "T00:00:00");
+        const totalDays = calculateWorkingDays(bStart, bEnd);
+        if (totalDays === 0) return;
+        const overlapStart = bStart > rangeStart ? bStart : rangeStart;
+        const overlapEnd = bEnd < rangeEnd ? bEnd : rangeEnd;
+        const overlapDays = calculateWorkingDays(overlapStart, overlapEnd);
+        const proratedHours = (b.booked_hours || 0) * overlapDays / totalDays;
+
         const name = b.full_name || "Unknown";
-        empMap[name] = (empMap[name] || 0) + (b.booked_hours || 0);
+        empMap[name] = (empMap[name] || 0) + proratedHours;
         allResourceNames.add(name);
       });
 
-      const totalBookedHours = projBookings.reduce((sum: number, b: any) => sum + (b.booked_hours || 0), 0);
+      const totalBookedHours = Object.values(empMap).reduce((sum, h) => sum + h, 0);
       const resourceCount = new Set(projBookings.map((b: any) => b.employee_id)).size;
 
       const duration = proj.start_date && proj.end_date
@@ -621,7 +655,7 @@ export default function DashboardPage() {
     });
 
     // Build worksheet
-    const titleRow = ["Projects Report"];
+    const titleRow = [`Projects Report: ${projectExportStartDate} to ${projectExportEndDate}`];
     const aoa: any[][] = [titleRow, [], headers, ...rows.map((r) => headers.map((h) => r[h]))];
     const ws = XLSX.utils.aoa_to_sheet(aoa);
 
@@ -764,7 +798,7 @@ export default function DashboardPage() {
 
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Projects");
-    XLSX.writeFile(wb, `projects_export.xlsx`);
+    XLSX.writeFile(wb, `projects_${projectExportStartDate}_to_${projectExportEndDate}.xlsx`);
     setIsProjectExportModalOpen(false);
   };
 
@@ -1429,9 +1463,62 @@ export default function DashboardPage() {
       {/* Project Export Modal */}
       <Modal isOpen={isProjectExportModalOpen} onClose={() => setIsProjectExportModalOpen(false)} title="Export Projects to Excel" size="sm">
         <div className="space-y-4">
-          <p className="text-sm text-zinc-600">
-            Export all projects with their details, booked resources, and hours to an Excel file.
-          </p>
+          <div>
+            <label className="block text-sm font-medium text-zinc-700 mb-2">Quick Range</label>
+            <div className="flex flex-wrap gap-2">
+              {(() => {
+                const today = new Date();
+                const year = today.getFullYear();
+                const todayStr = today.toISOString().slice(0, 10);
+                const yearStartStr = `${year}-01-01`;
+                const yearEndStr = `${year}-12-31`;
+                const options = [
+                  { label: "This Year", startStr: yearStartStr, endStr: yearEndStr },
+                  { label: "Year from Today", startStr: todayStr, endStr: yearEndStr },
+                  { label: "1 Month", startStr: todayStr, endStr: new Date(today.getFullYear(), today.getMonth() + 1, today.getDate() - 1).toISOString().slice(0, 10) },
+                ];
+                return options.map((opt) => {
+                  const isActive = projectExportStartDate === opt.startStr && projectExportEndDate === opt.endStr;
+                  return (
+                    <button
+                      key={opt.label}
+                      onClick={() => {
+                        setProjectExportStartDate(opt.startStr);
+                        setProjectExportEndDate(opt.endStr);
+                      }}
+                      className={`rounded-lg px-3 py-1.5 text-sm font-medium transition-all border ${
+                        isActive
+                          ? "bg-zinc-900 text-white border-zinc-900"
+                          : "bg-white text-zinc-600 border-zinc-200 hover:border-zinc-400 hover:text-zinc-900"
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  );
+                });
+              })()}
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-sm font-medium text-zinc-700 mb-1">Start Date</label>
+              <input
+                type="date"
+                value={projectExportStartDate}
+                onChange={(e) => setProjectExportStartDate(e.target.value)}
+                className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-zinc-700 mb-1">End Date</label>
+              <input
+                type="date"
+                value={projectExportEndDate}
+                onChange={(e) => setProjectExportEndDate(e.target.value)}
+                className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500"
+              />
+            </div>
+          </div>
           <div className="flex justify-end gap-3 pt-2">
             <Button variant="secondary" onClick={() => setIsProjectExportModalOpen(false)}>
               Cancel
