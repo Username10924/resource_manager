@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/Card";
 import Button from "@/components/Button";
 import Modal from "@/components/Modal";
 import { projectAPI, Booking, dashboardAPI, settingsAPI, Settings } from "@/lib/api";
-import { calculateMonthlyBookingHours, formatMonth, processEmployeeScheduleWithBookings, calculateWorkingDays } from "@/lib/utils";
+import { calculateMonthlyBookingHours, formatMonth, processEmployeeScheduleWithBookings, calculateWorkingDays, formatRangeDuration } from "@/lib/utils";
 import StatsCard from "@/components/StatsCard";
 import { SkeletonDashboardCharts } from "@/components/Skeleton";
 import UtilizationChart from "@/components/charts/UtilizationChart";
@@ -77,6 +77,7 @@ export default function DashboardPage() {
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [exportStartDate, setExportStartDate] = useState("");
   const [exportEndDate, setExportEndDate] = useState("");
+  const [isProjectExportModalOpen, setIsProjectExportModalOpen] = useState(false);
   const { user } = useAuth();
 
   const formatHours = (value: number) => {
@@ -143,8 +144,12 @@ export default function DashboardPage() {
         setAllBookings(bookings);
         setAllReservations(reservations);
       } else {
-        const data = await dashboardAPI.getProjectStats();
+        const [data, bookings] = await Promise.all([
+          dashboardAPI.getProjectStats(),
+          projectAPI.getAllBookings().catch(() => []),
+        ]);
         setProjectData(data);
+        setAllBookings(bookings);
       }
     } catch (err) {
       setError("An error occurred while fetching data");
@@ -543,6 +548,226 @@ export default function DashboardPage() {
     setIsExportModalOpen(false);
   };
 
+  const handleProjectExportToExcel = () => {
+    if (!projectData) return;
+
+    // Gather all unique resource names across all projects for dynamic columns
+    const projectRows: any[] = [];
+    const allResourceNames = new Set<string>();
+
+    projectData.projects.forEach((proj: any) => {
+      const projBookings = allBookings.filter(
+        (b: any) => b.project_id === proj.id && (b.status || "").toLowerCase() !== "cancelled"
+      );
+
+      // Group bookings by employee
+      const empMap: Record<string, number> = {};
+      projBookings.forEach((b: any) => {
+        const name = b.full_name || "Unknown";
+        empMap[name] = (empMap[name] || 0) + (b.booked_hours || 0);
+        allResourceNames.add(name);
+      });
+
+      const totalBookedHours = projBookings.reduce((sum: number, b: any) => sum + (b.booked_hours || 0), 0);
+      const resourceCount = new Set(projBookings.map((b: any) => b.employee_id)).size;
+
+      const duration = proj.start_date && proj.end_date
+        ? formatRangeDuration(proj.start_date, proj.end_date)
+        : "";
+
+      projectRows.push({
+        project: proj,
+        empMap,
+        totalBookedHours,
+        resourceCount,
+        duration,
+      });
+    });
+
+    const sortedResourceNames = Array.from(allResourceNames).sort();
+
+    // Build headers
+    const fixedHeaders = [
+      "Project Code", "Project Name", "Description", "Business Unit",
+      "Project Manager", "Start Date", "End Date", "Status",
+      "Completion %", "Duration", "Priority", "Total Booked Hours",
+    ];
+    const resourceHeaders = sortedResourceNames;
+    const trailingHeaders = ["Number of Resources"];
+    const headers = [...fixedHeaders, ...resourceHeaders, ...trailingHeaders];
+
+    // Build data rows
+    const rows = projectRows.map((pr) => {
+      const proj = pr.project;
+      const row: any = {
+        "Project Code": proj.project_code || "",
+        "Project Name": proj.name || "",
+        "Description": proj.description || "",
+        "Business Unit": proj.business_unit || "",
+        "Project Manager": proj.architect_name || "",
+        "Start Date": proj.start_date || "",
+        "End Date": proj.end_date || "",
+        "Status": (proj.status || "").replace("_", " "),
+        "Completion %": proj.progress || 0,
+        "Duration": pr.duration,
+        "Priority": proj.priority || "",
+        "Total Booked Hours": Math.round(pr.totalBookedHours * 10) / 10,
+      };
+      sortedResourceNames.forEach((name) => {
+        row[name] = pr.empMap[name] ? Math.round(pr.empMap[name] * 10) / 10 : 0;
+      });
+      row["Number of Resources"] = pr.resourceCount;
+      return row;
+    });
+
+    // Build worksheet
+    const titleRow = ["Projects Report"];
+    const aoa: any[][] = [titleRow, [], headers, ...rows.map((r) => headers.map((h) => r[h]))];
+    const ws = XLSX.utils.aoa_to_sheet(aoa);
+
+    // Column widths
+    const colWidths: { wch: number }[] = [
+      { wch: 16 }, // Project Code
+      { wch: 30 }, // Project Name
+      { wch: 36 }, // Description
+      { wch: 18 }, // Business Unit
+      { wch: 22 }, // Project Manager
+      { wch: 14 }, // Start Date
+      { wch: 14 }, // End Date
+      { wch: 14 }, // Status
+      { wch: 14 }, // Completion %
+      { wch: 20 }, // Duration
+      { wch: 10 }, // Priority
+      { wch: 20 }, // Total Booked Hours
+      ...sortedResourceNames.map((n) => ({ wch: Math.max(14, n.length + 4) })),
+      { wch: 20 }, // Number of Resources
+    ];
+    ws["!cols"] = colWidths;
+
+    // Merge title
+    ws["!merges"] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: headers.length - 1 } }];
+
+    // Style helpers (reuse same palette)
+    const headerFill = { fgColor: { rgb: "18181B" } };
+    const headerFont = { bold: true, color: { rgb: "FFFFFF" }, sz: 11 };
+    const headerAlignment = { horizontal: "center", vertical: "center" };
+    const titleStyle = {
+      font: { bold: true, sz: 14, color: { rgb: "18181B" } },
+      alignment: { horizontal: "left", vertical: "center" },
+    };
+    const borderThin = {
+      top: { style: "thin", color: { rgb: "D4D4D8" } },
+      bottom: { style: "thin", color: { rgb: "D4D4D8" } },
+      left: { style: "thin", color: { rgb: "D4D4D8" } },
+      right: { style: "thin", color: { rgb: "D4D4D8" } },
+    };
+    const stripeFill = { fgColor: { rgb: "F4F4F5" } };
+    const greenFill = { fgColor: { rgb: "DCFCE7" } };
+    const amberFill = { fgColor: { rgb: "FEF3C7" } };
+    const redFill = { fgColor: { rgb: "FEE2E2" } };
+
+    // Title style
+    const titleCell = ws["A1"];
+    if (titleCell) titleCell.s = titleStyle;
+
+    // Header styles (row 2, 0-based)
+    headers.forEach((_, ci) => {
+      const addr = XLSX.utils.encode_cell({ r: 2, c: ci });
+      if (!ws[addr]) ws[addr] = { v: headers[ci], t: "s" };
+
+      // Resource name columns get a distinct header color
+      const isResourceCol = ci >= fixedHeaders.length && ci < fixedHeaders.length + sortedResourceNames.length;
+      ws[addr].s = {
+        fill: isResourceCol ? { fgColor: { rgb: "1E40AF" } } : headerFill,
+        font: headerFont,
+        alignment: headerAlignment,
+        border: borderThin,
+      };
+    });
+
+    // Data row styles
+    rows.forEach((row, ri) => {
+      const rowIdx = ri + 3;
+      const isStripe = ri % 2 === 1;
+
+      headers.forEach((h, ci) => {
+        const addr = XLSX.utils.encode_cell({ r: rowIdx, c: ci });
+        if (!ws[addr]) return;
+
+        const cellStyle: any = {
+          border: borderThin,
+          alignment: { vertical: "center" },
+        };
+
+        if (isStripe) cellStyle.fill = stripeFill;
+
+        // Status color-coding
+        if (h === "Status") {
+          const val = (row[h] || "").toLowerCase();
+          cellStyle.alignment = { horizontal: "center", vertical: "center" };
+          cellStyle.font = { bold: true };
+          if (val === "active") {
+            cellStyle.fill = greenFill;
+            cellStyle.font = { bold: true, color: { rgb: "166534" } };
+          } else if (val === "completed") {
+            cellStyle.fill = { fgColor: { rgb: "E4E4E7" } };
+            cellStyle.font = { bold: true, color: { rgb: "3F3F46" } };
+          } else if (val === "on hold") {
+            cellStyle.fill = amberFill;
+            cellStyle.font = { bold: true, color: { rgb: "92400E" } };
+          } else if (val === "cancelled") {
+            cellStyle.fill = redFill;
+            cellStyle.font = { bold: true, color: { rgb: "991B1B" } };
+          }
+        }
+
+        // Completion % color-coding
+        if (h === "Completion %") {
+          const val = row[h] as number;
+          cellStyle.alignment = { horizontal: "center", vertical: "center" };
+          cellStyle.font = { bold: true };
+          if (val >= 75) {
+            cellStyle.fill = greenFill;
+            cellStyle.font = { bold: true, color: { rgb: "166534" } };
+          } else if (val >= 50) {
+            cellStyle.fill = amberFill;
+            cellStyle.font = { bold: true, color: { rgb: "92400E" } };
+          } else if (val > 0) {
+            cellStyle.fill = redFill;
+            cellStyle.font = { bold: true, color: { rgb: "991B1B" } };
+          }
+        }
+
+        // Center number columns
+        if (h === "Number of Resources" || h === "Priority") {
+          cellStyle.alignment = { horizontal: "center", vertical: "center" };
+        }
+
+        // Right-align hours columns
+        if (h === "Total Booked Hours") {
+          cellStyle.alignment = { horizontal: "right", vertical: "center" };
+          cellStyle.numFmt = "0.0";
+        }
+
+        // Resource hours columns
+        const isResourceCol = sortedResourceNames.includes(h);
+        if (isResourceCol) {
+          cellStyle.alignment = { horizontal: "right", vertical: "center" };
+          if (row[h] > 0) {
+            cellStyle.numFmt = "0.0";
+          }
+        }
+
+        ws[addr].s = cellStyle;
+      });
+    });
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Projects");
+    XLSX.writeFile(wb, `projects_export.xlsx`);
+    setIsProjectExportModalOpen(false);
+  };
+
   return (
     <div className="space-y-6">
       {/* Page Header with Greeting */}
@@ -573,6 +798,15 @@ export default function DashboardPage() {
         >
           Employees by Department
         </Button>
+        {viewMode === "projects" && (
+          <Button
+            onClick={() => setIsProjectExportModalOpen(true)}
+            variant="secondary"
+            className="ml-auto"
+          >
+            Export to Excel
+          </Button>
+        )}
         {viewMode === "employees" && (
           <Button
             onClick={() => setIsExportModalOpen(true)}
@@ -1186,6 +1420,23 @@ export default function DashboardPage() {
               Cancel
             </Button>
             <Button onClick={handleExportToExcel}>
+              Download
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Project Export Modal */}
+      <Modal isOpen={isProjectExportModalOpen} onClose={() => setIsProjectExportModalOpen(false)} title="Export Projects to Excel" size="sm">
+        <div className="space-y-4">
+          <p className="text-sm text-zinc-600">
+            Export all projects with their details, booked resources, and hours to an Excel file.
+          </p>
+          <div className="flex justify-end gap-3 pt-2">
+            <Button variant="secondary" onClick={() => setIsProjectExportModalOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleProjectExportToExcel}>
               Download
             </Button>
           </div>
