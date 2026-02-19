@@ -806,7 +806,7 @@ export default function DashboardPage() {
     <div className="space-y-6">
       {/* Page Header with Greeting */}
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-zinc-900">
+        <h1 className="text-xl sm:text-2xl font-bold text-zinc-900">
           Hey {user?.full_name?.split(" ")[0] || "Ahmed"} -
         </h1>
         <p className="mt-1 text-sm text-zinc-600">here's what's happening.</p>
@@ -1078,9 +1078,9 @@ export default function DashboardPage() {
           {/* Projects List */}
           <Card className="bg-white border border-zinc-200">
             <CardHeader>
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <CardTitle className="text-lg font-semibold text-zinc-900">All Projects</CardTitle>
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                   <span className="text-sm font-medium text-zinc-600">Year:</span>
                   <div className="flex rounded-lg border border-zinc-200 bg-zinc-50 p-0.5 gap-0.5">
                     {["all", ...Array.from(new Set(
@@ -1159,7 +1159,7 @@ export default function DashboardPage() {
                           </span>
                         </div>
                       </div>
-                      <div className="ml-6 text-right">
+                      <div className="ml-0 sm:ml-6 mt-3 sm:mt-0 text-right">
                         <div className="text-sm font-medium text-zinc-900">
                           {project.booking_stats?.unique_employees || 0} employees
                         </div>

@@ -260,14 +260,14 @@ export default function EmployeeSchedulePage() {
   };
 
   return (
-    <div className="h-[calc(100vh-6rem)] min-h-[650px] flex flex-col gap-4">
-      <div className="flex items-start justify-between gap-4">
+    <div className="h-[calc(100vh-6rem)] min-h-0 md:min-h-[650px] flex flex-col gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold text-zinc-900">Schedule</h1>
           <p className="mt-1 text-xs text-zinc-500">Drag to select a range, right-click for actions</p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
           <div className="flex items-center gap-2">
             <Button variant="secondary" onClick={() => setViewYear((y) => y - 1)}>
               ‹

@@ -104,7 +104,7 @@ export default function ResourcesPage() {
   return (
     <>
         <div className="mb-8">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
               <h1 className="text-2xl font-semibold text-zinc-900">Resources</h1>
               <p className="mt-2 text-sm text-zinc-600">
@@ -124,7 +124,7 @@ export default function ResourcesPage() {
 
         {/* Stats Grid */}
         {stats && (
-          <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
+          <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
             <Card>
               <CardContent className="py-5">
                 <div className="text-xs font-medium text-zinc-500 uppercase tracking-wide">Available This Month</div>

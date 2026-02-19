@@ -385,7 +385,7 @@ export default function ProjectsPage() {
   return (
     <>
       <div className="mb-8">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <h1 className="text-2xl font-semibold text-zinc-900">
               Projects
@@ -2617,7 +2617,7 @@ function ProjectDetailsModal({
             </div>
           </div>
 
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
               <h3 className="text-sm font-semibold text-zinc-900 mb-1">Status</h3>
               <span className="inline-block rounded-full px-3 py-1 text-xs font-medium bg-zinc-100 text-zinc-900">
