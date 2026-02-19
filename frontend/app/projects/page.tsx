@@ -995,7 +995,7 @@ function CreateProjectModal({
 
   // Auto-generate project code when project manager changes
   useEffect(() => {
-    if (formData.solution_architect_id && employees.length > 0 && allProjects.length > 0) {
+    if (formData.solution_architect_id && employees.length > 0) {
       generateProjectCode();
     }
   }, [formData.solution_architect_id, employees, allProjects]);
