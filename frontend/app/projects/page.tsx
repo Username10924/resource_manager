@@ -2955,7 +2955,12 @@ function ProjectDetailsModal({
                               .toUpperCase()}
                           </div>
                           <div>
-                            <h4 className="font-semibold text-zinc-900">{emp.employee_name}</h4>
+                            <h4 className="font-semibold text-zinc-900 flex items-center gap-1.5 flex-wrap">
+                              {emp.employee_name}
+                              {[...new Set((emp.bookings as any[]).map((b: any) => b.role).filter(Boolean))].map((r: string) => (
+                                <span key={r} className="inline-flex items-center rounded-full bg-zinc-100 px-2 py-0.5 text-[11px] font-medium text-zinc-600">{r}</span>
+                              ))}
+                            </h4>
                             <p className="text-xs text-zinc-500">{emp.department}</p>
                           </div>
                         </div>
