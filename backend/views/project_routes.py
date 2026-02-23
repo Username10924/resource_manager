@@ -19,7 +19,7 @@ async def get_all_bookings():
     
     try:
         query = '''
-            SELECT 
+            SELECT
                 pb.id,
                 pb.project_id,
                 pb.employee_id,
@@ -27,6 +27,7 @@ async def get_all_bookings():
                 pb.end_date,
                 pb.booked_hours,
                 pb.status,
+                pb.role,
                 p.name as project_name,
                 p.project_code,
                 e.full_name,
@@ -50,6 +51,7 @@ async def get_all_bookings():
                 'end_date': str(row['end_date']),
                 'booked_hours': float(row['booked_hours']),
                 'status': str(row['status'] or 'booked'),
+                'role': str(row['role']) if row['role'] else None,
                 'project_name': str(row['project_name']),
                 'project_code': str(row['project_code']),
                 'full_name': str(row['full_name']),
@@ -93,6 +95,7 @@ class BookingRequest(BaseModel):
     start_date: date
     end_date: date
     booked_hours: float
+    role: Optional[str] = None
     
     @validator('end_date')
     def validate_dates(cls, v, values):

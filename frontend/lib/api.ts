@@ -320,6 +320,7 @@ export type Booking = {
   start_date: string;
   end_date: string;
   status?: string;
+  role?: string | null;
   full_name?: string;
   department?: string;
   created_at?: string;

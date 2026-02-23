@@ -43,6 +43,7 @@ export default function ProjectBookingPage() {
 
   const [bookingData, setBookingData] = useState({
     hoursPerDay: '' as any,
+    role: '',
     ...getDefaultDates(),
   });
 
@@ -259,6 +260,7 @@ export default function ProjectBookingPage() {
         start_date: bookingData.startDate,
         end_date: bookingData.endDate,
         booked_hours: totalHours,
+        role: bookingData.role || undefined,
       };
 
       await projectAPI.createBooking(project.id, bookingPayload);
@@ -359,7 +361,7 @@ export default function ProjectBookingPage() {
       </div>
 
       <div className="rounded-md border border-zinc-200 bg-white p-3">
-        <div className="grid grid-cols-1 gap-3 lg:grid-cols-4">
+        <div className="grid grid-cols-1 gap-3 lg:grid-cols-5">
           <div className="lg:col-span-2">
             <label className="block text-sm font-medium text-zinc-600 mb-1">Team Member</label>
             <select
@@ -409,6 +411,14 @@ export default function ProjectBookingPage() {
             max={settings.work_hours_per_day.toString()}
             step="0.5"
             placeholder={`e.g., ${settings.work_hours_per_day}`}
+          />
+
+          <Input
+            type="text"
+            label="Role (optional)"
+            value={bookingData.role}
+            onChange={(e) => setBookingData({ ...bookingData, role: e.target.value })}
+            placeholder="e.g., Tech Lead"
           />
 
           <div className="rounded-md bg-zinc-50 border border-zinc-200 p-3">

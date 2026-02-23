@@ -148,8 +148,8 @@ class Project:
             db.rollback()
             raise Exception(f'Failed to delete project: {str(e)}')
     
-    def add_booking(self, employee_id: int, start_date: date, end_date: date, 
-                   booked_hours: float) -> Dict[str, Any]:
+    def add_booking(self, employee_id: int, start_date: date, end_date: date,
+                   booked_hours: float, role: str = None) -> Dict[str, Any]:
         """Book an employee for this project with date range"""
         if end_date < start_date:
             raise ValueError("End date must be after start date")
@@ -190,11 +190,11 @@ class Project:
         
         # Create new booking
         query = '''
-            INSERT INTO project_bookings (project_id, employee_id, start_date, end_date, 
-                                        booked_hours)
-            VALUES (?, ?, ?, ?, ?)
+            INSERT INTO project_bookings (project_id, employee_id, start_date, end_date,
+                                        booked_hours, role)
+            VALUES (?, ?, ?, ?, ?, ?)
         '''
-        cursor = db.execute(query, (self.id, employee_id, start_date, end_date, booked_hours))
+        cursor = db.execute(query, (self.id, employee_id, start_date, end_date, booked_hours, role))
         db.commit()
         
         return {'booking_id': cursor.lastrowid, 'message': 'Booking successful'}

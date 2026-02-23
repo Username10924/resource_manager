@@ -183,7 +183,8 @@ class ProjectController:
                 employee_id=booking_data['employee_id'],
                 start_date=booking_data['start_date'],
                 end_date=booking_data['end_date'],
-                booked_hours=booking_data['booked_hours']
+                booked_hours=booking_data['booked_hours'],
+                role=booking_data.get('role')
             )
             
             # Log the booking

@@ -260,6 +260,15 @@ class Database:
             self.conn.commit()
             print("Projects business_analyst_id migration completed successfully!")
 
+        # Add role to project_bookings table if missing
+        cursor.execute('PRAGMA table_info(project_bookings)')
+        booking_columns = [row[1] for row in cursor.fetchall()]
+        if 'role' not in booking_columns:
+            print("Migrating project_bookings table to add role column...")
+            cursor.execute('ALTER TABLE project_bookings ADD COLUMN role TEXT')
+            self.conn.commit()
+            print("project_bookings role migration completed successfully!")
+
         # Rename department: Solution Architect -> Solution Architecture
         cursor.execute("SELECT COUNT(*) FROM employees WHERE department = 'Solution Architect'")
         if cursor.fetchone()[0] > 0:

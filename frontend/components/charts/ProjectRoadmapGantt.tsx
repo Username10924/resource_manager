@@ -10,6 +10,8 @@ type RoadmapProject = {
   business_unit?: string | null;
   start_date: string | null;
   end_date: string | null;
+  architect_name?: string | null;
+  ba_name?: string | null;
 };
 
 type BookingForGantt = {
@@ -17,6 +19,12 @@ type BookingForGantt = {
   employee_id: number;
   full_name?: string;
   status?: string;
+  role?: string | null;
+};
+
+type ResourceEntry = {
+  name: string;
+  role?: string | null;
 };
 
 type ParsedProject = {
@@ -31,7 +39,8 @@ type ParsedProject = {
 
 type TooltipState = {
   project: ParsedProject;
-  resources: string[];
+  resources: ResourceEntry[];
+  pmBa: ResourceEntry[];
   x: number;
   y: number;
 };
@@ -138,19 +147,31 @@ export default function ProjectRoadmapGantt({
   projects: RoadmapProject[];
   bookings?: BookingForGantt[];
 }) {
-  // Build resource name map: project_id -> unique resource names[]
+  // Build resource map: project_id -> unique { name, role }[]
   const resourceMap = useMemo(() => {
-    const map: Record<number, string[]> = {};
+    const map: Record<number, ResourceEntry[]> = {};
     bookings.forEach((b) => {
       if ((b.status || "").toLowerCase() === "cancelled") return;
       if (!b.full_name) return;
       if (!map[b.project_id]) map[b.project_id] = [];
-      if (!map[b.project_id].includes(b.full_name)) {
-        map[b.project_id].push(b.full_name);
+      if (!map[b.project_id].some((r) => r.name === b.full_name)) {
+        map[b.project_id].push({ name: b.full_name, role: b.role ?? null });
       }
     });
     return map;
   }, [bookings]);
+
+  // Build PM/BA map: project_id -> [{ name, role }]
+  const pmBaMap = useMemo(() => {
+    const map: Record<number, ResourceEntry[]> = {};
+    projects.forEach((p) => {
+      const entries: ResourceEntry[] = [];
+      if (p.architect_name) entries.push({ name: p.architect_name, role: "Project Manager" });
+      if (p.ba_name) entries.push({ name: p.ba_name, role: "Business Analyst" });
+      if (entries.length > 0) map[p.id] = entries;
+    });
+    return map;
+  }, [projects]);
 
   // Tooltip state
   const [tooltip, setTooltip] = useState<TooltipState | null>(null);
@@ -441,6 +462,7 @@ export default function ProjectRoadmapGantt({
                         setTooltip({
                           project,
                           resources: resourceMap[project.id] || [],
+                          pmBa: pmBaMap[project.id] || [],
                           x: e.clientX,
                           y: e.clientY,
                         });
@@ -490,7 +512,7 @@ export default function ProjectRoadmapGantt({
       {tooltip && (
         <div
           ref={tooltipRef}
-          className="pointer-events-none fixed z-50 w-max max-w-[220px]"
+          className="pointer-events-none fixed z-50 w-max max-w-[260px]"
           style={{
             left: tooltip.x,
             top: tooltip.y - 8,
@@ -506,30 +528,48 @@ export default function ProjectRoadmapGantt({
             {/* Divider */}
             <div className="my-1.5 h-px bg-zinc-700" />
 
-            {/* Resource list */}
+            {/* PM / BA */}
+            {tooltip.pmBa.length > 0 && (
+              <ul className="mb-1.5 space-y-0.5">
+                {tooltip.pmBa.map((r) => (
+                  <li key={r.role} className="flex items-center gap-1.5">
+                    <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-blue-700 text-[9px] font-bold text-blue-100">
+                      {r.name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2)}
+                    </span>
+                    <div className="min-w-0">
+                      <span className="truncate text-[11px] text-zinc-200 leading-tight block">{r.name}</span>
+                      <span className="text-[9px] text-zinc-400">{r.role}</span>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+
+            {/* Team resources */}
             {tooltip.resources.length > 0 ? (
               <>
+                {tooltip.pmBa.length > 0 && <div className="mb-1.5 h-px bg-zinc-700" />}
                 <p className="mb-1 text-[10px] font-medium text-zinc-400 uppercase tracking-wide">
-                  {tooltip.resources.length} resource{tooltip.resources.length !== 1 ? "s" : ""}
+                  {tooltip.resources.length} team resource{tooltip.resources.length !== 1 ? "s" : ""}
                 </p>
                 <ul className="space-y-0.5">
-                  {tooltip.resources.map((name) => (
-                    <li key={name} className="flex items-center gap-1.5">
+                  {tooltip.resources.map((r) => (
+                    <li key={r.name} className="flex items-center gap-1.5">
                       <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-zinc-700 text-[9px] font-bold text-zinc-200">
-                        {name
-                          .split(" ")
-                          .map((n) => n[0])
-                          .join("")
-                          .toUpperCase()
-                          .slice(0, 2)}
+                        {r.name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2)}
                       </span>
-                      <span className="truncate text-[11px] text-zinc-200 leading-tight">{name}</span>
+                      <div className="min-w-0">
+                        <span className="truncate text-[11px] text-zinc-200 leading-tight block">{r.name}</span>
+                        {r.role && <span className="text-[9px] text-zinc-400">{r.role}</span>}
+                      </div>
                     </li>
                   ))}
                 </ul>
               </>
             ) : (
-              <p className="text-[11px] text-zinc-500 italic">No resources assigned</p>
+              tooltip.pmBa.length === 0 && (
+                <p className="text-[11px] text-zinc-500 italic">No resources assigned</p>
+              )
             )}
           </div>
         </div>
