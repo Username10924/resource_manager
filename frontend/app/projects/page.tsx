@@ -31,11 +31,10 @@ const BUSINESS_UNIT_OPTIONS = [
   "Dry Bulk",
   "Finance",
   "Fleet Planning",
-  "Liner",
-  "Logistics",
+  "Integrated Logistics",
   "Legal",
   "Oil",
-  "Shared Services",
+  "Support Services",
   "Ship Management",
   "Sustainability & GRC",
 ];

@@ -269,6 +269,21 @@ class Database:
             self.conn.commit()
             print("project_bookings role migration completed successfully!")
 
+        # Rename business units: Shared Services -> Support Services, Liner/Logistics -> Integrated Logistics
+        cursor.execute("SELECT COUNT(*) FROM projects WHERE business_unit = 'Shared Services'")
+        if cursor.fetchone()[0] > 0:
+            print("Migrating business_unit 'Shared Services' -> 'Support Services'...")
+            cursor.execute("UPDATE projects SET business_unit = 'Support Services', updated_at = CURRENT_TIMESTAMP WHERE business_unit = 'Shared Services'")
+            self.conn.commit()
+            print("business_unit Shared Services rename completed!")
+
+        cursor.execute("SELECT COUNT(*) FROM projects WHERE business_unit IN ('Liner', 'Logistics')")
+        if cursor.fetchone()[0] > 0:
+            print("Migrating business_units 'Liner' and 'Logistics' -> 'Integrated Logistics'...")
+            cursor.execute("UPDATE projects SET business_unit = 'Integrated Logistics', updated_at = CURRENT_TIMESTAMP WHERE business_unit IN ('Liner', 'Logistics')")
+            self.conn.commit()
+            print("business_unit Liner/Logistics merge completed!")
+
         # Rename department: Solution Architect -> Solution Architecture
         cursor.execute("SELECT COUNT(*) FROM employees WHERE department = 'Solution Architect'")
         if cursor.fetchone()[0] > 0:
