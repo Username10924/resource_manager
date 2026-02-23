@@ -11,11 +11,8 @@ class DashboardController:
     def get_resources_dashboard(manager_id: Optional[int] = None) -> Dict[str, Any]:
         """Get resources dashboard data"""
         
-        # Get dynamic settings
+        # Get global settings (used as fallback for employees without custom rules)
         settings = SettingsController.get_settings()
-        work_hours_per_day = settings['work_hours_per_day']
-        work_days_per_month = settings['work_days_per_month']
-        monthly_capacity = work_hours_per_day * work_days_per_month
         
         if manager_id:
             # Get manager's team
@@ -104,6 +101,12 @@ class DashboardController:
 
         # Process each employee
         for emp in employees:
+            # Get effective settings for this employee (per-employee override or global fallback)
+            emp_settings = SettingsController.get_settings_for_employee(emp.id)
+            work_hours_per_day = emp_settings['work_hours_per_day']
+            work_days_per_month = emp_settings['work_days_per_month']
+            monthly_capacity = work_hours_per_day * work_days_per_month
+
             # Department grouping
             dept = emp.department
             if dept not in dashboard_data['departments']:
@@ -124,7 +127,7 @@ class DashboardController:
             '''
             schedule_data = db.fetch_all(schedule_query, (emp.id, current_year))
 
-            # Dynamically compute available_hours_per_month using live settings
+            # Dynamically compute available_hours_per_month using per-employee settings
             for sched in schedule_data:
                 reserved = sched.get('reserved_hours_per_day') or 0
                 sched['available_hours_per_month'] = max(0, (work_hours_per_day - reserved) * work_days_per_month)
