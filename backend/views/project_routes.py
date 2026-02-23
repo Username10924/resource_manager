@@ -71,6 +71,7 @@ class ProjectCreate(BaseModel):
     business_unit: Optional[str] = None
     description: str
     solution_architect_id: int
+    business_analyst_id: Optional[int] = None
     start_date: Optional[date] = None
     end_date: Optional[date] = None
     priority: Optional[int] = PydanticField(default=1, ge=1, le=12)
@@ -82,6 +83,7 @@ class ProjectUpdate(BaseModel):
     status: Optional[str] = None
     progress: Optional[int] = None
     solution_architect_id: Optional[int] = None
+    business_analyst_id: Optional[int] = None
     start_date: Optional[date] = None
     end_date: Optional[date] = None
     priority: Optional[int] = PydanticField(default=None, ge=1, le=12)

@@ -35,7 +35,8 @@ class ProjectController:
             start_date=project_data.get('start_date'),
             end_date=project_data.get('end_date'),
             priority=project_data.get('priority', 1),
-            attachments=project_data.get('attachments', [])
+            attachments=project_data.get('attachments', []),
+            business_analyst_id=project_data.get('business_analyst_id')
         )
         
         return {'success': True, 'project': project.to_dict()}

@@ -623,7 +623,7 @@ export default function DashboardPage() {
     // Build headers
     const fixedHeaders = [
       "Project Code", "Project Name", "Description", "Business Unit",
-      "Project Manager", "Start Date", "End Date", "Status",
+      "Project Manager", "Business Analyst", "Start Date", "End Date", "Status",
       "Completion %", "Duration", "Priority", "Total Booked Hours",
     ];
     const resourceHeaders = sortedResourceNames;
@@ -639,6 +639,7 @@ export default function DashboardPage() {
         "Description": proj.description || "",
         "Business Unit": proj.business_unit || "",
         "Project Manager": proj.architect_name || "",
+        "Business Analyst": proj.ba_name || "",
         "Start Date": proj.start_date || "",
         "End Date": proj.end_date || "",
         "Status": (proj.status || "").replace("_", " "),
@@ -666,6 +667,7 @@ export default function DashboardPage() {
       { wch: 36 }, // Description
       { wch: 18 }, // Business Unit
       { wch: 22 }, // Project Manager
+      { wch: 22 }, // Business Analyst
       { wch: 14 }, // Start Date
       { wch: 14 }, // End Date
       { wch: 14 }, // Status

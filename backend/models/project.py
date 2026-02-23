@@ -13,6 +13,8 @@ class Project:
         self.status = kwargs.get('status', 'planned')
         self.progress = kwargs.get('progress', 0)
         self.solution_architect_id = kwargs.get('solution_architect_id')
+        self.business_analyst_id = kwargs.get('business_analyst_id')
+        self.ba_name = kwargs.get('ba_name')
         self.start_date = kwargs.get('start_date')
         self.end_date = kwargs.get('end_date')
         self.priority = kwargs.get('priority', 1)
@@ -23,21 +25,27 @@ class Project:
     @staticmethod
     def create(project_code: str, name: str, description: str,
                solution_architect_id: int, business_unit: str = None, start_date: date = None,
-               end_date: date = None, attachments: List[str] = None, priority: int = 1) -> 'Project':
+               end_date: date = None, attachments: List[str] = None, priority: int = 1,
+               business_analyst_id: int = None) -> 'Project':
         attachments_json = json.dumps(attachments or [])
         query = '''
             INSERT INTO projects (project_code, name, business_unit, description, solution_architect_id,
-                                 start_date, end_date, priority, attachments)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                                 start_date, end_date, priority, attachments, business_analyst_id)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         '''
         cursor = db.execute(query, (project_code, name, business_unit, description, solution_architect_id,
-                                   start_date, end_date, priority, attachments_json))
+                                   start_date, end_date, priority, attachments_json, business_analyst_id))
         db.commit()
         return Project.get_by_id(cursor.lastrowid)
     
     @staticmethod
     def get_by_id(project_id: int) -> Optional['Project']:
-        query = 'SELECT * FROM projects WHERE id = ?'
+        query = '''
+            SELECT p.*, e.full_name as ba_name
+            FROM projects p
+            LEFT JOIN employees e ON p.business_analyst_id = e.id
+            WHERE p.id = ?
+        '''
         row = db.fetch_one(query, (project_id,))
         return Project(**row) if row else None
     
@@ -58,9 +66,10 @@ class Project:
     @staticmethod
     def get_all() -> List['Project']:
         query = '''
-            SELECT p.*, u.full_name as architect_name 
+            SELECT p.*, u.full_name as architect_name, e.full_name as ba_name
             FROM projects p
             LEFT JOIN users u ON p.solution_architect_id = u.id
+            LEFT JOIN employees e ON p.business_analyst_id = e.id
             ORDER BY p.created_at DESC
         '''
         rows = db.fetch_all(query)
@@ -106,6 +115,9 @@ class Project:
         if 'priority' in kwargs:
             updates.append('priority = ?')
             params.append(kwargs['priority'])
+        if 'business_analyst_id' in kwargs:
+            updates.append('business_analyst_id = ?')
+            params.append(kwargs['business_analyst_id'])
         if 'attachments' in kwargs:
             attachments_json = json.dumps(kwargs['attachments'])
             updates.append('attachments = ?')
@@ -237,6 +249,8 @@ class Project:
             'status': self.status,
             'progress': self.progress,
             'solution_architect_id': self.solution_architect_id,
+            'business_analyst_id': self.business_analyst_id,
+            'ba_name': self.ba_name,
             'start_date': format_date(self.start_date),
             'end_date': format_date(self.end_date),
             'priority': self.priority,

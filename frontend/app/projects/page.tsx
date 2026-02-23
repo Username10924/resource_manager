@@ -971,6 +971,8 @@ function CreateProjectModal({
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [isEmployeeOpen, setIsEmployeeOpen] = useState(false);
   const [employeeSearch, setEmployeeSearch] = useState("");
+  const [isBaOpen, setIsBaOpen] = useState(false);
+  const [baSearch, setBaSearch] = useState("");
   const [attachments, setAttachments] = useState<File[]>([]);
   const [isDragging, setIsDragging] = useState(false);
   const [allProjects, setAllProjects] = useState<Project[]>([]);
@@ -980,6 +982,7 @@ function CreateProjectModal({
     business_unit: "",
     description: "",
     solution_architect_id: 0, // Will be set to first employee
+    business_analyst_id: null as number | null,
     start_date: "",
     end_date: "",
     priority: 1,
@@ -1128,6 +1131,7 @@ function CreateProjectModal({
         business_unit: "",
         description: "",
         solution_architect_id: 0,
+        business_analyst_id: null,
         start_date: "",
         end_date: "",
         priority: 1,
@@ -1294,6 +1298,91 @@ function CreateProjectModal({
           )}
         </div>
 
+        {/* Business Analyst (optional) */}
+        <div>
+          <label className="block text-sm font-medium text-zinc-900 mb-1">
+            Business Analyst (BA)
+          </label>
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => {
+                setIsBaOpen(!isBaOpen);
+                if (!isBaOpen) setBaSearch("");
+              }}
+              className="w-full px-3 py-2 text-left text-sm bg-white border border-zinc-200 rounded-md hover:border-zinc-400 focus:outline-none focus:border-zinc-400 focus:ring-1 focus:ring-zinc-400 transition-all duration-200 flex items-center justify-between group"
+            >
+              <span className={formData.business_analyst_id ? "text-zinc-900" : "text-zinc-400"}>
+                {employees.find((e) => e.id === formData.business_analyst_id)?.full_name ||
+                  "Select a business analyst (optional)"}
+              </span>
+              <svg
+                className={`w-5 h-5 text-zinc-400 transition-transform duration-200 flex-shrink-0 ${isBaOpen ? "rotate-180" : ""}`}
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+
+            {isBaOpen && (
+              <div className="absolute z-10 w-full mt-2 bg-white border border-zinc-200 rounded-lg shadow-sm max-h-60 overflow-auto">
+                <div className="sticky top-0 bg-white p-2 border-b border-zinc-100">
+                  <input
+                    type="text"
+                    value={baSearch}
+                    onChange={(e) => setBaSearch(e.target.value)}
+                    placeholder="Search business analysts..."
+                    className="w-full px-3 py-2 text-sm bg-white border border-zinc-200 rounded-md hover:border-zinc-400 focus:outline-none focus:border-zinc-400 focus:ring-1 focus:ring-zinc-400 transition-all duration-200"
+                  />
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setFormData((prev) => ({ ...prev, business_analyst_id: null }));
+                    setIsBaOpen(false);
+                    setBaSearch("");
+                  }}
+                  className={`w-full px-4 py-3 text-left text-sm hover:bg-zinc-50 transition-colors duration-150 first:rounded-t-lg ${
+                    !formData.business_analyst_id ? "bg-zinc-50 text-zinc-500 font-medium" : "text-zinc-400"
+                  }`}
+                >
+                  None
+                </button>
+                {employees
+                  .slice()
+                  .sort((a, b) => a.full_name.localeCompare(b.full_name))
+                  .filter(
+                    (employee) =>
+                      employee.full_name.toLowerCase().includes(baSearch.toLowerCase()) ||
+                      employee.department.toLowerCase().includes(baSearch.toLowerCase()) ||
+                      employee.position.toLowerCase().includes(baSearch.toLowerCase())
+                  )
+                  .map((employee) => (
+                    <button
+                      key={employee.id}
+                      type="button"
+                      onClick={() => {
+                        setFormData((prev) => ({ ...prev, business_analyst_id: employee.id }));
+                        setIsBaOpen(false);
+                        setBaSearch("");
+                      }}
+                      className={`w-full px-4 py-3 text-left text-sm hover:bg-zinc-50 transition-colors duration-150 last:rounded-b-lg ${
+                        formData.business_analyst_id === employee.id
+                          ? "bg-zinc-50 text-zinc-700 font-medium"
+                          : "text-zinc-700"
+                      }`}
+                    >
+                      <div className="font-medium">{employee.full_name}</div>
+                      <div className="text-xs text-zinc-500">{employee.department} - {employee.position}</div>
+                    </button>
+                  ))}
+              </div>
+            )}
+          </div>
+        </div>
+
         <div className="grid grid-cols-2 gap-4">
           <Input
             label="Start Date"
@@ -1442,6 +1531,8 @@ function EditProjectModal({
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [isEmployeeOpen, setIsEmployeeOpen] = useState(false);
   const [employeeSearch, setEmployeeSearch] = useState("");
+  const [isBaOpen, setIsBaOpen] = useState(false);
+  const [baSearch, setBaSearch] = useState("");
   const [attachments, setAttachments] = useState<File[]>([]);
   const [isDragging, setIsDragging] = useState(false);
   const [formData, setFormData] = useState({
@@ -1452,6 +1543,7 @@ function EditProjectModal({
     progress: project.progress,
     priority: (project as any).priority || 1,
     solution_architect_id: (project as any).solution_architect_id || 0,
+    business_analyst_id: (project as any).business_analyst_id ?? null as number | null,
     start_date: (project as any).start_date || "",
     end_date: (project as any).end_date || "",
   });
@@ -1468,10 +1560,12 @@ function EditProjectModal({
         progress: project.progress,
         priority: (project as any).priority || 1,
         solution_architect_id: (project as any).solution_architect_id || 0,
+        business_analyst_id: (project as any).business_analyst_id ?? null,
         start_date: (project as any).start_date || "",
         end_date: (project as any).end_date || "",
       });
       setEmployeeSearch("");
+      setBaSearch("");
       setAttachments([]);
     }
   }, [isOpen, project]);
@@ -1716,6 +1810,91 @@ function EditProjectModal({
                     <div className="text-xs text-zinc-500">{employee.department} - {employee.position}</div>
                   </button>
                 ))}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Business Analyst (optional) */}
+        <div>
+          <label className="block text-sm font-medium text-zinc-900 mb-1">
+            Business Analyst (BA)
+          </label>
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => {
+                setIsBaOpen(!isBaOpen);
+                if (!isBaOpen) setBaSearch("");
+              }}
+              className="w-full px-3 py-2 text-left text-sm bg-white border border-zinc-200 rounded-md hover:border-zinc-400 focus:outline-none focus:border-zinc-400 focus:ring-1 focus:ring-zinc-400 transition-all duration-200 flex items-center justify-between group"
+            >
+              <span className={formData.business_analyst_id ? "text-zinc-900" : "text-zinc-400"}>
+                {employees.find((e) => e.id === formData.business_analyst_id)?.full_name ||
+                  "Select a business analyst (optional)"}
+              </span>
+              <svg
+                className={`w-5 h-5 text-zinc-400 transition-transform duration-200 flex-shrink-0 ${isBaOpen ? "rotate-180" : ""}`}
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+
+            {isBaOpen && (
+              <div className="absolute z-10 w-full mt-2 bg-white border border-zinc-200 rounded-lg shadow-sm max-h-60 overflow-auto">
+                <div className="sticky top-0 bg-white p-2 border-b border-zinc-100">
+                  <input
+                    type="text"
+                    value={baSearch}
+                    onChange={(e) => setBaSearch(e.target.value)}
+                    placeholder="Search business analysts..."
+                    className="w-full px-3 py-2 text-sm bg-white border border-zinc-200 rounded-md hover:border-zinc-400 focus:outline-none focus:border-zinc-400 focus:ring-1 focus:ring-zinc-400 transition-all duration-200"
+                  />
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setFormData((prev) => ({ ...prev, business_analyst_id: null }));
+                    setIsBaOpen(false);
+                    setBaSearch("");
+                  }}
+                  className={`w-full px-4 py-3 text-left text-sm hover:bg-zinc-50 transition-colors duration-150 first:rounded-t-lg ${
+                    !formData.business_analyst_id ? "bg-zinc-50 text-zinc-500 font-medium" : "text-zinc-400"
+                  }`}
+                >
+                  None
+                </button>
+                {employees
+                  .slice()
+                  .sort((a, b) => a.full_name.localeCompare(b.full_name))
+                  .filter(
+                    (employee) =>
+                      employee.full_name.toLowerCase().includes(baSearch.toLowerCase()) ||
+                      employee.department.toLowerCase().includes(baSearch.toLowerCase()) ||
+                      employee.position.toLowerCase().includes(baSearch.toLowerCase())
+                  )
+                  .map((employee) => (
+                    <button
+                      key={employee.id}
+                      type="button"
+                      onClick={() => {
+                        setFormData({ ...formData, business_analyst_id: employee.id });
+                        setIsBaOpen(false);
+                        setBaSearch("");
+                      }}
+                      className={`w-full px-4 py-3 text-left text-sm hover:bg-zinc-50 transition-colors duration-150 last:rounded-b-lg ${
+                        formData.business_analyst_id === employee.id
+                          ? "bg-zinc-50 text-zinc-700 font-medium"
+                          : "text-zinc-700"
+                      }`}
+                    >
+                      <div className="font-medium">{employee.full_name}</div>
+                      <div className="text-xs text-zinc-500">{employee.department} - {employee.position}</div>
+                    </button>
+                  ))}
               </div>
             )}
           </div>

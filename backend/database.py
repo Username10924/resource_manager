@@ -251,6 +251,15 @@ class Database:
             self.conn.commit()
             print("Projects priority migration completed successfully!")
 
+        # Add business_analyst_id to projects table if missing
+        cursor.execute('PRAGMA table_info(projects)')
+        project_columns = [row[1] for row in cursor.fetchall()]
+        if 'business_analyst_id' not in project_columns:
+            print("Migrating projects table to add business_analyst_id column...")
+            cursor.execute('ALTER TABLE projects ADD COLUMN business_analyst_id INTEGER REFERENCES employees(id)')
+            self.conn.commit()
+            print("Projects business_analyst_id migration completed successfully!")
+
         # Rename department: Solution Architect -> Solution Architecture
         cursor.execute("SELECT COUNT(*) FROM employees WHERE department = 'Solution Architect'")
         if cursor.fetchone()[0] > 0:
