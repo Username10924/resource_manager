@@ -2869,6 +2869,18 @@ function ProjectDetailsModal({
           </div>
         )}
 
+        {/* Project Manager & Business Analyst */}
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <h3 className="text-sm font-semibold text-zinc-500 mb-1">Project Manager</h3>
+            <p className="text-sm text-zinc-900">{project.architect_name || "—"}</p>
+          </div>
+          <div>
+            <h3 className="text-sm font-semibold text-zinc-500 mb-1">Business Analyst</h3>
+            <p className="text-sm text-zinc-900">{project.ba_name || "—"}</p>
+          </div>
+        </div>
+
         {/* Team Members Section */}
         <div>
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
