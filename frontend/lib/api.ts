@@ -187,6 +187,11 @@ export const projectAPI = {
     fetchAPI(`/projects/bookings/${bookingId}`, {
       method: "DELETE",
     }),
+  updateBooking: (bookingId: number, data: { start_date?: string; end_date?: string; booked_hours?: number; role?: string | null }) =>
+    fetchAPI(`/projects/bookings/${bookingId}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    }),
   createBooking: (projectId: number, data: any) =>
     fetchAPI(`/projects/${projectId}/bookings`, {
       method: "POST",

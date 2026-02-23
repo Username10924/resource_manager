@@ -62,6 +62,8 @@ export default function ProjectsPage() {
   const [bookingSortColumn, setBookingSortColumn] = useState("start_date");
   const [bookingSortDirection, setBookingSortDirection] = useState<"asc" | "desc">("desc");
   const [isBulkImportModalOpen, setIsBulkImportModalOpen] = useState(false);
+  const [editingBookingRow, setEditingBookingRow] = useState<any | null>(null);
+  const [isEditBookingModalOpen, setIsEditBookingModalOpen] = useState(false);
 
   // Search & filter state
   const [searchQuery, setSearchQuery] = useState("");
@@ -129,6 +131,29 @@ export default function ProjectsPage() {
       setAllBookings([]);
     } finally {
       setLoadingBookings(false);
+    }
+  };
+
+  const handleOpenEditBooking = (row: any) => {
+    setEditingBookingRow(row);
+    setIsEditBookingModalOpen(true);
+  };
+
+  const handleSaveBookingEdit = async (data: { start_date: string; end_date: string; booked_hours: number; role: string }) => {
+    if (!editingBookingRow) return;
+    try {
+      await projectAPI.updateBooking(editingBookingRow.id, {
+        start_date: data.start_date,
+        end_date: data.end_date,
+        booked_hours: data.booked_hours,
+        role: data.role,
+      });
+      setIsEditBookingModalOpen(false);
+      setEditingBookingRow(null);
+      loadAllBookings();
+      loadData();
+    } catch (error) {
+      alert("Failed to update booking: " + (error as Error).message);
     }
   };
 
@@ -290,12 +315,14 @@ export default function ProjectsPage() {
         department: b.department || "",
         project_name: b.project_name || "",
         project_code: b.project_code || "",
+        project_id: b.project_id,
         reason: "",
         start_date: b.start_date,
         end_date: b.end_date,
         hours_per_day: wd > 0 ? b.booked_hours / wd : 0,
         total_hours: b.booked_hours,
         employee_id: b.employee_id,
+        role: b.role || "",
       };
     }),
     ...allReservations.map((r) => {
@@ -824,6 +851,9 @@ export default function ProjectsPage() {
                         </td>
                         <td className="whitespace-nowrap px-6 py-4">
                           <div className="text-sm text-zinc-900">{row.full_name}</div>
+                          {row.type === "booking" && row.role && (
+                            <div className="text-xs text-zinc-400">{row.role}</div>
+                          )}
                         </td>
                         <td className="whitespace-nowrap px-6 py-4 text-sm text-zinc-600">
                           {row.department}
@@ -843,18 +873,30 @@ export default function ProjectsPage() {
                           {row.total_hours > 0 ? `${Math.round(row.total_hours)}h` : "—"}
                         </td>
                         <td className="whitespace-nowrap px-6 py-4 text-right text-sm">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() =>
-                              row.type === "booking"
-                                ? handleDeleteBooking(row.id)
-                                : handleDeleteReservation(row.employee_id, row.id)
-                            }
-                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                          >
-                            Delete
-                          </Button>
+                          <div className="flex items-center justify-end gap-1">
+                            {row.type === "booking" && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleOpenEditBooking(row)}
+                                className="text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100"
+                              >
+                                Edit
+                              </Button>
+                            )}
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() =>
+                                row.type === "booking"
+                                  ? handleDeleteBooking(row.id)
+                                  : handleDeleteReservation(row.employee_id, row.id)
+                              }
+                              className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                            >
+                              Delete
+                            </Button>
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -874,6 +916,14 @@ export default function ProjectsPage() {
         isOpen={isBulkImportModalOpen}
         onClose={() => setIsBulkImportModalOpen(false)}
         onImport={loadData}
+      />
+
+      {/* Edit Booking Modal */}
+      <EditBookingModal
+        isOpen={isEditBookingModalOpen}
+        booking={editingBookingRow}
+        onClose={() => { setIsEditBookingModalOpen(false); setEditingBookingRow(null); }}
+        onSave={handleSaveBookingEdit}
       />
 
       {/* Create Project Modal */}
@@ -3344,6 +3394,129 @@ function BulkImportModal({
           )}
         </div>
       </div>
+    </Modal>
+  );
+}
+
+function EditBookingModal({
+  isOpen,
+  booking,
+  onClose,
+  onSave,
+}: {
+  isOpen: boolean;
+  booking: any | null;
+  onClose: () => void;
+  onSave: (data: { start_date: string; end_date: string; booked_hours: number; role: string }) => Promise<void>;
+}) {
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
+  const [hoursPerDay, setHoursPerDay] = useState<number | "">("");
+  const [role, setRole] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (booking) {
+      setStartDate(booking.start_date || "");
+      setEndDate(booking.end_date || "");
+      setHoursPerDay(booking.hours_per_day > 0 ? parseFloat(booking.hours_per_day.toFixed(2)) : "");
+      setRole(booking.role || "");
+    }
+  }, [booking]);
+
+  const workingDays = calculateWorkingDays(startDate, endDate);
+  const totalHours = workingDays * (typeof hoursPerDay === "number" ? hoursPerDay : 0);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!startDate || !endDate || !hoursPerDay) return;
+    setSaving(true);
+    try {
+      await onSave({ start_date: startDate, end_date: endDate, booked_hours: totalHours, role });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (!isOpen || !booking) return null;
+
+  return (
+    <Modal isOpen={isOpen} onClose={onClose} title="Edit Booking">
+      <form onSubmit={handleSubmit} className="space-y-4">
+        {/* Read-only info */}
+        <div className="rounded-lg bg-zinc-50 border border-zinc-200 px-4 py-3 space-y-1">
+          <div className="flex justify-between text-sm">
+            <span className="text-zinc-500">Employee</span>
+            <span className="font-medium text-zinc-900">{booking.full_name}</span>
+          </div>
+          <div className="flex justify-between text-sm">
+            <span className="text-zinc-500">Project</span>
+            <span className="font-medium text-zinc-900">{booking.project_name}</span>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="block text-sm font-medium text-zinc-700 mb-1">Start Date</label>
+            <input
+              type="date"
+              required
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+              className="w-full rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 focus:border-zinc-400 focus:outline-none focus:ring-1 focus:ring-zinc-400"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-zinc-700 mb-1">End Date</label>
+            <input
+              type="date"
+              required
+              value={endDate}
+              min={startDate}
+              onChange={(e) => setEndDate(e.target.value)}
+              className="w-full rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 focus:border-zinc-400 focus:outline-none focus:ring-1 focus:ring-zinc-400"
+            />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="block text-sm font-medium text-zinc-700 mb-1">Hours per Day</label>
+            <input
+              type="number"
+              required
+              min={0.5}
+              step={0.5}
+              value={hoursPerDay}
+              onChange={(e) => setHoursPerDay(parseFloat(e.target.value) || "")}
+              className="w-full rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 focus:border-zinc-400 focus:outline-none focus:ring-1 focus:ring-zinc-400"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-zinc-700 mb-1">Role (optional)</label>
+            <input
+              type="text"
+              value={role}
+              onChange={(e) => setRole(e.target.value)}
+              placeholder="e.g. Tech Lead"
+              className="w-full rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 focus:border-zinc-400 focus:outline-none focus:ring-1 focus:ring-zinc-400"
+            />
+          </div>
+        </div>
+
+        {/* Computed summary */}
+        <div className="rounded-lg bg-zinc-50 border border-zinc-200 px-4 py-3 flex justify-between text-sm">
+          <span className="text-zinc-500">Working days: <span className="font-semibold text-zinc-900">{workingDays}</span></span>
+          <span className="text-zinc-500">Total hours: <span className="font-semibold text-zinc-900">{totalHours.toFixed(1)}h</span></span>
+        </div>
+
+        <div className="flex justify-end gap-2 pt-1">
+          <Button type="button" variant="secondary" onClick={onClose} disabled={saving}>Cancel</Button>
+          <Button type="submit" disabled={saving || !startDate || !endDate || !hoursPerDay || workingDays === 0}>
+            {saving ? "Saving..." : "Save Changes"}
+          </Button>
+        </div>
+      </form>
     </Modal>
   );
 }

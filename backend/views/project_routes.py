@@ -180,6 +180,43 @@ async def get_project_bookings(project_id: int):
     
     return project.get_bookings()
 
+class BookingUpdate(BaseModel):
+    start_date: Optional[date] = None
+    end_date: Optional[date] = None
+    booked_hours: Optional[float] = None
+    role: Optional[str] = None
+
+@router.put("/bookings/{booking_id}", response_model=Dict[str, Any])
+async def update_booking(booking_id: int, update: BookingUpdate):
+    """Update a booking's dates, hours, and/or role"""
+    from database import db
+
+    booking = db.fetch_one('SELECT * FROM project_bookings WHERE id = ?', (booking_id,))
+    if not booking:
+        raise HTTPException(status_code=404, detail="Booking not found")
+
+    fields: Dict[str, Any] = {}
+    if update.start_date is not None:
+        fields['start_date'] = update.start_date
+    if update.end_date is not None:
+        fields['end_date'] = update.end_date
+    if update.booked_hours is not None:
+        fields['booked_hours'] = update.booked_hours
+    # role=None means "no change"; role="" means "clear"
+    if update.role is not None:
+        fields['role'] = update.role if update.role != '' else None
+
+    if fields:
+        set_clause = ', '.join(f'{k} = ?' for k in fields)
+        db.execute(
+            f'UPDATE project_bookings SET {set_clause}, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+            list(fields.values()) + [booking_id]
+        )
+        db.commit()
+
+    updated = db.fetch_one('SELECT * FROM project_bookings WHERE id = ?', (booking_id,))
+    return {'success': True, 'booking': dict(updated)}
+
 @router.delete("/bookings/{booking_id}", response_model=Dict[str, Any])
 async def delete_booking(booking_id: int):
     """Delete a booking"""
