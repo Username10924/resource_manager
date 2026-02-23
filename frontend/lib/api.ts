@@ -293,6 +293,7 @@ export type Schedule = {
 
 export type Project = {
   id: number;
+  project_code: string;
   name: string;
   business_unit: string | null;
   description: string;
@@ -305,6 +306,10 @@ export type Project = {
   created_by: number;
   created_at: string;
   updated_at: string;
+  solution_architect_id: number | null;
+  architect_name: string | null;
+  business_analyst_id: number | null;
+  ba_name: string | null;
 };
 
 export type Booking = {
