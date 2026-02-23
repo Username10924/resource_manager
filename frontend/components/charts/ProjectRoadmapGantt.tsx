@@ -48,6 +48,17 @@ type TooltipState = {
 const CELL_WIDTH = 52;
 const NAME_COL_WIDTH = 260;
 
+// One palette entry per year slot — cycles if there are more years than entries
+const YEAR_PALETTE = [
+  { rowBg: "#f5f3ff", accent: "#7c3aed", separatorBg: "#ede9fe", separatorText: "#5b21b6", headerBg: "#ddd6fe" }, // violet
+  { rowBg: "#f0f9ff", accent: "#0284c7", separatorBg: "#e0f2fe", separatorText: "#0369a1", headerBg: "#bae6fd" }, // sky
+  { rowBg: "#f0fdf4", accent: "#16a34a", separatorBg: "#dcfce7", separatorText: "#15803d", headerBg: "#bbf7d0" }, // emerald
+  { rowBg: "#fff7ed", accent: "#ea580c", separatorBg: "#ffedd5", separatorText: "#9a3412", headerBg: "#fed7aa" }, // orange
+  { rowBg: "#fdf2f8", accent: "#be185d", separatorBg: "#fce7f3", separatorText: "#9d174d", headerBg: "#fbcfe8" }, // pink
+  { rowBg: "#fefce8", accent: "#ca8a04", separatorBg: "#fef9c3", separatorText: "#854d0e", headerBg: "#fef08a" }, // yellow
+  { rowBg: "#fff1f2", accent: "#e11d48", separatorBg: "#ffe4e6", separatorText: "#be123c", headerBg: "#fecdd3" }, // rose
+];
+
 function toMonthStart(value: string | null): Date | null {
   if (!value) return null;
 
@@ -87,52 +98,37 @@ function getMonthRange(start: Date, end: Date): Date[] {
 
 function statusBarBg(status: string): string {
   switch (status) {
-    case "active":
-      return "#2563eb"; // blue-600
-    case "completed":
-      return "#059669"; // emerald-600
+    case "active":    return "#2563eb";
+    case "completed": return "#059669";
     case "planned":
-    case "planning":
-      return "#d97706"; // amber-600
+    case "planning":  return "#d97706";
     case "on_hold":
-    case "on-hold":
-      return "#ea580c"; // orange-600
-    default:
-      return "#dc2626"; // red-600
+    case "on-hold":   return "#ea580c";
+    default:          return "#dc2626";
   }
 }
 
 function statusBarTrackBg(status: string): string {
   switch (status) {
-    case "active":
-      return "#93c5fd"; // blue-300
-    case "completed":
-      return "#6ee7b7"; // emerald-300
+    case "active":    return "#93c5fd";
+    case "completed": return "#6ee7b7";
     case "planned":
-    case "planning":
-      return "#fcd34d"; // amber-300
+    case "planning":  return "#fcd34d";
     case "on_hold":
-    case "on-hold":
-      return "#fdba74"; // orange-300
-    default:
-      return "#fca5a5"; // red-300
+    case "on-hold":   return "#fdba74";
+    default:          return "#fca5a5";
   }
 }
 
 function statusBadgeClass(status: string): string {
   switch (status) {
-    case "active":
-      return "bg-blue-50 text-blue-700 ring-1 ring-blue-200";
-    case "completed":
-      return "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200";
+    case "active":    return "bg-blue-50 text-blue-700 ring-1 ring-blue-200";
+    case "completed": return "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200";
     case "planned":
-    case "planning":
-      return "bg-amber-50 text-amber-700 ring-1 ring-amber-200";
+    case "planning":  return "bg-amber-50 text-amber-700 ring-1 ring-amber-200";
     case "on_hold":
-    case "on-hold":
-      return "bg-orange-50 text-orange-700 ring-1 ring-orange-200";
-    default:
-      return "bg-red-50 text-red-700 ring-1 ring-red-200";
+    case "on-hold":   return "bg-orange-50 text-orange-700 ring-1 ring-orange-200";
+    default:          return "bg-red-50 text-red-700 ring-1 ring-red-200";
   }
 }
 
@@ -177,14 +173,13 @@ export default function ProjectRoadmapGantt({
   const [tooltip, setTooltip] = useState<TooltipState | null>(null);
   const tooltipRef = useRef<HTMLDivElement>(null);
 
-  // Hide tooltip on scroll so it doesn't float in a wrong position
   useEffect(() => {
     const hide = () => setTooltip(null);
     window.addEventListener("scroll", hide, true);
     return () => window.removeEventListener("scroll", hide, true);
   }, []);
 
-  // Parse all projects to discover available years
+  // Parse all projects
   const allParsed = useMemo(() => {
     return projects
       .map((project) => {
@@ -214,48 +209,68 @@ export default function ProjectRoadmapGantt({
       .filter(Boolean) as ParsedProject[];
   }, [projects]);
 
-  // Discover all years that have projects starting in them
+  // Sorted unique years
   const availableYears = useMemo(() => {
     const yearSet = new Set<number>();
     allParsed.forEach((p) => yearSet.add(p.start.getFullYear()));
-    const years = Array.from(yearSet).sort((a, b) => a - b);
-    return years;
+    return Array.from(yearSet).sort((a, b) => a - b);
   }, [allParsed]);
 
+  // Map year -> palette index (stable across renders)
+  const yearColorIndex = useMemo(() => {
+    const map: Record<number, number> = {};
+    availableYears.forEach((y, i) => { map[y] = i % YEAR_PALETTE.length; });
+    return map;
+  }, [availableYears]);
+
   const currentYear = new Date().getFullYear();
-  const defaultYear = availableYears.includes(currentYear)
+  const defaultYear: number | "all" = availableYears.includes(currentYear)
     ? currentYear
     : availableYears[availableYears.length - 1] ?? currentYear;
 
-  const [selectedYear, setSelectedYear] = useState<number>(defaultYear);
+  const [selectedYear, setSelectedYear] = useState<number | "all">(defaultYear);
 
-  // Filter: show projects that START in the selected year (end can be any year)
+  // Rows for the current selection
   const rows = useMemo(() => {
+    if (selectedYear === "all") {
+      return [...allParsed].sort(
+        (a, b) => a.start.getTime() - b.start.getTime() || a.end.getTime() - b.end.getTime()
+      );
+    }
     const filtered = allParsed.filter((p) => p.start.getFullYear() === selectedYear);
-    filtered.sort((a, b) => a.start.getTime() - b.start.getTime() || a.end.getTime() - b.end.getTime());
-    return filtered;
+    return filtered.sort((a, b) => a.start.getTime() - b.start.getTime() || a.end.getTime() - b.end.getTime());
   }, [allParsed, selectedYear]);
 
-  // Compute the window: starts Jan of selected year, ends at the latest end date month (or Dec of selected year)
+  // Window (start/end of the timeline)
   const { windowStart, windowEnd, months } = useMemo(() => {
-    const wStart = new Date(selectedYear, 0, 1);
-    let wEnd = new Date(selectedYear, 11, 1);
+    if (rows.length === 0) {
+      const y = typeof selectedYear === "number" ? selectedYear : new Date().getFullYear();
+      const wStart = new Date(y, 0, 1);
+      return { windowStart: wStart, windowEnd: new Date(y, 11, 1), months: getMonthRange(wStart, new Date(y, 11, 1)) };
+    }
 
-    // Extend the window to cover all project end dates
-    rows.forEach((p) => {
-      if (p.end > wEnd) {
-        wEnd = new Date(p.end.getFullYear(), p.end.getMonth(), 1);
-      }
-    });
+    let wStart: Date;
+    let wEnd: Date;
 
-    return {
-      windowStart: wStart,
-      windowEnd: wEnd,
-      months: getMonthRange(wStart, wEnd),
-    };
+    if (selectedYear === "all") {
+      wStart = new Date(rows[0].start.getFullYear(), 0, 1);
+      wEnd = new Date(rows[0].end.getFullYear(), rows[0].end.getMonth(), 1);
+      rows.forEach((p) => {
+        if (p.start < wStart) wStart = new Date(p.start.getFullYear(), 0, 1);
+        if (p.end > wEnd) wEnd = new Date(p.end.getFullYear(), p.end.getMonth(), 1);
+      });
+    } else {
+      wStart = new Date(selectedYear, 0, 1);
+      wEnd = new Date(selectedYear, 11, 1);
+      rows.forEach((p) => {
+        if (p.end > wEnd) wEnd = new Date(p.end.getFullYear(), p.end.getMonth(), 1);
+      });
+    }
+
+    return { windowStart: wStart, windowEnd: wEnd, months: getMonthRange(wStart, wEnd) };
   }, [selectedYear, rows]);
 
-  // Group months by year for the grouped header
+  // Group months by year for header
   const yearGroups = useMemo(() => {
     const groups: { year: number; months: Date[]; startIndex: number }[] = [];
     let currentGroup: { year: number; months: Date[]; startIndex: number } | null = null;
@@ -274,7 +289,6 @@ export default function ProjectRoadmapGantt({
 
   const timelineWidth = months.length * CELL_WIDTH;
 
-  // Today marker position
   const todayPosition = useMemo(() => {
     const now = new Date();
     const nowMonth = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -284,37 +298,81 @@ export default function ProjectRoadmapGantt({
     return index * CELL_WIDTH + dayProgress * CELL_WIDTH;
   }, [windowStart, windowEnd]);
 
+  // For "all" view: group rows by start year to insert separator rows
+  const rowGroups = useMemo(() => {
+    if (selectedYear !== "all") return null;
+    const groups: { year: number; rows: ParsedProject[] }[] = [];
+    rows.forEach((p) => {
+      const y = p.start.getFullYear();
+      const last = groups[groups.length - 1];
+      if (!last || last.year !== y) groups.push({ year: y, rows: [p] });
+      else last.rows.push(p);
+    });
+    return groups;
+  }, [selectedYear, rows]);
+
   return (
     <div className="space-y-4">
       {/* Year selector */}
       <div className="flex flex-wrap items-center gap-2">
         <span className="text-sm font-medium text-zinc-600">Year:</span>
-        <div className="flex rounded-lg border border-zinc-200 bg-zinc-50 p-0.5 gap-0.5">
-          {availableYears.map((year) => (
-            <button
-              key={year}
-              onClick={() => setSelectedYear(year)}
-              className={`rounded-md px-3.5 py-1.5 text-sm font-medium transition-all ${
-                selectedYear === year
-                  ? "bg-blue-600 text-white shadow-sm"
-                  : "text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100"
-              }`}
-            >
-              {year}
-            </button>
-          ))}
+        <div className="flex flex-wrap rounded-lg border border-zinc-200 bg-zinc-50 p-0.5 gap-0.5">
+          {/* All button */}
+          <button
+            onClick={() => setSelectedYear("all")}
+            className={`rounded-md px-3.5 py-1.5 text-sm font-medium transition-all ${
+              selectedYear === "all"
+                ? "bg-zinc-800 text-white shadow-sm"
+                : "text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100"
+            }`}
+          >
+            All
+          </button>
+          {/* Individual year buttons, each in its palette color when selected */}
+          {availableYears.map((year) => {
+            const pal = YEAR_PALETTE[yearColorIndex[year]];
+            const isSelected = selectedYear === year;
+            return (
+              <button
+                key={year}
+                onClick={() => setSelectedYear(year)}
+                style={isSelected ? { backgroundColor: pal.accent, color: "#fff" } : undefined}
+                className={`rounded-md px-3.5 py-1.5 text-sm font-medium transition-all ${
+                  isSelected
+                    ? "shadow-sm"
+                    : "text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100"
+                }`}
+              >
+                {year}
+              </button>
+            );
+          })}
         </div>
-        <span className="ml-2 text-xs text-zinc-400">
+        {/* Year color swatches legend when "All" is active */}
+        {selectedYear === "all" && availableYears.length > 0 && (
+          <div className="flex flex-wrap items-center gap-2 ml-1">
+            {availableYears.map((year) => {
+              const pal = YEAR_PALETTE[yearColorIndex[year]];
+              return (
+                <span key={year} className="flex items-center gap-1 text-xs font-medium" style={{ color: pal.accent }}>
+                  <span className="inline-block h-2.5 w-2.5 rounded-sm" style={{ backgroundColor: pal.accent }} />
+                  {year}
+                </span>
+              );
+            })}
+          </div>
+        )}
+        <span className="ml-1 text-xs text-zinc-400">
           {rows.length} project{rows.length !== 1 ? "s" : ""}
         </span>
       </div>
 
-      {/* Legend */}
+      {/* Status legend */}
       <div className="flex flex-wrap items-center gap-4">
         {[
-          { status: "active", label: "Active", color: "bg-blue-600" },
-          { status: "planning", label: "Planning", color: "bg-amber-500" },
-          { status: "on-hold", label: "On Hold", color: "bg-orange-500" },
+          { status: "active",    label: "Active",    color: "bg-blue-600"    },
+          { status: "planning",  label: "Planning",  color: "bg-amber-500"   },
+          { status: "on-hold",   label: "On Hold",   color: "bg-orange-500"  },
           { status: "completed", label: "Completed", color: "bg-emerald-600" },
         ].map((item) => (
           <div key={item.status} className="flex items-center gap-1.5 text-xs text-zinc-600">
@@ -330,36 +388,47 @@ export default function ProjectRoadmapGantt({
 
       {rows.length === 0 ? (
         <div className="rounded-lg border border-dashed border-zinc-300 bg-zinc-50 p-8 text-center">
-          <div className="text-sm text-zinc-500">No projects starting in {selectedYear}</div>
-          <div className="mt-1 text-xs text-zinc-400">Select a different year to view projects</div>
+          <div className="text-sm text-zinc-500">
+            {selectedYear === "all" ? "No projects found" : `No projects starting in ${selectedYear}`}
+          </div>
+          {selectedYear !== "all" && (
+            <div className="mt-1 text-xs text-zinc-400">Select a different year to view projects</div>
+          )}
         </div>
       ) : (
         <div className="overflow-x-auto rounded-lg border border-zinc-200 bg-white shadow-sm">
           <div style={{ minWidth: NAME_COL_WIDTH + timelineWidth }}>
-            {/* Header: Year group row + Month row */}
+            {/* Header */}
             <div
               className="grid border-b border-zinc-200 bg-zinc-50"
               style={{ gridTemplateColumns: `${NAME_COL_WIDTH}px ${timelineWidth}px` }}
             >
-              {/* Project column header - spans both header rows */}
               <div className="border-r border-zinc-200 flex items-center px-4">
                 <span className="text-xs font-semibold text-zinc-700 uppercase tracking-wider">Project</span>
               </div>
-
-              {/* Timeline headers */}
               <div>
                 {/* Year row */}
-                <div className="grid border-b border-zinc-200" style={{ gridTemplateColumns: yearGroups.map((g) => `${g.months.length * CELL_WIDTH}px`).join(" ") }}>
-                  {yearGroups.map((group) => (
-                    <div
-                      key={group.year}
-                      className="border-r border-zinc-200 px-2 py-2 text-center text-xs font-bold text-zinc-800"
-                    >
-                      {group.year}
-                    </div>
-                  ))}
+                <div
+                  className="grid border-b border-zinc-200"
+                  style={{ gridTemplateColumns: yearGroups.map((g) => `${g.months.length * CELL_WIDTH}px`).join(" ") }}
+                >
+                  {yearGroups.map((group) => {
+                    const pal = YEAR_PALETTE[yearColorIndex[group.year] ?? 0];
+                    return (
+                      <div
+                        key={group.year}
+                        className="border-r border-zinc-200 px-2 py-2 text-center text-xs font-bold"
+                        style={
+                          selectedYear === "all"
+                            ? { backgroundColor: pal.headerBg, color: pal.separatorText }
+                            : { color: "#1f2937" }
+                        }
+                      >
+                        {group.year}
+                      </div>
+                    );
+                  })}
                 </div>
-
                 {/* Month row */}
                 <div
                   className="grid"
@@ -384,126 +453,36 @@ export default function ProjectRoadmapGantt({
               </div>
             </div>
 
-            {/* Project rows */}
-            {rows.map((project) => {
-              const clippedStart = project.start < windowStart ? windowStart : project.start;
-              const clippedEnd = project.end > windowEnd ? windowEnd : project.end;
-
-              const startIndex = Math.max(0, monthDiff(windowStart, clippedStart));
-              const span = Math.max(1, monthDiff(clippedStart, clippedEnd) + 1);
-
-              const barLeft = startIndex * CELL_WIDTH + 2;
-              const barWidth = span * CELL_WIDTH - 4;
-
-              const progressWidth = Math.round((project.progress / 100) * barWidth);
-
-              // Build the label that goes inside the bar
-              const barLabel = [
-                project.progress > 0 ? `${project.progress}%` : null,
-                project.businessUnit || null,
-              ].filter(Boolean).join(" · ");
-
-              return (
-                <div
-                  key={project.id}
-                  className="grid border-b border-zinc-100 hover:bg-zinc-50/50 transition-colors"
-                  style={{ gridTemplateColumns: `${NAME_COL_WIDTH}px ${timelineWidth}px` }}
-                >
-                  {/* Project name cell */}
-                  <div className="border-r border-zinc-200 px-4 py-3">
-                    <div className="flex items-center gap-2">
-                      <span className="truncate text-sm font-medium text-zinc-900">{project.name}</span>
-                      <span
-                        className={`inline-flex shrink-0 items-center rounded-full px-2 py-0.5 text-[10px] font-medium capitalize ${statusBadgeClass(project.status)}`}
-                      >
-                        {statusLabel(project.status)}
-                      </span>
-                    </div>
-                    <div className="mt-1 text-[11px] text-zinc-400">
-                      {formatMonthYear(project.start)} — {formatMonthYear(project.end)}
-                    </div>
-                  </div>
-
-                  {/* Timeline bar cell */}
-                  <div className="relative h-14">
-                    {/* Grid lines */}
-                    <div
-                      className="absolute inset-0 grid"
-                      style={{ gridTemplateColumns: `repeat(${months.length}, ${CELL_WIDTH}px)` }}
-                    >
-                      {months.map((month) => {
-                        const isYearBoundary = month.getMonth() === 0;
-                        return (
-                          <div
-                            key={`${project.id}-${month.getFullYear()}-${month.getMonth()}`}
-                            className={`border-r ${isYearBoundary ? "border-zinc-200" : "border-zinc-100"}`}
-                          />
-                        );
-                      })}
-                    </div>
-
-                    {/* Today marker */}
-                    {todayPosition !== null && (
+            {/* Project rows — grouped when in "all" view */}
+            {selectedYear === "all" && rowGroups
+              ? rowGroups.map(({ year, rows: groupRows }) => {
+                  const pal = YEAR_PALETTE[yearColorIndex[year] ?? 0];
+                  return (
+                    <div key={year}>
+                      {/* Year separator */}
                       <div
-                        className="absolute top-0 bottom-0 w-px bg-red-400 z-10"
-                        style={{ left: todayPosition }}
-                      />
-                    )}
-
-                    {/* Project bar: track (lighter) + filled progress (darker) */}
-                    <div
-                      className="absolute top-3 h-8 rounded-md overflow-hidden cursor-pointer"
-                      style={{
-                        left: barLeft,
-                        width: barWidth,
-                        backgroundColor: statusBarTrackBg(project.status),
-                      }}
-                      onMouseEnter={(e) => {
-                        setTooltip({
-                          project,
-                          resources: resourceMap[project.id] || [],
-                          pmBa: pmBaMap[project.id] || [],
-                          x: e.clientX,
-                          y: e.clientY,
-                        });
-                      }}
-                      onMouseMove={(e) => {
-                        setTooltip((prev) =>
-                          prev ? { ...prev, x: e.clientX, y: e.clientY } : null
-                        );
-                      }}
-                      onMouseLeave={() => setTooltip(null)}
-                    >
-                      {/* Filled progress portion */}
-                      <div
-                        className="absolute inset-y-0 left-0 rounded-l-md"
+                        className="grid border-b"
                         style={{
-                          width: progressWidth,
-                          backgroundColor: statusBarBg(project.status),
+                          gridTemplateColumns: `${NAME_COL_WIDTH}px ${timelineWidth}px`,
+                          backgroundColor: pal.separatorBg,
+                          borderColor: pal.accent + "55",
                         }}
-                      />
-
-                      {/* Label inside the bar */}
-                      {barWidth >= 48 && barLabel && (
+                      >
                         <div
-                          className="absolute inset-0 flex items-center px-2 z-[1]"
+                          className="col-span-2 px-4 py-1.5 text-xs font-bold uppercase tracking-widest"
+                          style={{ color: pal.separatorText }}
                         >
-                          <span
-                            className="truncate text-[10px] font-semibold leading-none"
-                            style={{
-                              color: progressWidth > barWidth * 0.5 ? "#fff" : "#1f2937",
-                              textShadow: progressWidth > barWidth * 0.5 ? "0 1px 2px rgba(0,0,0,0.2)" : "none",
-                            }}
-                          >
-                            {barLabel}
-                          </span>
+                          {year}
                         </div>
-                      )}
+                      </div>
+
+                      {/* Rows for this year */}
+                      {groupRows.map((project) => renderProjectRow(project, pal.accent, pal.rowBg))}
                     </div>
-                  </div>
-                </div>
-              );
-            })}
+                  );
+                })
+              : rows.map((project) => renderProjectRow(project, undefined, undefined))
+            }
           </div>
         </div>
       )}
@@ -520,15 +499,10 @@ export default function ProjectRoadmapGantt({
           }}
         >
           <div className="rounded-lg bg-zinc-900 px-3 py-2.5 shadow-xl ring-1 ring-white/10">
-            {/* Project name */}
             <p className="truncate text-[11px] font-semibold text-white leading-tight">
               {tooltip.project.name}
             </p>
-
-            {/* Divider */}
             <div className="my-1.5 h-px bg-zinc-700" />
-
-            {/* PM / BA */}
             {tooltip.pmBa.length > 0 && (
               <ul className="mb-1.5 space-y-0.5">
                 {tooltip.pmBa.map((r) => (
@@ -544,8 +518,6 @@ export default function ProjectRoadmapGantt({
                 ))}
               </ul>
             )}
-
-            {/* Team resources */}
             {tooltip.resources.length > 0 ? (
               <>
                 {tooltip.pmBa.length > 0 && <div className="mb-1.5 h-px bg-zinc-700" />}
@@ -576,4 +548,129 @@ export default function ProjectRoadmapGantt({
       )}
     </div>
   );
+
+  // ── helper rendered inside the component so it closes over state ──────────
+  function renderProjectRow(project: ParsedProject, accentColor?: string, rowBg?: string) {
+    const clippedStart = project.start < windowStart ? windowStart : project.start;
+    const clippedEnd = project.end > windowEnd ? windowEnd : project.end;
+
+    const startIndex = Math.max(0, monthDiff(windowStart, clippedStart));
+    const span = Math.max(1, monthDiff(clippedStart, clippedEnd) + 1);
+
+    const barLeft = startIndex * CELL_WIDTH + 2;
+    const barWidth = span * CELL_WIDTH - 4;
+    const progressWidth = Math.round((project.progress / 100) * barWidth);
+
+    const barLabel = [
+      project.progress > 0 ? `${project.progress}%` : null,
+      project.businessUnit || null,
+    ].filter(Boolean).join(" · ");
+
+    return (
+      <div
+        key={project.id}
+        className="grid border-b border-zinc-100 transition-colors"
+        style={{
+          gridTemplateColumns: `${NAME_COL_WIDTH}px ${timelineWidth}px`,
+          backgroundColor: rowBg ?? undefined,
+        }}
+        onMouseEnter={(e) => {
+          const el = e.currentTarget;
+          el.style.filter = "brightness(0.97)";
+        }}
+        onMouseLeave={(e) => {
+          const el = e.currentTarget;
+          el.style.filter = "";
+        }}
+      >
+        {/* Project name cell */}
+        <div
+          className="border-r border-zinc-200 px-4 py-3"
+          style={accentColor ? { borderLeft: `3px solid ${accentColor}` } : undefined}
+        >
+          <div className="flex items-center gap-2">
+            <span className="truncate text-sm font-medium text-zinc-900">{project.name}</span>
+            <span
+              className={`inline-flex shrink-0 items-center rounded-full px-2 py-0.5 text-[10px] font-medium capitalize ${statusBadgeClass(project.status)}`}
+            >
+              {statusLabel(project.status)}
+            </span>
+          </div>
+          <div className="mt-1 text-[11px] text-zinc-400">
+            {formatMonthYear(project.start)} — {formatMonthYear(project.end)}
+          </div>
+        </div>
+
+        {/* Timeline bar cell */}
+        <div className="relative h-14">
+          {/* Grid lines */}
+          <div
+            className="absolute inset-0 grid"
+            style={{ gridTemplateColumns: `repeat(${months.length}, ${CELL_WIDTH}px)` }}
+          >
+            {months.map((month) => {
+              const isYearBoundary = month.getMonth() === 0;
+              return (
+                <div
+                  key={`${project.id}-${month.getFullYear()}-${month.getMonth()}`}
+                  className={`border-r ${isYearBoundary ? "border-zinc-300" : "border-zinc-100"}`}
+                />
+              );
+            })}
+          </div>
+
+          {/* Today marker */}
+          {todayPosition !== null && (
+            <div
+              className="absolute top-0 bottom-0 w-px bg-red-400 z-10"
+              style={{ left: todayPosition }}
+            />
+          )}
+
+          {/* Project bar */}
+          <div
+            className="absolute top-3 h-8 rounded-md overflow-hidden cursor-pointer"
+            style={{
+              left: barLeft,
+              width: barWidth,
+              backgroundColor: statusBarTrackBg(project.status),
+            }}
+            onMouseEnter={(e) => {
+              setTooltip({
+                project,
+                resources: resourceMap[project.id] || [],
+                pmBa: pmBaMap[project.id] || [],
+                x: e.clientX,
+                y: e.clientY,
+              });
+            }}
+            onMouseMove={(e) => {
+              setTooltip((prev) =>
+                prev ? { ...prev, x: e.clientX, y: e.clientY } : null
+              );
+            }}
+            onMouseLeave={() => setTooltip(null)}
+          >
+            <div
+              className="absolute inset-y-0 left-0 rounded-l-md"
+              style={{ width: progressWidth, backgroundColor: statusBarBg(project.status) }}
+            />
+            {barWidth >= 48 && barLabel && (
+              <div className="absolute inset-0 flex items-center px-2 z-[1]">
+                <span
+                  className="truncate text-[10px] font-semibold leading-none"
+                  style={{
+                    color: progressWidth > barWidth * 0.5 ? "#fff" : "#1f2937",
+                    textShadow: progressWidth > barWidth * 0.5 ? "0 1px 2px rgba(0,0,0,0.2)" : "none",
+                  }}
+                >
+                  {barLabel}
+                </span>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
 }
