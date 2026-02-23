@@ -108,7 +108,7 @@ class ProjectController:
             return working_days
         
         total_working_days = count_working_days(start_date, end_date)
-        max_hours_per_day = SettingsController.get_work_hours_per_day()
+        max_hours_per_day = SettingsController.get_settings_for_employee(booking_data['employee_id'])['work_hours_per_day']
         total_max_hours = total_working_days * max_hours_per_day
         
         # Check existing bookings that overlap with this date range

@@ -142,6 +142,20 @@ class Database:
                 FOREIGN KEY (user_id) REFERENCES users (id)
             )
         ''')
+
+        # Per-employee business rules overrides
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS employee_business_rules (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                employee_id INTEGER NOT NULL UNIQUE,
+                work_hours_per_day REAL,
+                work_days_per_month REAL,
+                months_in_year INTEGER,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (employee_id) REFERENCES employees (id)
+            )
+        ''')
         
         self.conn.commit()
     
@@ -244,6 +258,35 @@ class Database:
             cursor.execute("UPDATE employees SET department = 'Solution Architecture', updated_at = CURRENT_TIMESTAMP WHERE department = 'Solution Architect'")
             self.conn.commit()
             print("Solution Architect department rename completed!")
+
+        # Create employee_business_rules table if not yet created (needed before seeding below)
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS employee_business_rules (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                employee_id INTEGER NOT NULL UNIQUE,
+                work_hours_per_day REAL,
+                work_days_per_month REAL,
+                months_in_year INTEGER,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (employee_id) REFERENCES employees (id)
+            )
+        ''')
+
+        # Seed custom business rules for specific employees
+        target_employees = ['Ziyad Albattah', 'Khalid Albakr', 'Julian Paglione', 'Tan Mutalib']
+        for name in target_employees:
+            cursor.execute("SELECT id FROM employees WHERE full_name = ?", (name,))
+            emp = cursor.fetchone()
+            if emp:
+                cursor.execute("SELECT id FROM employee_business_rules WHERE employee_id = ?", (emp[0],))
+                if not cursor.fetchone():
+                    print(f"Seeding custom business rules for employee: {name}")
+                    cursor.execute('''
+                        INSERT INTO employee_business_rules (employee_id, work_hours_per_day, work_days_per_month, months_in_year)
+                        VALUES (?, ?, ?, ?)
+                    ''', (emp[0], 7, 5.2388, 12))
+        self.conn.commit()
     
     # query helpers
     def execute(self, query: str, params: Tuple = ()) -> sqlite3.Cursor:

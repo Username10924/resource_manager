@@ -17,12 +17,20 @@ class EmployeeSchedule:
     @staticmethod
     def enrich_schedule_dicts(rows):
         """Add dynamically computed available_hours_per_month to raw schedule dicts using live settings."""
-        settings = SettingsController.get_settings()
-        whpd = settings['work_hours_per_day']
-        wdpm = settings['work_days_per_month']
+        if not rows:
+            return rows
+
+        global_settings = SettingsController.get_settings()
+
+        # Batch-load per-employee settings for all unique employee IDs in the result set
+        employee_ids = {row.get('employee_id') for row in rows if row.get('employee_id')}
+        employee_settings_cache = {eid: SettingsController.get_settings_for_employee(eid) for eid in employee_ids}
+
         for row in rows:
+            emp_id = row.get('employee_id')
+            settings = employee_settings_cache.get(emp_id, global_settings)
             reserved = row.get('reserved_hours_per_day') or 0
-            row['available_hours_per_month'] = max(0, (whpd - reserved) * wdpm)
+            row['available_hours_per_month'] = max(0, (settings['work_hours_per_day'] - reserved) * settings['work_days_per_month'])
         return rows
     
     @staticmethod
@@ -65,7 +73,8 @@ class EmployeeSchedule:
     
     def update_reserved_hours(self, reserved_hours: float) -> 'EmployeeSchedule':
         """Update reserved hours and recalculate available hours"""
-        work_hours_per_day = SettingsController.get_work_hours_per_day()
+        settings = SettingsController.get_settings_for_employee(self.employee_id)
+        work_hours_per_day = settings['work_hours_per_day']
         if reserved_hours > work_hours_per_day:
             raise ValueError(f"Reserved hours cannot exceed {work_hours_per_day} hours per day")
         
@@ -83,7 +92,7 @@ class EmployeeSchedule:
     
     def get_available_hours(self) -> float:
         """Calculate available hours for the month"""
-        settings = SettingsController.get_settings()
+        settings = SettingsController.get_settings_for_employee(self.employee_id)
         work_hours_per_day = settings['work_hours_per_day']
         work_days_per_month = settings['work_days_per_month']
         available = (work_hours_per_day - self.reserved_hours_per_day) * work_days_per_month

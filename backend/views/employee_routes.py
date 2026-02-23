@@ -34,19 +34,24 @@ class ScheduleUpdate(BaseModel):
     month: int
     year: int
     reserved_hours_per_day: float
-    
+
     @validator('month')
     def validate_month(cls, v):
         if v < 1 or v > 12:
             raise ValueError('Month must be between 1 and 12')
         return v
-    
+
     @validator('reserved_hours_per_day')
     def validate_hours(cls, v):
         # Basic range check - more specific validation done in route handler
         if v < 0 or v > 24:
             raise ValueError('Reserved hours must be between 0 and 24')
         return v
+
+class EmployeeBusinessRulesUpdate(BaseModel):
+    work_hours_per_day: Optional[float] = None
+    work_days_per_month: Optional[float] = None
+    months_in_year: Optional[int] = None
 
 @router.post("", response_model=Dict[str, Any])
 async def create_employee(employee: EmployeeCreate, current_user: User = Depends(get_current_user)):
@@ -224,7 +229,7 @@ async def get_employee_availability(employee_id: int, month: int, year: int):
     booked_hours = result['booked_hours'] or 0
     
     # Include reserved hours as part of the booked hours for utilization
-    work_days_per_month = SettingsController.get_work_days_per_month()
+    work_days_per_month = SettingsController.get_settings_for_employee(employee_id)['work_days_per_month']
     reserved_hours_monthly = schedule.reserved_hours_per_day * work_days_per_month
     total_utilized_hours = booked_hours + reserved_hours_monthly
     
@@ -346,7 +351,7 @@ async def get_employee_availability_for_date_range(
     # Calculate available hours considering overlapping bookings and reservations
     # We need to track utilization per day
     total_working_days = count_working_days(start, end)
-    max_hours_per_day = SettingsController.get_work_hours_per_day()
+    max_hours_per_day = SettingsController.get_settings_for_employee(employee_id)['work_hours_per_day']
     total_max_hours = total_working_days * max_hours_per_day
     
     # Calculate total booked hours for overlapping bookings
@@ -415,6 +420,57 @@ async def get_employee_availability_for_date_range(
             'avg_utilized_per_day': round(avg_utilized_per_day, 2),
             'avg_available_per_day': round(avg_available_per_day, 2)
         }
+    }
+
+@router.get("/{employee_id}/business-rules", response_model=Dict[str, Any])
+async def get_employee_business_rules(employee_id: int, current_user: User = Depends(get_current_user)):
+    """Get custom business rules for an employee. Returns null fields if using global defaults."""
+    from models.employee import Employee
+    employee = Employee.get_by_id(employee_id)
+    if not employee:
+        raise HTTPException(status_code=404, detail="Employee not found")
+    rules = SettingsController.get_employee_business_rules(employee_id)
+    effective = SettingsController.get_settings_for_employee(employee_id)
+    return {
+        'employee_id': employee_id,
+        'custom_rules': rules,
+        'effective_settings': effective
+    }
+
+@router.put("/{employee_id}/business-rules", response_model=Dict[str, Any])
+async def set_employee_business_rules(
+    employee_id: int,
+    rules: EmployeeBusinessRulesUpdate,
+    current_user: User = Depends(get_current_user)
+):
+    """Set or update custom business rules for an employee."""
+    from models.employee import Employee
+    employee = Employee.get_by_id(employee_id)
+    if not employee:
+        raise HTTPException(status_code=404, detail="Employee not found")
+    update_data = {k: v for k, v in rules.dict().items() if v is not None}
+    if not update_data:
+        raise HTTPException(status_code=400, detail="No fields provided to update")
+    saved = SettingsController.set_employee_business_rules(employee_id, update_data)
+    effective = SettingsController.get_settings_for_employee(employee_id)
+    return {
+        'employee_id': employee_id,
+        'custom_rules': saved,
+        'effective_settings': effective
+    }
+
+@router.delete("/{employee_id}/business-rules", response_model=Dict[str, Any])
+async def delete_employee_business_rules(employee_id: int, current_user: User = Depends(get_current_user)):
+    """Remove custom business rules for an employee, reverting to global settings."""
+    from models.employee import Employee
+    employee = Employee.get_by_id(employee_id)
+    if not employee:
+        raise HTTPException(status_code=404, detail="Employee not found")
+    SettingsController.delete_employee_business_rules(employee_id)
+    return {
+        'employee_id': employee_id,
+        'message': 'Custom business rules removed. Employee will now use global settings.',
+        'effective_settings': SettingsController.get_settings()
     }
 
 @router.delete("/{employee_id}", response_model=Dict[str, Any])

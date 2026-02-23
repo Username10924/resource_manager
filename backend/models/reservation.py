@@ -22,12 +22,12 @@ class EmployeeReservation:
         if end_date < start_date:
             raise ValueError("End date must be after or equal to start date")
         
-        max_hours = SettingsController.get_work_hours_per_day()
+        max_hours = SettingsController.get_settings_for_employee(employee_id)['work_hours_per_day']
         if reserved_hours_per_day < 0 or reserved_hours_per_day > max_hours:
             raise ValueError(f"Reserved hours per day must be between 0 and {max_hours}")
-        
+
         query = '''
-            INSERT INTO employee_reservations 
+            INSERT INTO employee_reservations
             (employee_id, start_date, end_date, reserved_hours_per_day, reason)
             VALUES (?, ?, ?, ?, ?)
         '''
@@ -93,7 +93,7 @@ class EmployeeReservation:
             updates.append('end_date = ?')
             params.append(kwargs['end_date'])
         if 'reserved_hours_per_day' in kwargs:
-            max_hours = SettingsController.get_work_hours_per_day()
+            max_hours = SettingsController.get_settings_for_employee(self.employee_id)['work_hours_per_day']
             if kwargs['reserved_hours_per_day'] < 0 or kwargs['reserved_hours_per_day'] > max_hours:
                 raise ValueError(f"Reserved hours per day must be between 0 and {max_hours}")
             updates.append('reserved_hours_per_day = ?')

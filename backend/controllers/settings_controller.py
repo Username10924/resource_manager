@@ -1,7 +1,8 @@
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 import re
 from pathlib import Path
 import importlib
+from database import db
 
 class SettingsController:
     @staticmethod
@@ -124,6 +125,63 @@ class SettingsController:
     def verify_site_password(password: str) -> bool:
         """Verify the provided password against the site password"""
         return password == SettingsController.get_site_password()
+
+    # --- Per-employee business rule overrides ---
+
+    @staticmethod
+    def get_settings_for_employee(employee_id: int) -> Dict[str, Any]:
+        """Get effective settings for an employee, applying per-employee overrides over global settings."""
+        global_settings = SettingsController.get_settings()
+        row = db.fetch_one('SELECT * FROM employee_business_rules WHERE employee_id = ?', (employee_id,))
+        if not row:
+            return global_settings
+        return {
+            'work_hours_per_day': int(row['work_hours_per_day']) if row['work_hours_per_day'] is not None else global_settings['work_hours_per_day'],
+            'work_days_per_month': float(row['work_days_per_month']) if row['work_days_per_month'] is not None else global_settings['work_days_per_month'],
+            'months_in_year': int(row['months_in_year']) if row['months_in_year'] is not None else global_settings['months_in_year'],
+        }
+
+    @staticmethod
+    def get_employee_business_rules(employee_id: int) -> Optional[Dict[str, Any]]:
+        """Return stored custom rules for an employee, or None if none are set."""
+        row = db.fetch_one('SELECT * FROM employee_business_rules WHERE employee_id = ?', (employee_id,))
+        return dict(row) if row else None
+
+    @staticmethod
+    def set_employee_business_rules(employee_id: int, rules: Dict[str, Any]) -> Dict[str, Any]:
+        """Create or update custom business rules for an employee."""
+        existing = db.fetch_one('SELECT id FROM employee_business_rules WHERE employee_id = ?', (employee_id,))
+        if existing:
+            updates = []
+            params = []
+            if 'work_hours_per_day' in rules:
+                updates.append('work_hours_per_day = ?')
+                params.append(rules['work_hours_per_day'])
+            if 'work_days_per_month' in rules:
+                updates.append('work_days_per_month = ?')
+                params.append(rules['work_days_per_month'])
+            if 'months_in_year' in rules:
+                updates.append('months_in_year = ?')
+                params.append(rules['months_in_year'])
+            if updates:
+                updates.append('updated_at = CURRENT_TIMESTAMP')
+                params.append(employee_id)
+                db.execute(f'UPDATE employee_business_rules SET {", ".join(updates)} WHERE employee_id = ?', tuple(params))
+                db.commit()
+        else:
+            db.execute(
+                'INSERT INTO employee_business_rules (employee_id, work_hours_per_day, work_days_per_month, months_in_year) VALUES (?, ?, ?, ?)',
+                (employee_id, rules.get('work_hours_per_day'), rules.get('work_days_per_month'), rules.get('months_in_year'))
+            )
+            db.commit()
+        return SettingsController.get_employee_business_rules(employee_id)
+
+    @staticmethod
+    def delete_employee_business_rules(employee_id: int) -> bool:
+        """Remove custom business rules for an employee (reverts to global settings)."""
+        db.execute('DELETE FROM employee_business_rules WHERE employee_id = ?', (employee_id,))
+        db.commit()
+        return True
 
     @staticmethod
     def update_site_password(new_password: str) -> bool:

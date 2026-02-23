@@ -87,8 +87,8 @@ class EmployeeController:
         
         schedule = EmployeeSchedule.get_employee_yearly_schedule(employee_id, year)
         
-        # Get dynamic settings
-        settings = SettingsController.get_settings()
+        # Get effective settings for this employee (per-employee overrides or global)
+        settings = SettingsController.get_settings_for_employee(employee_id)
         work_hours_per_day = settings['work_hours_per_day']
         work_days_per_month = settings['work_days_per_month']
         
