@@ -180,6 +180,11 @@ class DashboardController:
 
             emp_data = emp.to_dict()
             emp_data['schedule'] = schedule_data
+            emp_data['effective_settings'] = {
+                'work_hours_per_day': work_hours_per_day,
+                'work_days_per_month': work_days_per_month,
+                'months_in_year': emp_settings.get('months_in_year', settings.get('months_in_year', 12)),
+            }
 
             # Add to department
             dashboard_data['departments'][dept]['employees'].append(emp_data)

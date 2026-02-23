@@ -277,12 +277,17 @@ export default function DashboardPage() {
         }
       }
     }
-    const capacity = monthsInRange * settings.work_days_per_month * settings.work_hours_per_day;
-
     const rows: any[] = [];
 
     Object.entries(resourceData.departments).forEach(([dept, deptData]) => {
       deptData.employees.forEach((emp: any) => {
+        // Use per-employee effective settings (falls back to global if not set)
+        const empSettings = emp.effective_settings || settings;
+        const empWorkHoursPerDay = empSettings.work_hours_per_day ?? settings.work_hours_per_day;
+        const empWorkDaysPerMonth = empSettings.work_days_per_month ?? settings.work_days_per_month;
+        const empMonthsInYear = empSettings.months_in_year ?? settings.months_in_year ?? 12;
+        const empCapacity = monthsInRange * empWorkDaysPerMonth * empWorkHoursPerDay;
+
         const empBookings = allBookings.filter(
           (b) =>
             b.employee_id === emp.id &&
@@ -322,11 +327,11 @@ export default function DashboardPage() {
           totalReservationHours += (r.reserved_hours_per_day || 0) * overlapDays;
         });
 
-        const utilization = capacity > 0
-          ? Math.min(100, (totalProjectHours + totalReservationHours) / capacity * 100)
+        const utilization = empCapacity > 0
+          ? Math.min(100, (totalProjectHours + totalReservationHours) / empCapacity * 100)
           : 0;
 
-        const yearlyCapacity = settings.work_hours_per_day * settings.work_days_per_month * 12;
+        const yearlyCapacity = empWorkHoursPerDay * empWorkDaysPerMonth * empMonthsInYear;
         const projectPctOfYear = yearlyCapacity > 0
           ? totalProjectHours / yearlyCapacity * 100
           : 0;
@@ -335,12 +340,12 @@ export default function DashboardPage() {
           : 0;
 
         const totalBookedHours = totalProjectHours + totalReservationHours;
-        const totalAvailableHours = Math.max(0, capacity - totalProjectHours - totalReservationHours);
+        const totalAvailableHours = Math.max(0, empCapacity - totalProjectHours - totalReservationHours);
 
         rows.push({
           "Function": dept,
           "Employee": emp.full_name,
-          "Total Bookable Hours": Math.round(capacity * 10) / 10,
+          "Total Bookable Hours": Math.round(empCapacity * 10) / 10,
           "Total Available Hours": Math.round(totalAvailableHours * 10) / 10,
           "Total Booked Hours": Math.round(totalBookedHours * 10) / 10,
           "Number of Projects": projectIds.size,
