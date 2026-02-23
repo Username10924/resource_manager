@@ -234,26 +234,6 @@ export default function ProjectBookingPage() {
       return;
     }
 
-    if (totalHours > maxHours) {
-      if (utilizedHours > 0) {
-        alert(
-          `Cannot book ${totalHours} hours (${bookingData.hoursPerDay} hrs/day × ${workingDays} days). Employee only has ${maxHours} hours available in this period.\n\nAlready utilized: ${utilizedHours} hours (${bookedHours} booked + ${reservedHours} reserved)\nMaximum capacity: ${totalMaxHours} hours (${workingDays} working days × ${settings.work_hours_per_day} hrs/day)`
-        );
-      } else {
-        alert(
-          `Cannot book ${totalHours} hours (${bookingData.hoursPerDay} hrs/day × ${workingDays} days). Maximum ${maxHours} hours for ${workingDays} working days (${settings.work_hours_per_day}hrs/day).`
-        );
-      }
-      return;
-    }
-
-    if (maxHoursFromAvailability !== null && totalHours > maxHoursFromAvailability) {
-      alert(
-        `Cannot book ${totalHours} hours (${bookingData.hoursPerDay} hrs/day × ${workingDays} days). Employee only has ${maxHoursFromAvailability} hours available after accounting for existing bookings and reservations.`
-      );
-      return;
-    }
-
     try {
       const bookingPayload = {
         employee_id: selectedEmployee.id,
@@ -279,7 +259,7 @@ export default function ProjectBookingPage() {
       {
         id: 'create-booking',
         label: 'Create booking for selected range',
-        disabled: !hasEmployee || !hasHoursPerDay || workingDays <= 0 || totalHours > maxHours || maxHours <= 0,
+        disabled: !hasEmployee || !hasHoursPerDay || workingDays <= 0,
         onSelect: handleBooking,
       },
       {
@@ -428,9 +408,14 @@ export default function ProjectBookingPage() {
             <div className="text-xs text-zinc-600 mt-1 font-mono tabular-nums whitespace-nowrap">
               Total hours: <span className="font-semibold">{totalHours.toFixed(1)}h</span>
             </div>
-            <div className={`text-xs mt-1 font-mono tabular-nums whitespace-nowrap ${totalHours > maxHours ? 'text-red-700' : 'text-zinc-600'}`}>
+            <div className={`text-xs mt-1 font-mono tabular-nums whitespace-nowrap ${totalHours > maxHours ? 'text-amber-600' : 'text-zinc-600'}`}>
               Available to book: <span className="font-semibold">{maxHours}h</span>
             </div>
+            {totalHours > maxHours && maxHours >= 0 && (
+              <div className="text-xs text-amber-600 mt-1 font-medium whitespace-nowrap">
+                ⚠ Overbooking by {(totalHours - maxHours).toFixed(1)}h
+              </div>
+            )}
             <div className="text-xs text-zinc-500 mt-2 h-4">
               {loadingAvailability ? 'Checking availability...' : <span className="invisible">Checking availability...</span>}
             </div>

@@ -183,7 +183,7 @@ export default function DashboardPage() {
       month: monthNames[parseInt(month) - 1],
       available: Math.round(Math.max(0, data.total_available || 0)),
       utilized: Math.round(data.total_booked || 0), // Note: This is total utilized (booked + reserved)
-      utilization: Math.min(100, Math.max(0, data.utilization_rate)),
+      utilization: Math.max(0, data.utilization_rate),
     }));
   };
 
@@ -191,7 +191,7 @@ export default function DashboardPage() {
     if (!resourceData) return [];
     return Object.entries(resourceData.monthly_summary).map(([month, data]) => ({
       month: monthNames[parseInt(month) - 1],
-      utilization: Math.min(100, Math.max(0, data.utilization_rate)),
+      utilization: Math.max(0, data.utilization_rate),
     }));
   };
 
@@ -328,7 +328,7 @@ export default function DashboardPage() {
         });
 
         const utilization = empCapacity > 0
-          ? Math.min(100, (totalProjectHours + totalReservationHours) / empCapacity * 100)
+          ? (totalProjectHours + totalReservationHours) / empCapacity * 100
           : 0;
 
         const yearlyCapacity = empWorkHoursPerDay * empWorkDaysPerMonth * empMonthsInYear;
@@ -498,7 +498,7 @@ export default function DashboardPage() {
 
     const deptRows = Object.entries(deptMap).map(([dept, d]) => ({
       dept,
-      utilization: d.totalCapacity > 0 ? Math.round(Math.min(100, d.totalBooked / d.totalCapacity * 100) * 10) / 10 : 0,
+      utilization: d.totalCapacity > 0 ? Math.round(d.totalBooked / d.totalCapacity * 100 * 10) / 10 : 0,
     }));
 
     const summaryStartRow = rows.length + 3 + 2; // after data rows + 2 blank rows
@@ -929,7 +929,7 @@ export default function DashboardPage() {
                 const months = Object.values(resourceData.monthly_summary);
                 const avgUtil =
                   months.reduce((sum, m) => sum + m.utilization_rate, 0) / months.length;
-                return Math.min(100, Math.max(0, avgUtil)).toFixed(1);
+                return Math.max(0, avgUtil).toFixed(1);
               })()}%`}
             />
           </div>
@@ -1210,7 +1210,7 @@ export default function DashboardPage() {
                 if (months.length === 0) return "0.0";
                 const avgUtil =
                   months.reduce((sum, m) => sum + m.utilization_rate, 0) / months.length;
-                return Math.min(100, Math.max(0, avgUtil)).toFixed(1);
+                return Math.max(0, avgUtil).toFixed(1);
               })()}%`}
             />
           </div>
@@ -1296,7 +1296,6 @@ export default function DashboardPage() {
                       0
                     );
                     const utilization = totalCapacity > 0 ? (totalUtilized / totalCapacity) * 100 : 0;
-                    const utilizationCapped = Math.min(100, Math.max(0, utilization));
 
                     // Per-employee project & reservation stats
                     const empBookings = allBookings.filter(
@@ -1349,7 +1348,7 @@ export default function DashboardPage() {
                           <div className="flex justify-between text-sm">
                             <span className="text-zinc-500">Utilization</span>
                             <span className="font-semibold text-zinc-900">
-                              {utilizationCapped.toFixed(1)}%
+                              {utilization.toFixed(1)}%
                             </span>
                           </div>
                           <div className="h-2 w-full rounded-full bg-zinc-100">

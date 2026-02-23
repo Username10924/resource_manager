@@ -170,14 +170,6 @@ class ProjectController:
         total_utilized_hours = total_booked_hours + total_reserved_hours
         available_hours = max(0, total_max_hours - total_utilized_hours)
         
-        # Validate that the requested hours don't exceed available hours
-        if booked_hours > available_hours:
-            return {
-                'error': f'Cannot book {booked_hours} hours. Employee only has {round(available_hours, 1)} hours available in this period. '
-                        f'Already utilized: {round(total_utilized_hours, 1)} hours ({round(total_booked_hours, 1)} booked + {round(total_reserved_hours, 1)} reserved). '
-                        f'Maximum capacity: {total_max_hours} hours ({total_working_days} working days × {max_hours_per_day} hrs/day).'
-            }
-        
         try:
             result = project.add_booking(
                 employee_id=booking_data['employee_id'],
