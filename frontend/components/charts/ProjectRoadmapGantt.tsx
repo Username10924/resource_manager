@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect, useRef } from "react";
 
 type RoadmapProject = {
   id: number;
@@ -12,6 +12,13 @@ type RoadmapProject = {
   end_date: string | null;
 };
 
+type BookingForGantt = {
+  project_id: number;
+  employee_id: number;
+  full_name?: string;
+  status?: string;
+};
+
 type ParsedProject = {
   id: number;
   name: string;
@@ -20,6 +27,13 @@ type ParsedProject = {
   businessUnit: string;
   start: Date;
   end: Date;
+};
+
+type TooltipState = {
+  project: ParsedProject;
+  resources: string[];
+  x: number;
+  y: number;
 };
 
 const CELL_WIDTH = 52;
@@ -117,7 +131,38 @@ function statusLabel(status: string): string {
   return status.replace(/[_-]/g, " ");
 }
 
-export default function ProjectRoadmapGantt({ projects }: { projects: RoadmapProject[] }) {
+export default function ProjectRoadmapGantt({
+  projects,
+  bookings = [],
+}: {
+  projects: RoadmapProject[];
+  bookings?: BookingForGantt[];
+}) {
+  // Build resource name map: project_id -> unique resource names[]
+  const resourceMap = useMemo(() => {
+    const map: Record<number, string[]> = {};
+    bookings.forEach((b) => {
+      if ((b.status || "").toLowerCase() === "cancelled") return;
+      if (!b.full_name) return;
+      if (!map[b.project_id]) map[b.project_id] = [];
+      if (!map[b.project_id].includes(b.full_name)) {
+        map[b.project_id].push(b.full_name);
+      }
+    });
+    return map;
+  }, [bookings]);
+
+  // Tooltip state
+  const [tooltip, setTooltip] = useState<TooltipState | null>(null);
+  const tooltipRef = useRef<HTMLDivElement>(null);
+
+  // Hide tooltip on scroll so it doesn't float in a wrong position
+  useEffect(() => {
+    const hide = () => setTooltip(null);
+    window.addEventListener("scroll", hide, true);
+    return () => window.removeEventListener("scroll", hide, true);
+  }, []);
+
   // Parse all projects to discover available years
   const allParsed = useMemo(() => {
     return projects
@@ -386,13 +431,26 @@ export default function ProjectRoadmapGantt({ projects }: { projects: RoadmapPro
 
                     {/* Project bar: track (lighter) + filled progress (darker) */}
                     <div
-                      className="absolute top-3 h-8 rounded-md overflow-hidden"
+                      className="absolute top-3 h-8 rounded-md overflow-hidden cursor-pointer"
                       style={{
                         left: barLeft,
                         width: barWidth,
                         backgroundColor: statusBarTrackBg(project.status),
                       }}
-                      title={`${project.name}${project.businessUnit ? ` — ${project.businessUnit}` : ""} (${project.progress}% complete, ${formatMonthYear(project.start)} – ${formatMonthYear(project.end)})`}
+                      onMouseEnter={(e) => {
+                        setTooltip({
+                          project,
+                          resources: resourceMap[project.id] || [],
+                          x: e.clientX,
+                          y: e.clientY,
+                        });
+                      }}
+                      onMouseMove={(e) => {
+                        setTooltip((prev) =>
+                          prev ? { ...prev, x: e.clientX, y: e.clientY } : null
+                        );
+                      }}
+                      onMouseLeave={() => setTooltip(null)}
                     >
                       {/* Filled progress portion */}
                       <div
@@ -424,6 +482,55 @@ export default function ProjectRoadmapGantt({ projects }: { projects: RoadmapPro
                 </div>
               );
             })}
+          </div>
+        </div>
+      )}
+
+      {/* Hover tooltip */}
+      {tooltip && (
+        <div
+          ref={tooltipRef}
+          className="pointer-events-none fixed z-50 w-max max-w-[220px]"
+          style={{
+            left: tooltip.x,
+            top: tooltip.y - 8,
+            transform: "translate(-50%, -100%)",
+          }}
+        >
+          <div className="rounded-lg bg-zinc-900 px-3 py-2.5 shadow-xl ring-1 ring-white/10">
+            {/* Project name */}
+            <p className="truncate text-[11px] font-semibold text-white leading-tight">
+              {tooltip.project.name}
+            </p>
+
+            {/* Divider */}
+            <div className="my-1.5 h-px bg-zinc-700" />
+
+            {/* Resource list */}
+            {tooltip.resources.length > 0 ? (
+              <>
+                <p className="mb-1 text-[10px] font-medium text-zinc-400 uppercase tracking-wide">
+                  {tooltip.resources.length} resource{tooltip.resources.length !== 1 ? "s" : ""}
+                </p>
+                <ul className="space-y-0.5">
+                  {tooltip.resources.map((name) => (
+                    <li key={name} className="flex items-center gap-1.5">
+                      <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-zinc-700 text-[9px] font-bold text-zinc-200">
+                        {name
+                          .split(" ")
+                          .map((n) => n[0])
+                          .join("")
+                          .toUpperCase()
+                          .slice(0, 2)}
+                      </span>
+                      <span className="truncate text-[11px] text-zinc-200 leading-tight">{name}</span>
+                    </li>
+                  ))}
+                </ul>
+              </>
+            ) : (
+              <p className="text-[11px] text-zinc-500 italic">No resources assigned</p>
+            )}
           </div>
         </div>
       )}

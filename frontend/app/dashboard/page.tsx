@@ -1063,15 +1063,15 @@ export default function DashboardPage() {
             </Card>
           </div>
 
-          {/* Product Roadmap Gantt */}
+          {/* Project Roadmap Gantt */}
           <Card className="bg-white border border-zinc-200">
             <CardHeader>
               <CardTitle className="text-lg font-semibold text-zinc-900">
-                Product Roadmap Timeline (Monthly)
+                Project Roadmap Timeline (Monthly)
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <ProjectRoadmapGantt projects={projectData.projects} />
+              <ProjectRoadmapGantt projects={projectData.projects} bookings={allBookings} />
             </CardContent>
           </Card>
 
