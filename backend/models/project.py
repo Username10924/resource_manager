@@ -68,7 +68,7 @@ class Project:
         query = '''
             SELECT p.*, u.full_name as architect_name, e.full_name as ba_name
             FROM projects p
-            LEFT JOIN users u ON p.solution_architect_id = u.id
+            LEFT JOIN employees u ON p.solution_architect_id = u.id
             LEFT JOIN employees e ON p.business_analyst_id = e.id
             ORDER BY p.created_at DESC
         '''
