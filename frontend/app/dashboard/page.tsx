@@ -1287,8 +1287,9 @@ export default function DashboardPage() {
                       (sum: number, s: any) => sum + (s.project_booked_hours || 0),
                       0
                     );
-                    // Use business rules from backend instead of hardcoded values
-                    const monthlyCapacity = settings.work_hours_per_day * settings.work_days_per_month;
+                    // Use per-employee effective settings (falls back to global if not set)
+                    const empEffectiveSettings = emp.effective_settings || settings;
+                    const monthlyCapacity = empEffectiveSettings.work_hours_per_day * empEffectiveSettings.work_days_per_month;
                     const totalCapacity = empSchedule.length * monthlyCapacity;
                     // Utilization should use total utilized (booked + reserved)
                     const totalUtilized = empSchedule.reduce(

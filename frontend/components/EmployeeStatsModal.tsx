@@ -149,7 +149,8 @@ export default function EmployeeStatsModal({ isOpen, onClose, employee, allBooki
     const nowYear = now.getFullYear();
     const nowMonth = now.getMonth() + 1;
 
-    const totalCapacity = settings.work_hours_per_day * settings.work_days_per_month;
+    const effectiveSettings = employee.effective_settings || settings;
+    const totalCapacity = effectiveSettings.work_hours_per_day * effectiveSettings.work_days_per_month;
 
     return employee.schedule.map((sched: any) => {
       const projectBooked = sched.project_booked_hours || 0;
@@ -234,7 +235,8 @@ export default function EmployeeStatsModal({ isOpen, onClose, employee, allBooki
   const totalBooked = monthlyData.reduce((sum: number, m: any) => sum + m.booked, 0);
   const totalReserved = monthlyData.reduce((sum: number, m: any) => sum + m.reserved, 0);
   const totalUtilized = monthlyData.reduce((sum: number, m: any) => sum + m.totalUtilized, 0);
-  const monthlyCapacity = settings.work_hours_per_day * settings.work_days_per_month;
+  const effectiveSettings = employee.effective_settings || settings;
+  const monthlyCapacity = effectiveSettings.work_hours_per_day * effectiveSettings.work_days_per_month;
   const totalCapacity = monthlyCapacity * monthlyData.length;
   const avgUtilization = clampPercent(totalCapacity > 0 ? (totalUtilized / totalCapacity) * 100 : 0);
 
