@@ -1,4 +1,4 @@
-export type UserRole = "line_manager" | "solution_architect" | "dashboard_viewer" | "admin";
+export type UserRole = "line_manager" | "solution_architect" | "dashboard_viewer" | "admin" | "dtmo";
 
 export interface User {
   id: number;

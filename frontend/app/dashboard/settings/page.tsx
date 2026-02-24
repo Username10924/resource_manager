@@ -792,6 +792,7 @@ export default function SettingsPage() {
                           <option value="dashboard_viewer">Dashboard Viewer</option>
                           <option value="line_manager">Line Manager</option>
                           <option value="solution_architect">Solution Architect</option>
+                          <option value="dtmo">DTMO</option>
                           <option value="admin">Admin</option>
                         </select>
                       </div>

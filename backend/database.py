@@ -306,6 +306,22 @@ class Database:
             )
         ''')
 
+        # Update ZAlbattah user role to dtmo
+        cursor.execute("SELECT COUNT(*) FROM users WHERE username = 'ZAlbattah' AND role != 'dtmo'")
+        if cursor.fetchone()[0] > 0:
+            print("Migrating user 'ZAlbattah' role to 'dtmo'...")
+            cursor.execute("UPDATE users SET role = 'dtmo', updated_at = CURRENT_TIMESTAMP WHERE username = 'ZAlbattah'")
+            self.conn.commit()
+            print("ZAlbattah role migration completed!")
+
+        # Rename employee: Santh Chathapuram -> Santhi Venkateswaran
+        cursor.execute("SELECT COUNT(*) FROM employees WHERE full_name = 'Santh Chathapuram'")
+        if cursor.fetchone()[0] > 0:
+            print("Migrating employee name 'Santh Chathapuram' -> 'Santhi Venkateswaran'...")
+            cursor.execute("UPDATE employees SET full_name = 'Santhi Venkateswaran', updated_at = CURRENT_TIMESTAMP WHERE full_name = 'Santh Chathapuram'")
+            self.conn.commit()
+            print("Employee name migration completed!")
+
         # Seed custom business rules for specific employees
         target_employees = ['Ziyad Albattah', 'Khalid Albakr', 'Julian Paglione', 'Tan Mutalib']
         for name in target_employees:

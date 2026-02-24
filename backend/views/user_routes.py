@@ -21,7 +21,7 @@ async def get_solution_architects(current_user: User = Depends(get_current_user)
 async def get_all_users(current_user: User = Depends(get_current_user)):
     """Get all users - requires authentication"""
     # Get all roles
-    roles = ['solution_architect', 'line_manager', 'dashboard_viewer', 'admin']
+    roles = ['solution_architect', 'line_manager', 'dashboard_viewer', 'admin', 'dtmo']
     all_users = []
     for role in roles:
         users = User.get_by_role(role)
@@ -61,7 +61,7 @@ async def create_user(request: Request, current_user: User = Depends(get_current
         )
     
     # Validate role
-    valid_roles = ['admin', 'line_manager', 'solution_architect', 'dashboard_viewer']
+    valid_roles = ['admin', 'line_manager', 'solution_architect', 'dashboard_viewer', 'dtmo']
     if role not in valid_roles:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
