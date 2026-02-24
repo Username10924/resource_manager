@@ -667,7 +667,7 @@ export default function ProjectsPage() {
                       <p className="mt-1 text-xs text-zinc-500 line-clamp-1">{project.description}</p>
                     </div>
                     <span className={`shrink-0 rounded-full px-2.5 py-1 text-[11px] font-medium capitalize ${getStatusColor(project.status)}`}>
-                      {project.status}
+                      {project.status === 'planned' ? 'planning' : project.status}
                     </span>
                   </div>
 
@@ -2849,7 +2849,7 @@ function ProjectDetailsModal({
             <div>
               <h3 className="text-sm font-semibold text-zinc-900 mb-1">Status</h3>
               <span className="inline-block rounded-full px-3 py-1 text-xs font-medium bg-zinc-100 text-zinc-900">
-                {project.status}
+                {project.status === 'planned' ? 'planning' : project.status}
               </span>
             </div>
             <div>
