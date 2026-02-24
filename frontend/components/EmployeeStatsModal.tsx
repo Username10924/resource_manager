@@ -397,7 +397,7 @@ export default function EmployeeStatsModal({ isOpen, onClose, employee, allBooki
                           )}
                         </div>
                         <span className={`shrink-0 inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium ${statusClass}`}>
-                          {proj.project_status.replace('_', ' ')}
+                          {(proj.project_status === 'planned' ? 'planning' : proj.project_status).replace('_', ' ')}
                         </span>
                       </div>
                       <div className="flex items-center justify-between text-xs text-zinc-500">
@@ -598,7 +598,7 @@ export default function EmployeeStatsModal({ isOpen, onClose, employee, allBooki
                                       : 'bg-zinc-100 text-zinc-600'
                                   }`}
                                 >
-                                  {booking.project_status}
+                                  {booking.project_status === 'planned' ? 'planning' : booking.project_status}
                                 </span>
                               </div>
                               <h4 className="text-zinc-900 font-medium mb-1">{booking.project_name}</h4>

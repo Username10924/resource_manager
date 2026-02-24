@@ -133,6 +133,7 @@ function statusBadgeClass(status: string): string {
 }
 
 function statusLabel(status: string): string {
+  if (status === "planned") return "planning";
   return status.replace(/[_-]/g, " ");
 }
 

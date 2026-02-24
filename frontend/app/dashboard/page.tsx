@@ -207,7 +207,7 @@ export default function DashboardPage() {
   const getProjectStatusData = () => {
     if (!projectData) return [];
     return Object.entries(projectData.status_distribution).map(([status, count]) => ({
-      name: status.replace("_", " ").replace(/\b\w/g, (l) => l.toUpperCase()),
+      name: (status === "planned" ? "planning" : status).replace("_", " ").replace(/\b\w/g, (l) => l.toUpperCase()),
       value: count,
     }));
   };
@@ -1159,7 +1159,7 @@ export default function DashboardPage() {
                                 : "bg-red-100 text-red-700"
                             }`}
                           >
-                            {project.status.replace("_", " ")}
+                            {(project.status === "planned" ? "planning" : project.status).replace("_", " ")}
                           </span>
                           <span className="inline-flex items-center rounded-full bg-zinc-100 px-3 py-1 text-xs font-medium text-zinc-700">
                             {project.progress}% complete
@@ -1624,7 +1624,7 @@ function ProjectDetailsModal({
                     : "bg-red-100 text-red-700"
                 }`}
               >
-                {project.status.replace("_", " ")}
+                {(project.status === "planned" ? "planning" : project.status).replace("_", " ")}
               </span>
             </div>
             <div>

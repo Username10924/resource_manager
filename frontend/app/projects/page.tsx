@@ -1957,7 +1957,7 @@ function EditProjectModal({
               value={formData.status}
               onChange={(e) => setFormData({ ...formData, status: e.target.value })}
             >
-              <option value="planned">Planned</option>
+              <option value="planned">Planning</option>
               <option value="active">Active</option>
               <option value="on_hold">On Hold</option>
               <option value="completed">Completed</option>
@@ -3357,7 +3357,7 @@ function BulkImportModal({
                             ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
                             : "bg-zinc-100 text-zinc-600 border border-zinc-200"
                         }`}>
-                          {row.completed ? "completed" : row.progress > 0 ? "active" : "planned"}
+                          {row.completed ? "completed" : row.progress > 0 ? "active" : "planning"}
                         </span>
                       </td>
                     </tr>
