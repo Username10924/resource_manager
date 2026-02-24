@@ -224,11 +224,16 @@ export default function ProjectRoadmapGantt({
   }, [availableYears]);
 
   const currentYear = new Date().getFullYear();
-  const defaultYear: number | "all" = availableYears.includes(currentYear)
+  const defaultYear: number | "all" | "remaining" = availableYears.includes(currentYear)
     ? currentYear
     : availableYears[availableYears.length - 1] ?? currentYear;
 
-  const [selectedYear, setSelectedYear] = useState<number | "all">(defaultYear);
+  const [selectedYear, setSelectedYear] = useState<number | "all" | "remaining">(defaultYear);
+
+  const currentMonthStart = useMemo(() => {
+    const now = new Date();
+    return new Date(now.getFullYear(), now.getMonth(), 1);
+  }, []);
 
   // Rows for the current selection
   const rows = useMemo(() => {
@@ -237,9 +242,14 @@ export default function ProjectRoadmapGantt({
         (a, b) => a.start.getTime() - b.start.getTime() || a.end.getTime() - b.end.getTime()
       );
     }
+    if (selectedYear === "remaining") {
+      return [...allParsed]
+        .filter((p) => p.end >= currentMonthStart)
+        .sort((a, b) => a.start.getTime() - b.start.getTime() || a.end.getTime() - b.end.getTime());
+    }
     const filtered = allParsed.filter((p) => p.start.getFullYear() === selectedYear);
     return filtered.sort((a, b) => a.start.getTime() - b.start.getTime() || a.end.getTime() - b.end.getTime());
-  }, [allParsed, selectedYear]);
+  }, [allParsed, selectedYear, currentMonthStart]);
 
   // Window (start/end of the timeline)
   const { windowStart, windowEnd, months } = useMemo(() => {
@@ -259,6 +269,12 @@ export default function ProjectRoadmapGantt({
         if (p.start < wStart) wStart = new Date(p.start.getFullYear(), 0, 1);
         if (p.end > wEnd) wEnd = new Date(p.end.getFullYear(), p.end.getMonth(), 1);
       });
+    } else if (selectedYear === "remaining") {
+      wStart = new Date(currentMonthStart);
+      wEnd = new Date(currentMonthStart);
+      rows.forEach((p) => {
+        if (p.end > wEnd) wEnd = new Date(p.end.getFullYear(), p.end.getMonth(), 1);
+      });
     } else {
       wStart = new Date(selectedYear, 0, 1);
       wEnd = new Date(selectedYear, 11, 1);
@@ -268,7 +284,7 @@ export default function ProjectRoadmapGantt({
     }
 
     return { windowStart: wStart, windowEnd: wEnd, months: getMonthRange(wStart, wEnd) };
-  }, [selectedYear, rows]);
+  }, [selectedYear, rows, currentMonthStart]);
 
   // Group months by year for header
   const yearGroups = useMemo(() => {
@@ -298,9 +314,9 @@ export default function ProjectRoadmapGantt({
     return index * CELL_WIDTH + dayProgress * CELL_WIDTH;
   }, [windowStart, windowEnd]);
 
-  // For "all" view: group rows by start year to insert separator rows
+  // For "all" / "remaining" view: group rows by start year to insert separator rows
   const rowGroups = useMemo(() => {
-    if (selectedYear !== "all") return null;
+    if (selectedYear !== "all" && selectedYear !== "remaining") return null;
     const groups: { year: number; rows: ParsedProject[] }[] = [];
     rows.forEach((p) => {
       const y = p.start.getFullYear();
@@ -328,6 +344,17 @@ export default function ProjectRoadmapGantt({
           >
             All
           </button>
+          {/* Remaining button */}
+          <button
+            onClick={() => setSelectedYear("remaining")}
+            className={`rounded-md px-3.5 py-1.5 text-sm font-medium transition-all ${
+              selectedYear === "remaining"
+                ? "bg-zinc-800 text-white shadow-sm"
+                : "text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100"
+            }`}
+          >
+            Remaining
+          </button>
           {/* Individual year buttons, each in its palette color when selected */}
           {availableYears.map((year) => {
             const pal = YEAR_PALETTE[yearColorIndex[year]];
@@ -348,8 +375,8 @@ export default function ProjectRoadmapGantt({
             );
           })}
         </div>
-        {/* Year color swatches legend when "All" is active */}
-        {selectedYear === "all" && availableYears.length > 0 && (
+        {/* Year color swatches legend when "All" or "Remaining" is active */}
+        {(selectedYear === "all" || selectedYear === "remaining") && availableYears.length > 0 && (
           <div className="flex flex-wrap items-center gap-2 ml-1">
             {availableYears.map((year) => {
               const pal = YEAR_PALETTE[yearColorIndex[year]];
@@ -389,9 +416,13 @@ export default function ProjectRoadmapGantt({
       {rows.length === 0 ? (
         <div className="rounded-lg border border-dashed border-zinc-300 bg-zinc-50 p-8 text-center">
           <div className="text-sm text-zinc-500">
-            {selectedYear === "all" ? "No projects found" : `No projects starting in ${selectedYear}`}
+            {selectedYear === "all"
+              ? "No projects found"
+              : selectedYear === "remaining"
+              ? "No remaining projects found"
+              : `No projects starting in ${selectedYear}`}
           </div>
-          {selectedYear !== "all" && (
+          {selectedYear !== "all" && selectedYear !== "remaining" && (
             <div className="mt-1 text-xs text-zinc-400">Select a different year to view projects</div>
           )}
         </div>
@@ -453,8 +484,8 @@ export default function ProjectRoadmapGantt({
               </div>
             </div>
 
-            {/* Project rows — grouped when in "all" view */}
-            {selectedYear === "all" && rowGroups
+            {/* Project rows — grouped when in "all" or "remaining" view */}
+            {(selectedYear === "all" || selectedYear === "remaining") && rowGroups
               ? rowGroups.map(({ year, rows: groupRows }) => {
                   const pal = YEAR_PALETTE[yearColorIndex[year] ?? 0];
                   return (

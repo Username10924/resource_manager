@@ -2986,6 +2986,16 @@ function ProjectDetailsModal({
                       <div className="ml-4 text-right">
                         <div className="text-xs text-zinc-500">Total Hours</div>
                         <div className="text-2xl font-bold text-zinc-600">{emp.total_hours}</div>
+                        <div className="text-xs text-zinc-400 mt-0.5">
+                          {(() => {
+                            const totalWd = (emp.bookings as any[]).reduce((sum: number, b: any) => {
+                              const s = new Date((b.start_date || '').slice(0, 10) + 'T00:00:00');
+                              const e = new Date((b.end_date || '').slice(0, 10) + 'T00:00:00');
+                              return sum + calculateWorkingDays(s, e);
+                            }, 0);
+                            return totalWd > 0 ? `${(emp.total_hours / totalWd).toFixed(1)}h/day` : '—';
+                          })()}
+                        </div>
                       </div>
                     </div>
                   </CardContent>
