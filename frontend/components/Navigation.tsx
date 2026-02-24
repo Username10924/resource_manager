@@ -45,7 +45,7 @@ export default function Navigation({ isMobileOpen = false, onMobileClose }: Navi
 
     if (user.role === 'line_manager') {
       baseLinks.push({ href: '/resources', label: 'Resources', icon: FaUsers, section: 'ANALYTICS' });
-    } else if (user.role === 'solution_architect') {
+    } else if (user.role === 'solution_architect' || user.role === 'dtmo') {
       baseLinks.push({ href: '/projects', label: 'Projects', icon: FaProjectDiagram, section: 'ANALYTICS' });
     }
 

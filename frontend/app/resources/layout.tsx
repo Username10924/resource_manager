@@ -15,13 +15,13 @@ export default function ResourcesLayout({
   useEffect(() => {
     if (!isAuthenticated) {
       router.push('/');
-    } else if (user?.role === 'solution_architect') {
-      // Redirect solution architects to projects page
+    } else if (user?.role === 'solution_architect' || user?.role === 'dtmo') {
+      // Redirect solution architects and DTMO users to projects page
       router.push('/projects');
     }
   }, [isAuthenticated, user, router]);
 
-  if (!isAuthenticated || user?.role === 'solution_architect') {
+  if (!isAuthenticated || user?.role === 'solution_architect' || user?.role === 'dtmo') {
     return (
       <div className="flex h-screen items-center justify-center">
         <div className="h-8 w-8 animate-spin rounded-full border-2 border-zinc-200 border-t-zinc-900"></div>

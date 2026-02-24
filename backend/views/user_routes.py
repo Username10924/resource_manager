@@ -13,8 +13,8 @@ async def get_users_by_role(role: str):
 
 @router.get("/architects", response_model=List[Dict[str, Any]])
 async def get_solution_architects(current_user: User = Depends(get_current_user)):
-    """Get all solution architects - requires authentication"""
-    architects = User.get_by_role('solution_architect')
+    """Get all solution architects and DTMO users - requires authentication"""
+    architects = User.get_by_role('solution_architect') + User.get_by_role('dtmo')
     return [architect.to_dict() for architect in architects]
 
 @router.get("", response_model=List[Dict[str, Any]])

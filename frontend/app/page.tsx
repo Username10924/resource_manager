@@ -22,7 +22,7 @@ export default function Home() {
       // Redirect based on role
       if (user.role === 'line_manager') {
         router.push('/resources');
-      } else if (user.role === 'solution_architect') {
+      } else if (user.role === 'solution_architect' || user.role === 'dtmo') {
         router.push('/projects');
       } else if (user.role === 'dashboard_viewer') {
         router.push('/dashboard');
