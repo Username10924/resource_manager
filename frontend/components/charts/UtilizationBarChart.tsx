@@ -5,6 +5,7 @@ interface UtilizationBarChartProps {
     month: string;
     utilization: number;
   }[];
+  onBarClick?: (month: string) => void;
 }
 
 const getBarColor = (utilization: number) => {
@@ -15,10 +16,13 @@ const getBarColor = (utilization: number) => {
   return '#94a3b8';  // slate-400
 };
 
-export default function UtilizationBarChart({ data }: UtilizationBarChartProps) {
+export default function UtilizationBarChart({ data, onBarClick }: UtilizationBarChartProps) {
   return (
     <ResponsiveContainer width="100%" height={300}>
-      <BarChart data={data} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+      <BarChart
+        data={data}
+        margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
+      >
         <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" vertical={false} />
         <XAxis
           dataKey="month"
@@ -44,8 +48,19 @@ export default function UtilizationBarChart({ data }: UtilizationBarChartProps) 
             fontSize: '13px',
           }}
           formatter={(value: number | undefined) => value !== undefined ? [`${value.toFixed(1)}%`, 'Utilization'] : ['', '']}
+          cursor={{ fill: 'rgba(0,0,0,0.05)' }}
         />
-        <Bar dataKey="utilization" radius={[6, 6, 0, 0]} maxBarSize={40}>
+        <Bar
+          dataKey="utilization"
+          radius={[6, 6, 0, 0]}
+          maxBarSize={40}
+          cursor={onBarClick ? 'pointer' : undefined}
+          onClick={(barData) => {
+            if (onBarClick && barData?.month) {
+              onBarClick(barData.month);
+            }
+          }}
+        >
           {data.map((entry, index) => (
             <Cell key={`cell-${index}`} fill={getBarColor(entry.utilization)} />
           ))}

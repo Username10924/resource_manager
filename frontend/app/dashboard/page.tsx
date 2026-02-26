@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import * as XLSX from "xlsx-js-style";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/Card";
@@ -79,6 +79,8 @@ export default function DashboardPage() {
   const [exportEndDate, setExportEndDate] = useState("");
   const [isProjectExportModalOpen, setIsProjectExportModalOpen] = useState(false);
   const [projectExportStartDate, setProjectExportStartDate] = useState("");
+  const [selectedUtilMonth, setSelectedUtilMonth] = useState<string | null>(null);
+  const [isMonthDetailModalOpen, setIsMonthDetailModalOpen] = useState(false);
   const [projectExportEndDate, setProjectExportEndDate] = useState("");
   const { user } = useAuth();
 
@@ -193,6 +195,73 @@ export default function DashboardPage() {
       month: monthNames[parseInt(month) - 1],
       utilization: Math.max(0, data.utilization_rate),
     }));
+  };
+
+  const handleMonthBarClick = (monthName: string) => {
+    setSelectedUtilMonth(monthName);
+    setIsMonthDetailModalOpen(true);
+  };
+
+  const getMonthEmployeeDetails = (monthName: string) => {
+    if (!resourceData) return { employees: [], summary: null };
+    const monthIndex = monthNames.indexOf(monthName) + 1; // 1-12
+    const summary = resourceData.monthly_summary[monthIndex];
+    const employees: {
+      id: number;
+      name: string;
+      department: string;
+      capacity: number;
+      projectBookedHours: number;
+      reservedHours: number;
+      totalBookedHours: number;
+      utilization: number;
+      projects: { name: string; code: string; hours: number }[];
+    }[] = [];
+
+    Object.entries(resourceData.departments).forEach(([dept, deptData]: [string, any]) => {
+      deptData.employees.forEach((emp: any) => {
+        const sched = emp.schedule?.find((s: any) => s.month === monthIndex);
+        if (!sched) return;
+        const year = sched.year ?? new Date().getFullYear();
+        const capacity = (emp.effective_settings?.work_hours_per_day ?? 7) * (emp.effective_settings?.work_days_per_month ?? 18.333);
+        const projectBooked = sched.project_booked_hours ?? 0;
+        const reserved = sched.reserved_hours ?? 0;
+        const totalBooked = sched.booked_hours ?? (projectBooked + reserved);
+        const utilization = capacity > 0 ? (totalBooked / capacity) * 100 : 0;
+
+        // Build per-project breakdown for this month
+        const projectMap: Record<string, { name: string; code: string; hours: number }> = {};
+        allBookings
+          .filter((b: any) => b.employee_id === emp.id && (b.status || '').toLowerCase() !== 'cancelled')
+          .forEach((b: any) => {
+            const hours = calculateMonthlyBookingHours(b.start_date, b.end_date, b.booked_hours, monthIndex, year);
+            if (hours <= 0) return;
+            const key = String(b.project_id);
+            if (!projectMap[key]) {
+              projectMap[key] = { name: b.project_name ?? `Project ${b.project_id}`, code: b.project_code ?? '', hours: 0 };
+            }
+            projectMap[key].hours += hours;
+          });
+        const projects = Object.values(projectMap)
+          .map((p) => ({ ...p, hours: Math.round(p.hours * 10) / 10 }))
+          .sort((a, b) => b.hours - a.hours);
+
+        employees.push({
+          id: emp.id,
+          name: emp.full_name,
+          department: dept,
+          capacity: Math.round(capacity * 10) / 10,
+          projectBookedHours: Math.round(projectBooked * 10) / 10,
+          reservedHours: Math.round(reserved * 10) / 10,
+          totalBookedHours: Math.round(totalBooked * 10) / 10,
+          utilization: Math.round(utilization * 10) / 10,
+          projects,
+        });
+      });
+    });
+
+    employees.sort((a, b) => b.utilization - a.utilization);
+    return { employees, summary };
   };
 
   const getDepartmentPieData = () => {
@@ -953,9 +1022,10 @@ export default function DashboardPage() {
                 <CardTitle className="text-lg font-semibold text-zinc-900">
                   Utilization Rate by Month
                 </CardTitle>
+                <p className="text-xs text-zinc-400 mt-0.5">Click a bar to see employee details</p>
               </CardHeader>
               <CardContent>
-                <UtilizationBarChart data={getUtilizationBarData()} />
+                <UtilizationBarChart data={getUtilizationBarData()} onBarClick={handleMonthBarClick} />
               </CardContent>
             </Card>
 
@@ -1559,6 +1629,105 @@ export default function DashboardPage() {
           bookings={projectBookings}
         />
       )}
+
+      {/* Month Utilization Detail Modal */}
+      {selectedUtilMonth && (() => {
+        const { employees: monthEmps, summary: monthSummary } = getMonthEmployeeDetails(selectedUtilMonth);
+        const utilRate = Math.max(0, monthSummary?.utilization_rate ?? 0);
+        const utilBarColor = utilRate >= 90 ? 'bg-red-500' : utilRate >= 75 ? 'bg-blue-500' : utilRate >= 50 ? 'bg-teal-500' : 'bg-indigo-400';
+        return (
+          <Modal
+            isOpen={isMonthDetailModalOpen}
+            onClose={() => { setIsMonthDetailModalOpen(false); setSelectedUtilMonth(null); }}
+            title={`${selectedUtilMonth} — Utilization Details`}
+            size="5xl"
+          >
+            {/* Month summary banner */}
+            {monthSummary && (
+              <div className="mb-5 rounded-xl border border-zinc-200 bg-zinc-50 px-5 py-4">
+                <div className="flex items-end justify-between mb-2">
+                  <span className="text-sm font-medium text-zinc-500">Overall utilization</span>
+                  <span className={`text-2xl font-bold ${utilRate >= 90 ? 'text-red-600' : utilRate >= 75 ? 'text-blue-600' : utilRate >= 50 ? 'text-teal-600' : 'text-zinc-800'}`}>
+                    {utilRate.toFixed(1)}%
+                  </span>
+                </div>
+                <div className="h-2.5 w-full rounded-full bg-zinc-200 overflow-hidden mb-4">
+                  <div className={`h-full rounded-full transition-all ${utilBarColor}`} style={{ width: `${Math.min(utilRate, 100)}%` }} />
+                </div>
+                <div className="grid grid-cols-3 divide-x divide-zinc-200">
+                  <div className="pr-4">
+                    <p className="text-xs text-zinc-400 font-medium uppercase tracking-wide mb-0.5">Capacity</p>
+                    <p className="text-base font-semibold text-zinc-900">{formatHours(monthSummary.total_capacity)}</p>
+                  </div>
+                  <div className="px-4">
+                    <p className="text-xs text-zinc-400 font-medium uppercase tracking-wide mb-0.5">Booked</p>
+                    <p className="text-base font-semibold text-zinc-900">{formatHours(monthSummary.total_booked)}</p>
+                  </div>
+                  <div className="pl-4">
+                    <p className="text-xs text-zinc-400 font-medium uppercase tracking-wide mb-0.5">Available</p>
+                    <p className="text-base font-semibold text-zinc-900">{formatHours(monthSummary.total_available)}</p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Employee cards */}
+            {monthEmps.length === 0 ? (
+              <p className="text-sm text-zinc-500 text-center py-8">No employee data available for this month.</p>
+            ) : (
+              <div className="space-y-2">
+                {monthEmps.map((emp) => {
+                  const empBarColor = emp.utilization >= 90 ? 'bg-red-500' : emp.utilization >= 75 ? 'bg-blue-500' : emp.utilization >= 50 ? 'bg-teal-500' : emp.utilization >= 25 ? 'bg-indigo-400' : 'bg-zinc-300';
+                  const empTextColor = emp.utilization >= 90 ? 'text-red-600' : emp.utilization >= 75 ? 'text-blue-600' : emp.utilization >= 50 ? 'text-teal-600' : 'text-zinc-700';
+                  return (
+                    <div key={emp.id} className="rounded-lg border border-zinc-200 bg-white px-4 py-3">
+                      {/* Header row */}
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <span className="font-semibold text-zinc-900 text-sm truncate">{emp.name}</span>
+                          <span className="shrink-0 rounded-full bg-zinc-100 px-2 py-0.5 text-xs text-zinc-500 font-medium">{emp.department}</span>
+                        </div>
+                        <span className={`shrink-0 text-sm font-bold ml-3 ${empTextColor}`}>{emp.utilization.toFixed(1)}%</span>
+                      </div>
+
+                      {/* Utilization bar */}
+                      <div className="h-1.5 w-full rounded-full bg-zinc-100 overflow-hidden mb-3">
+                        <div className={`h-full rounded-full ${empBarColor}`} style={{ width: `${Math.min(emp.utilization, 100)}%` }} />
+                      </div>
+
+                      {/* Hours breakdown */}
+                      <div className="flex gap-4 text-xs mb-2.5">
+                        <span className="text-zinc-400">Capacity <span className="font-semibold text-zinc-700">{formatHours(emp.capacity)}</span></span>
+                        <span className="text-zinc-300">|</span>
+                        <span className="text-zinc-400">Project <span className="font-semibold text-zinc-700">{formatHours(emp.projectBookedHours)}</span></span>
+                        <span className="text-zinc-300">|</span>
+                        <span className="text-zinc-400">Reserved <span className="font-semibold text-zinc-700">{formatHours(emp.reservedHours)}</span></span>
+                        <span className="text-zinc-300">|</span>
+                        <span className="text-zinc-400">Total Booked <span className="font-semibold text-zinc-900">{formatHours(emp.totalBookedHours)}</span></span>
+                      </div>
+
+                      {/* Projects */}
+                      {emp.projects.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5 pt-2 border-t border-zinc-100">
+                          {emp.projects.map((proj) => (
+                            <span key={proj.code || proj.name} className="inline-flex items-center gap-1.5 rounded-md bg-zinc-50 border border-zinc-200 px-2.5 py-1 text-xs">
+                              <span className="font-medium text-zinc-800">{proj.name}</span>
+                              {proj.code && <span className="text-zinc-300">·</span>}
+                              {proj.code && <span className="text-zinc-400">{proj.code}</span>}
+                              <span className="text-zinc-300">·</span>
+                              <span className="font-semibold text-zinc-700">{formatHours(proj.hours)}</span>
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </Modal>
+        );
+      })()}
     </div>
   );
 }
