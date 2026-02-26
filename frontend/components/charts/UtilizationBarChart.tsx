@@ -55,7 +55,7 @@ export default function UtilizationBarChart({ data, onBarClick }: UtilizationBar
           radius={[6, 6, 0, 0]}
           maxBarSize={40}
           cursor={onBarClick ? 'pointer' : undefined}
-          onClick={(barData) => {
+          onClick={(barData: any) => {
             if (onBarClick && barData?.month) {
               onBarClick(barData.month);
             }
