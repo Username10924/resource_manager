@@ -15,6 +15,7 @@ import {
   FaUsers,
   FaPlus,
   FaTrash,
+  FaUserCog,
 } from "react-icons/fa";
 
 interface UserData {
@@ -34,7 +35,7 @@ interface Settings {
 
 export default function SettingsPage() {
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState<"config" | "password" | "users">("config");
+  const [activeTab, setActiveTab] = useState<"config" | "password" | "users" | "employee-rules">("config");
   const [settings, setSettings] = useState<Settings>({
     work_hours_per_day: 7,
     work_days_per_month: 18.333333333,
@@ -74,6 +75,18 @@ export default function SettingsPage() {
   const [userError, setUserError] = useState<string | null>(null);
   const [userSuccess, setUserSuccess] = useState<string | null>(null);
 
+  // Employee rules state
+  const [empRuleEmployees, setEmpRuleEmployees] = useState<any[]>([]);
+  const [empRuleEmployeesLoading, setEmpRuleEmployeesLoading] = useState(false);
+  const [selectedEmpId, setSelectedEmpId] = useState<number | "">("");
+  const [empRules, setEmpRules] = useState<{ custom_rules: any; effective_settings: any } | null>(null);
+  const [empRulesLoading, setEmpRulesLoading] = useState(false);
+  const [empRulesForm, setEmpRulesForm] = useState({ work_hours_per_day: "", work_days_per_month: "", months_in_year: "" });
+  const [empRulesSaving, setEmpRulesSaving] = useState(false);
+  const [empRulesResetting, setEmpRulesResetting] = useState(false);
+  const [empRulesError, setEmpRulesError] = useState<string | null>(null);
+  const [empRulesSuccess, setEmpRulesSuccess] = useState<string | null>(null);
+
   useEffect(() => {
     fetchSettings();
   }, []);
@@ -81,6 +94,9 @@ export default function SettingsPage() {
   useEffect(() => {
     if (activeTab === "users") {
       fetchUsers();
+    }
+    if (activeTab === "employee-rules") {
+      fetchEmpRuleEmployees();
     }
   }, [activeTab]);
 
@@ -321,6 +337,115 @@ export default function SettingsPage() {
     }
   };
 
+  const fetchEmpRuleEmployees = async () => {
+    const accessToken = localStorage.getItem("access_token");
+    if (!accessToken) return;
+    try {
+      setEmpRuleEmployeesLoading(true);
+      const response = await fetch("https://dplanner.alkhathlan.dev/api/employees", {
+        headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
+      });
+      if (!response.ok) throw new Error("Failed to fetch employees");
+      const data = await response.json();
+      setEmpRuleEmployees(data.sort((a: any, b: any) => a.full_name.localeCompare(b.full_name)));
+    } catch (err) {
+      setEmpRulesError(err instanceof Error ? err.message : "Failed to load employees");
+    } finally {
+      setEmpRuleEmployeesLoading(false);
+    }
+  };
+
+  const fetchEmpRules = async (empId: number) => {
+    const accessToken = localStorage.getItem("access_token");
+    if (!accessToken) return;
+    try {
+      setEmpRulesLoading(true);
+      setEmpRulesError(null);
+      setEmpRulesSuccess(null);
+      const response = await fetch(`https://dplanner.alkhathlan.dev/api/employees/${empId}/business-rules`, {
+        headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
+      });
+      if (!response.ok) throw new Error("Failed to fetch employee rules");
+      const data = await response.json();
+      setEmpRules(data);
+      const eff = data.effective_settings;
+      setEmpRulesForm({
+        work_hours_per_day: String(eff.work_hours_per_day),
+        work_days_per_month: String(eff.work_days_per_month),
+        months_in_year: String(eff.months_in_year),
+      });
+    } catch (err) {
+      setEmpRulesError(err instanceof Error ? err.message : "Failed to load employee rules");
+    } finally {
+      setEmpRulesLoading(false);
+    }
+  };
+
+  const handleEmpRulesSave = async () => {
+    if (!selectedEmpId) return;
+    const accessToken = localStorage.getItem("access_token");
+    if (!accessToken) return;
+    try {
+      setEmpRulesSaving(true);
+      setEmpRulesError(null);
+      setEmpRulesSuccess(null);
+      const body = {
+        work_hours_per_day: parseFloat(empRulesForm.work_hours_per_day),
+        work_days_per_month: parseFloat(empRulesForm.work_days_per_month),
+        months_in_year: parseInt(empRulesForm.months_in_year),
+      };
+      if (isNaN(body.work_hours_per_day) || isNaN(body.work_days_per_month) || isNaN(body.months_in_year)) {
+        setEmpRulesError("All fields must be valid numbers");
+        return;
+      }
+      const response = await fetch(`https://dplanner.alkhathlan.dev/api/employees/${selectedEmpId}/business-rules`, {
+        method: "PUT",
+        headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      if (!response.ok) throw new Error("Failed to save custom rules");
+      const data = await response.json();
+      setEmpRules(data);
+      setEmpRulesSuccess("Custom rules saved successfully!");
+      setTimeout(() => setEmpRulesSuccess(null), 3000);
+    } catch (err) {
+      setEmpRulesError(err instanceof Error ? err.message : "Failed to save");
+    } finally {
+      setEmpRulesSaving(false);
+    }
+  };
+
+  const handleEmpRulesReset = async () => {
+    if (!selectedEmpId) return;
+    if (!confirm("Remove all custom rules for this employee? They will revert to global defaults.")) return;
+    const accessToken = localStorage.getItem("access_token");
+    if (!accessToken) return;
+    try {
+      setEmpRulesResetting(true);
+      setEmpRulesError(null);
+      setEmpRulesSuccess(null);
+      const response = await fetch(`https://dplanner.alkhathlan.dev/api/employees/${selectedEmpId}/business-rules`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
+      });
+      if (!response.ok) throw new Error("Failed to reset rules");
+      const data = await response.json();
+      const eff = data.effective_settings;
+      setEmpRules({ custom_rules: null, effective_settings: eff });
+      setEmpRulesForm({
+        work_hours_per_day: String(eff.work_hours_per_day),
+        work_days_per_month: String(eff.work_days_per_month),
+        months_in_year: String(eff.months_in_year),
+      });
+      setEmpRulesSuccess("Custom rules removed. Employee now uses global defaults.");
+      setTimeout(() => setEmpRulesSuccess(null), 3000);
+    } catch (err) {
+      setEmpRulesError(err instanceof Error ? err.message : "Failed to reset");
+    } finally {
+      setEmpRulesResetting(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="p-6">
@@ -417,6 +542,21 @@ export default function SettingsPage() {
                 <div className="flex items-center gap-2">
                   <FaUsers />
                   User Management
+                </div>
+              </button>
+            )}
+            {user?.role === "admin" && (
+              <button
+                onClick={() => setActiveTab("employee-rules")}
+                className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
+                  activeTab === "employee-rules"
+                    ? "border-zinc-900 text-zinc-900"
+                    : "border-transparent text-zinc-500 hover:text-zinc-700 hover:border-zinc-300"
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  <FaUserCog />
+                  Employee Rules
                 </div>
               </button>
             )}
@@ -839,6 +979,177 @@ export default function SettingsPage() {
                 </Card>
               </div>
             )}
+          </>
+        )}
+        {/* Employee Rules Tab */}
+        {activeTab === "employee-rules" && user?.role === "admin" && (
+          <>
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <FaUserCog className="text-zinc-500" />
+                  Employee Business Rules
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-6">
+                <p className="text-sm text-zinc-600 mb-5">
+                  Override the global business rules for a specific employee. Only set values that differ from the global defaults — unset fields automatically inherit the system-wide settings.
+                </p>
+
+                {empRulesError && (
+                  <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md text-sm text-red-700">
+                    {empRulesError}
+                  </div>
+                )}
+                {empRulesSuccess && (
+                  <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-md text-sm text-green-700">
+                    {empRulesSuccess}
+                  </div>
+                )}
+
+                {/* Employee selector */}
+                <div className="mb-6">
+                  <label className="block text-sm font-medium text-zinc-700 mb-2">Select Employee</label>
+                  {empRuleEmployeesLoading ? (
+                    <div className="h-10 bg-zinc-100 rounded-md animate-pulse max-w-sm" />
+                  ) : (
+                    <select
+                      value={selectedEmpId}
+                      onChange={(e) => {
+                        const id = e.target.value ? Number(e.target.value) : "";
+                        setSelectedEmpId(id);
+                        setEmpRules(null);
+                        setEmpRulesError(null);
+                        setEmpRulesSuccess(null);
+                        if (id) fetchEmpRules(id as number);
+                      }}
+                      className="block w-full max-w-sm rounded-md border border-zinc-200 px-3 py-2 text-sm transition-colors focus:border-zinc-400 focus:ring-1 focus:ring-zinc-400 focus:outline-none"
+                    >
+                      <option value="">— Choose an employee —</option>
+                      {empRuleEmployees.map((emp) => (
+                        <option key={emp.id} value={emp.id}>
+                          {emp.full_name} {emp.department ? `(${emp.department})` : ""}
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                </div>
+
+                {/* Rules form */}
+                {selectedEmpId && (
+                  empRulesLoading ? (
+                    <div className="space-y-4">
+                      {[1, 2, 3].map((i) => (
+                        <div key={i} className="h-16 bg-zinc-100 rounded-md animate-pulse" />
+                      ))}
+                    </div>
+                  ) : empRules ? (
+                    <>
+                      {/* Status banner */}
+                      <div className={`flex items-center gap-2 rounded-lg px-4 py-3 mb-6 text-sm ${
+                        empRules.custom_rules
+                          ? "bg-amber-50 border border-amber-200 text-amber-800"
+                          : "bg-zinc-50 border border-zinc-200 text-zinc-600"
+                      }`}>
+                        <span className={`inline-block w-2 h-2 rounded-full shrink-0 ${empRules.custom_rules ? "bg-amber-500" : "bg-zinc-400"}`} />
+                        {empRules.custom_rules
+                          ? "This employee has custom business rules that override the global defaults."
+                          : "This employee is using the global default business rules."}
+                      </div>
+
+                      <div className="space-y-5">
+                        {/* Work Hours Per Day */}
+                        <div>
+                          <div className="flex items-center gap-2 mb-2">
+                            <label className="text-sm font-medium text-zinc-700">Work Hours Per Day</label>
+                            {empRules.custom_rules?.work_hours_per_day != null && (
+                              <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-amber-100 text-amber-700">Custom</span>
+                            )}
+                          </div>
+                          <Input
+                            type="number"
+                            min="1"
+                            max="24"
+                            value={empRulesForm.work_hours_per_day}
+                            onChange={(e) => setEmpRulesForm((f) => ({ ...f, work_hours_per_day: e.target.value }))}
+                            className="max-w-xs"
+                          />
+                          <p className="mt-1 text-xs text-zinc-400">
+                            Global default: <span className="font-medium text-zinc-500">{settings.work_hours_per_day}h</span>
+                          </p>
+                        </div>
+
+                        {/* Work Days Per Month */}
+                        <div>
+                          <div className="flex items-center gap-2 mb-2">
+                            <label className="text-sm font-medium text-zinc-700">Work Days Per Month</label>
+                            {empRules.custom_rules?.work_days_per_month != null && (
+                              <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-amber-100 text-amber-700">Custom</span>
+                            )}
+                          </div>
+                          <Input
+                            type="number"
+                            min="1"
+                            max="31"
+                            step="0.5"
+                            value={empRulesForm.work_days_per_month}
+                            onChange={(e) => setEmpRulesForm((f) => ({ ...f, work_days_per_month: e.target.value }))}
+                            className="max-w-xs"
+                          />
+                          <p className="mt-1 text-xs text-zinc-400">
+                            Global default: <span className="font-medium text-zinc-500">{settings.work_days_per_month} days</span>
+                          </p>
+                        </div>
+
+                        {/* Months In Year */}
+                        <div>
+                          <div className="flex items-center gap-2 mb-2">
+                            <label className="text-sm font-medium text-zinc-700">Months In Year</label>
+                            {empRules.custom_rules?.months_in_year != null && (
+                              <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-amber-100 text-amber-700">Custom</span>
+                            )}
+                          </div>
+                          <Input
+                            type="number"
+                            min="1"
+                            max="12"
+                            value={empRulesForm.months_in_year}
+                            onChange={(e) => setEmpRulesForm((f) => ({ ...f, months_in_year: e.target.value }))}
+                            className="max-w-xs"
+                          />
+                          <p className="mt-1 text-xs text-zinc-400">
+                            Global default: <span className="font-medium text-zinc-500">{settings.months_in_year}</span>
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-3 mt-8 pt-6 border-t border-zinc-200">
+                        <Button
+                          onClick={handleEmpRulesSave}
+                          disabled={empRulesSaving || empRulesResetting}
+                          variant="primary"
+                          className="flex items-center gap-2"
+                        >
+                          <FaSave />
+                          {empRulesSaving ? "Saving..." : "Save Custom Rules"}
+                        </Button>
+                        {empRules.custom_rules && (
+                          <Button
+                            onClick={handleEmpRulesReset}
+                            disabled={empRulesSaving || empRulesResetting}
+                            variant="secondary"
+                            className="flex items-center gap-2 text-red-600 hover:text-red-700"
+                          >
+                            <FaUndo />
+                            {empRulesResetting ? "Resetting..." : "Reset to Global Defaults"}
+                          </Button>
+                        )}
+                      </div>
+                    </>
+                  ) : null
+                )}
+              </CardContent>
+            </Card>
           </>
         )}
       </div>
