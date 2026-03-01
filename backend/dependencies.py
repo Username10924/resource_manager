@@ -6,7 +6,7 @@ from models.user import User
 from config import APP_CONFIG
 
 # JWT settings
-SECRET_KEY = "68729ea65bf0e8ef73f74bebb3ba545e"  # key doesn't have to be private since we're only encoding user info.
+SECRET_KEY = "68729ea65bf0e8ef73f74bebb3ba545e"  # change on prod
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 480  # 8 hours
 

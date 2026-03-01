@@ -16,6 +16,7 @@ import DepartmentPieChart from "@/components/charts/DepartmentPieChart";
 import ProjectStatusChart from "@/components/charts/ProjectStatusChart";
 import ProjectProgressChart from "@/components/charts/ProjectProgressChart";
 import ProjectRoadmapGantt from "@/components/charts/ProjectRoadmapGantt";
+import EmployeeRoadmapGantt from "@/components/charts/EmployeeRoadmapGantt";
 import {
   FaUsers,
   FaBuilding,
@@ -1040,6 +1041,22 @@ export default function DashboardPage() {
               </CardContent>
             </Card>
           </div>
+
+          {/* Employee Roadmap Timeline */}
+          <Card className="bg-white border border-zinc-200">
+            <CardHeader>
+              <CardTitle className="text-lg font-semibold text-zinc-900">
+                Employee Roadmap Timeline (Monthly)
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <EmployeeRoadmapGantt
+                employees={Object.values(resourceData.departments).flatMap((d: any) => d.employees)}
+                bookings={allBookings}
+                reservations={allReservations}
+              />
+            </CardContent>
+          </Card>
 
           {/* Departments Breakdown */}
           <Card className="bg-white border border-zinc-200">
