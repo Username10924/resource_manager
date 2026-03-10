@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import * as XLSX from "xlsx-js-style";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/Card";
@@ -83,6 +83,9 @@ export default function DashboardPage() {
   const [selectedUtilMonth, setSelectedUtilMonth] = useState<string | null>(null);
   const [isMonthDetailModalOpen, setIsMonthDetailModalOpen] = useState(false);
   const [projectExportEndDate, setProjectExportEndDate] = useState("");
+  const [employeesSubView, setEmployeesSubView] = useState<"cards" | "table">("cards");
+  const [tableStartDate, setTableStartDate] = useState("");
+  const [tableEndDate, setTableEndDate] = useState("");
   const { user } = useAuth();
 
   const formatHours = (value: number) => {
@@ -162,6 +165,122 @@ export default function DashboardPage() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const getTableRows = (startDate: string, endDate: string) => {
+    if (!startDate || !endDate || !resourceData) return { rows: [], deptRows: [] };
+
+    const rangeStart = new Date(startDate + "T00:00:00");
+    const rangeEnd = new Date(endDate + "T00:00:00");
+
+    const startYear = rangeStart.getFullYear();
+    const startMonth = rangeStart.getMonth();
+    const endYear = rangeEnd.getFullYear();
+    const endMonth = rangeEnd.getMonth();
+    let monthsInRange = 0;
+    for (let y = startYear; y <= endYear; y++) {
+      const mStart = y === startYear ? startMonth : 0;
+      const mEnd = y === endYear ? endMonth : 11;
+      for (let m = mStart; m <= mEnd; m++) {
+        const daysInMonth = new Date(y, m + 1, 0).getDate();
+        const monthStart = new Date(y, m, 1);
+        const monthEnd = new Date(y, m, daysInMonth);
+        const overlapStart = monthStart > rangeStart ? monthStart : rangeStart;
+        const overlapEnd = monthEnd < rangeEnd ? monthEnd : rangeEnd;
+        if (overlapStart <= overlapEnd) {
+          const fractionOfMonth = (overlapEnd.getDate() - overlapStart.getDate() + 1) / daysInMonth;
+          monthsInRange += fractionOfMonth;
+        }
+      }
+    }
+
+    const rows: any[] = [];
+    Object.entries(resourceData.departments).forEach(([dept, deptData]) => {
+      deptData.employees.forEach((emp: any) => {
+        const empSettings = emp.effective_settings || settings;
+        const empWorkHoursPerDay = empSettings.work_hours_per_day ?? settings.work_hours_per_day;
+        const empWorkDaysPerMonth = empSettings.work_days_per_month ?? settings.work_days_per_month;
+        const empMonthsInYear = empSettings.months_in_year ?? settings.months_in_year ?? 12;
+        const empCapacity = monthsInRange * empWorkDaysPerMonth * empWorkHoursPerDay;
+
+        const empBookings = allBookings.filter(
+          (b) =>
+            b.employee_id === emp.id &&
+            (b.status || "").toLowerCase() !== "cancelled" &&
+            b.start_date <= endDate &&
+            b.end_date >= startDate
+        );
+
+        const projectIds = new Set(empBookings.map((b: any) => b.project_id));
+
+        let totalProjectHours = 0;
+        empBookings.forEach((b: any) => {
+          const bStart = new Date(b.start_date + "T00:00:00");
+          const bEnd = new Date(b.end_date + "T00:00:00");
+          const totalDays = calculateWorkingDays(bStart, bEnd);
+          if (totalDays === 0) return;
+          const overlapStart = bStart > rangeStart ? bStart : rangeStart;
+          const overlapEnd = bEnd < rangeEnd ? bEnd : rangeEnd;
+          const overlapDays = calculateWorkingDays(overlapStart, overlapEnd);
+          totalProjectHours += (b.booked_hours || 0) * overlapDays / totalDays;
+        });
+
+        const empReservations = allReservations.filter(
+          (r: any) =>
+            r.employee_id === emp.id &&
+            r.start_date <= endDate &&
+            r.end_date >= startDate
+        );
+
+        let totalReservationHours = 0;
+        empReservations.forEach((r: any) => {
+          const rStart = new Date(r.start_date + "T00:00:00");
+          const rEnd = new Date(r.end_date + "T00:00:00");
+          const overlapStart = rStart > rangeStart ? rStart : rangeStart;
+          const overlapEnd = rEnd < rangeEnd ? rEnd : rangeEnd;
+          const overlapDays = calculateWorkingDays(overlapStart, overlapEnd);
+          totalReservationHours += (r.reserved_hours_per_day || 0) * overlapDays;
+        });
+
+        const utilization = empCapacity > 0
+          ? (totalProjectHours + totalReservationHours) / empCapacity * 100
+          : 0;
+
+        const yearlyCapacity = empWorkHoursPerDay * empWorkDaysPerMonth * empMonthsInYear;
+        const projectPctOfYear = yearlyCapacity > 0 ? totalProjectHours / yearlyCapacity * 100 : 0;
+        const reservationPctOfYear = yearlyCapacity > 0 ? totalReservationHours / yearlyCapacity * 100 : 0;
+        const totalBookedHours = totalProjectHours + totalReservationHours;
+        const totalAvailableHours = Math.max(0, empCapacity - totalBookedHours);
+
+        rows.push({
+          function: dept,
+          employee: emp.full_name,
+          totalBookableHours: Math.round(empCapacity * 10) / 10,
+          totalAvailableHours: Math.round(totalAvailableHours * 10) / 10,
+          totalBookedHours: Math.round(totalBookedHours * 10) / 10,
+          numberOfProjects: projectIds.size,
+          totalProjectHours: Math.round(totalProjectHours * 10) / 10,
+          projectPctOfYear: Math.round(projectPctOfYear * 10) / 10,
+          numberOfReservations: empReservations.length,
+          totalReservationHours: Math.round(totalReservationHours * 10) / 10,
+          reservationPctOfYear: Math.round(reservationPctOfYear * 10) / 10,
+          utilization: Math.round(utilization * 10) / 10,
+        });
+      });
+    });
+
+    const deptMap: Record<string, { totalBooked: number; totalCapacity: number }> = {};
+    rows.forEach((row) => {
+      if (!deptMap[row.function]) deptMap[row.function] = { totalBooked: 0, totalCapacity: 0 };
+      deptMap[row.function].totalBooked += (row.totalProjectHours || 0) + (row.totalReservationHours || 0);
+      deptMap[row.function].totalCapacity += row.totalBookableHours || 0;
+    });
+    const deptRows = Object.entries(deptMap).map(([dept, d]) => ({
+      dept,
+      utilization: d.totalCapacity > 0 ? Math.round(d.totalBooked / d.totalCapacity * 100 * 10) / 10 : 0,
+    }));
+
+    return { rows, deptRows };
   };
 
   const monthNames = [
@@ -1281,7 +1400,7 @@ export default function DashboardPage() {
       {/* Employees by Department View */}
       {viewMode === "employees" && resourceData && !isLoading && (
         <div className="space-y-6">
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
             <StatsCard
               title="TOTAL EMPLOYEES"
               value={resourceData.total_employees}
@@ -1302,8 +1421,34 @@ export default function DashboardPage() {
             />
           </div>
 
-          {/* Employees by Department */}
-          {Object.entries(resourceData.departments).map(([dept, data]) => {
+          {/* Sub-view toggle */}
+          <div className="flex items-center gap-2">
+            <div className="flex rounded-lg border border-zinc-200 bg-zinc-50 p-0.5 gap-0.5">
+              <button
+                onClick={() => setEmployeesSubView("cards")}
+                className={`rounded-md px-4 py-1.5 text-sm font-medium transition-all ${
+                  employeesSubView === "cards"
+                    ? "bg-white text-zinc-900 shadow-sm border border-zinc-200"
+                    : "text-zinc-500 hover:text-zinc-900"
+                }`}
+              >
+                Cards
+              </button>
+              <button
+                onClick={() => setEmployeesSubView("table")}
+                className={`rounded-md px-4 py-1.5 text-sm font-medium transition-all ${
+                  employeesSubView === "table"
+                    ? "bg-white text-zinc-900 shadow-sm border border-zinc-200"
+                    : "text-zinc-500 hover:text-zinc-900"
+                }`}
+              >
+                Table Report
+              </button>
+            </div>
+          </div>
+
+          {/* Cards view */}
+          {employeesSubView === "cards" && Object.entries(resourceData.departments).map(([dept, data]) => {
             // Compute department-level stats from allBookings and allReservations
             const deptEmployeeIds = new Set(data.employees.map((e: any) => e.id));
 
@@ -1481,6 +1626,178 @@ export default function DashboardPage() {
             </Card>
             );
           })}
+
+          {/* Table Report view */}
+          {employeesSubView === "table" && (() => {
+            const today = new Date();
+            const year = today.getFullYear();
+            const todayStr = today.toISOString().slice(0, 10);
+            const yearStartStr = `${year}-01-01`;
+            const yearEndStr = `${year}-12-31`;
+            const quickRanges = [
+              { label: "This Year", start: yearStartStr, end: yearEndStr },
+              { label: "Year from Today", start: todayStr, end: yearEndStr },
+              { label: "1 Month", start: todayStr, end: new Date(today.getFullYear(), today.getMonth() + 1, today.getDate() - 1).toISOString().slice(0, 10) },
+            ];
+            const { rows, deptRows } = getTableRows(tableStartDate, tableEndDate);
+
+            const utilizationCellClass = (val: number) => {
+              if (val >= 75) return "bg-green-100 text-green-800 font-bold";
+              if (val >= 50) return "bg-amber-100 text-amber-800 font-bold";
+              if (val > 0) return "bg-red-100 text-red-800 font-bold";
+              return "text-zinc-500";
+            };
+
+            return (
+              <div className="space-y-6">
+                {/* Date range pickers */}
+                <Card className="bg-white border border-zinc-200">
+                  <CardHeader>
+                    <CardTitle className="text-base font-semibold text-zinc-900">Select Date Range</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      <div className="flex flex-wrap gap-2">
+                        {quickRanges.map((opt) => {
+                          const isActive = tableStartDate === opt.start && tableEndDate === opt.end;
+                          return (
+                            <button
+                              key={opt.label}
+                              onClick={() => { setTableStartDate(opt.start); setTableEndDate(opt.end); }}
+                              className={`rounded-lg px-3 py-1.5 text-sm font-medium transition-all border ${
+                                isActive
+                                  ? "bg-zinc-900 text-white border-zinc-900"
+                                  : "bg-white text-zinc-600 border-zinc-200 hover:border-zinc-400 hover:text-zinc-900"
+                              }`}
+                            >
+                              {opt.label}
+                            </button>
+                          );
+                        })}
+                      </div>
+                      <div className="flex flex-wrap gap-3 items-end">
+                        <div>
+                          <label className="block text-xs font-medium text-zinc-600 mb-1">Start Date</label>
+                          <input
+                            type="date"
+                            value={tableStartDate}
+                            onChange={(e) => setTableStartDate(e.target.value)}
+                            className="rounded-lg border border-zinc-300 px-3 py-2 text-sm focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-medium text-zinc-600 mb-1">End Date</label>
+                          <input
+                            type="date"
+                            value={tableEndDate}
+                            onChange={(e) => setTableEndDate(e.target.value)}
+                            className="rounded-lg border border-zinc-300 px-3 py-2 text-sm focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {!tableStartDate || !tableEndDate ? (
+                  <Card className="bg-white border border-zinc-200">
+                    <CardContent className="pt-10 pb-10">
+                      <p className="text-center text-sm text-zinc-400">Select a date range above to view the report.</p>
+                    </CardContent>
+                  </Card>
+                ) : (
+                  <>
+                    {/* Main employee table */}
+                    <Card className="bg-white border border-zinc-200">
+                      <CardHeader>
+                        <CardTitle className="text-base font-semibold text-zinc-900">
+                          Employee Report: {tableStartDate} to {tableEndDate}
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="p-0">
+                        <DragScrollContainer className="overflow-x-auto">
+                          <table className="w-full text-sm border-collapse">
+                            <thead>
+                              <tr className="bg-zinc-900 text-white">
+                                <th className="px-4 py-3 text-left font-semibold whitespace-nowrap border border-zinc-700">Function</th>
+                                <th className="px-4 py-3 text-left font-semibold whitespace-nowrap border border-zinc-700">Employee</th>
+                                <th className="px-4 py-3 text-right font-semibold whitespace-nowrap border border-zinc-700">Bookable Hours</th>
+                                <th className="px-4 py-3 text-right font-semibold whitespace-nowrap border border-zinc-700">Available Hours</th>
+                                <th className="px-4 py-3 text-right font-semibold whitespace-nowrap border border-zinc-700">Booked Hours</th>
+                                <th className="px-4 py-3 text-center font-semibold whitespace-nowrap border border-zinc-700"># Projects</th>
+                                <th className="px-4 py-3 text-right font-semibold whitespace-nowrap border border-zinc-700">Project Hours</th>
+                                <th className="px-4 py-3 text-center font-semibold whitespace-nowrap border border-zinc-700">Project % of Year</th>
+                                <th className="px-4 py-3 text-center font-semibold whitespace-nowrap border border-zinc-700"># Reservations</th>
+                                <th className="px-4 py-3 text-right font-semibold whitespace-nowrap border border-zinc-700">Reservation Hours</th>
+                                <th className="px-4 py-3 text-center font-semibold whitespace-nowrap border border-zinc-700">Reservation % of Year</th>
+                                <th className="px-4 py-3 text-center font-semibold whitespace-nowrap border border-zinc-700">Utilization %</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {rows.map((row, i) => (
+                                <tr key={i} className={i % 2 === 1 ? "bg-zinc-50" : "bg-white"}>
+                                  <td className="px-4 py-2.5 font-semibold text-zinc-800 whitespace-nowrap border border-zinc-200">{row.function}</td>
+                                  <td className="px-4 py-2.5 text-zinc-700 whitespace-nowrap border border-zinc-200">{row.employee}</td>
+                                  <td className="px-4 py-2.5 text-right text-zinc-700 tabular-nums border border-zinc-200">{row.totalBookableHours.toLocaleString()}</td>
+                                  <td className="px-4 py-2.5 text-right text-zinc-700 tabular-nums border border-zinc-200">{row.totalAvailableHours.toLocaleString()}</td>
+                                  <td className="px-4 py-2.5 text-right text-zinc-700 tabular-nums border border-zinc-200">{row.totalBookedHours.toLocaleString()}</td>
+                                  <td className="px-4 py-2.5 text-center text-zinc-700 tabular-nums border border-zinc-200">{row.numberOfProjects}</td>
+                                  <td className="px-4 py-2.5 text-right text-zinc-700 tabular-nums border border-zinc-200">{row.totalProjectHours.toLocaleString()}</td>
+                                  <td className="px-4 py-2.5 text-center text-zinc-700 tabular-nums border border-zinc-200">{row.projectPctOfYear.toFixed(1)}%</td>
+                                  <td className="px-4 py-2.5 text-center text-zinc-700 tabular-nums border border-zinc-200">{row.numberOfReservations}</td>
+                                  <td className="px-4 py-2.5 text-right text-zinc-700 tabular-nums border border-zinc-200">{row.totalReservationHours.toLocaleString()}</td>
+                                  <td className="px-4 py-2.5 text-center text-zinc-700 tabular-nums border border-zinc-200">{row.reservationPctOfYear.toFixed(1)}%</td>
+                                  <td className={`px-4 py-2.5 text-center tabular-nums border border-zinc-200 ${utilizationCellClass(row.utilization)}`}>
+                                    {row.utilization.toFixed(1)}%
+                                  </td>
+                                </tr>
+                              ))}
+                              {rows.length === 0 && (
+                                <tr>
+                                  <td colSpan={12} className="px-4 py-8 text-center text-zinc-400 text-sm">No data available for the selected date range.</td>
+                                </tr>
+                              )}
+                            </tbody>
+                          </table>
+                        </DragScrollContainer>
+                      </CardContent>
+                    </Card>
+
+                    {/* Department utilization summary */}
+                    {deptRows.length > 0 && (
+                      <Card className="bg-white border border-zinc-200">
+                        <CardHeader>
+                          <CardTitle className="text-base font-semibold text-zinc-900">Department Utilization Summary</CardTitle>
+                        </CardHeader>
+                        <CardContent className="p-0">
+                          <DragScrollContainer className="overflow-x-auto">
+                            <table className="w-full text-sm border-collapse">
+                              <thead>
+                                <tr className="bg-zinc-900 text-white">
+                                  <th className="px-4 py-3 text-left font-semibold border border-zinc-700">Department</th>
+                                  <th className="px-4 py-3 text-center font-semibold border border-zinc-700">Utilization %</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {deptRows.map((dr, i) => (
+                                  <tr key={dr.dept} className={i % 2 === 1 ? "bg-zinc-50" : "bg-white"}>
+                                    <td className="px-4 py-2.5 font-semibold text-zinc-800 border border-zinc-200">{dr.dept}</td>
+                                    <td className={`px-4 py-2.5 text-center tabular-nums border border-zinc-200 ${utilizationCellClass(dr.utilization)}`}>
+                                      {dr.utilization.toFixed(1)}%
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </DragScrollContainer>
+                        </CardContent>
+                      </Card>
+                    )}
+                  </>
+                )}
+              </div>
+            );
+          })()}
         </div>
       )}
 
@@ -1745,6 +2062,45 @@ export default function DashboardPage() {
           </Modal>
         );
       })()}
+    </div>
+  );
+}
+
+function DragScrollContainer({ children, className }: { children: React.ReactNode; className?: string }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const isDragging = useRef(false);
+  const startX = useRef(0);
+  const startScrollLeft = useRef(0);
+
+  const onMouseDown = (e: React.MouseEvent) => {
+    isDragging.current = true;
+    startX.current = e.clientX;
+    startScrollLeft.current = ref.current?.scrollLeft ?? 0;
+    if (ref.current) ref.current.style.cursor = "grabbing";
+  };
+
+  const onMouseMove = (e: React.MouseEvent) => {
+    if (!isDragging.current || !ref.current) return;
+    e.preventDefault();
+    ref.current.scrollLeft = startScrollLeft.current - (e.clientX - startX.current);
+  };
+
+  const stopDrag = () => {
+    isDragging.current = false;
+    if (ref.current) ref.current.style.cursor = "grab";
+  };
+
+  return (
+    <div
+      ref={ref}
+      className={className}
+      style={{ cursor: "grab", userSelect: "none" }}
+      onMouseDown={onMouseDown}
+      onMouseMove={onMouseMove}
+      onMouseUp={stopDrag}
+      onMouseLeave={stopDrag}
+    >
+      {children}
     </div>
   );
 }

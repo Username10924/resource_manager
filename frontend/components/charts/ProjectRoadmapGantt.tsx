@@ -12,6 +12,7 @@ type RoadmapProject = {
   end_date: string | null;
   architect_name?: string | null;
   ba_name?: string | null;
+  priority?: number | null;
 };
 
 type BookingForGantt = {
@@ -33,6 +34,7 @@ type ParsedProject = {
   status: string;
   progress: number;
   businessUnit: string;
+  priority: number | null;
   start: Date;
   end: Date;
 };
@@ -203,6 +205,7 @@ export default function ProjectRoadmapGantt({
           status: (project.status || "unknown").toLowerCase(),
           progress: project.progress ?? 0,
           businessUnit: project.business_unit || "",
+          priority: project.priority ?? null,
           start,
           end,
         } as ParsedProject;
@@ -231,26 +234,62 @@ export default function ProjectRoadmapGantt({
 
   const [selectedYear, setSelectedYear] = useState<number | "all" | "remaining">(defaultYear);
 
+  // Priority filter state
+  const availablePriorities = useMemo(() => {
+    const set = new Set<number>();
+    allParsed.forEach((p) => { if (p.priority != null) set.add(p.priority); });
+    return Array.from(set).sort((a, b) => a - b);
+  }, [allParsed]);
+
+  const [selectedPriorities, setSelectedPriorities] = useState<number[]>([]);
+  const [priorityDropdownOpen, setPriorityDropdownOpen] = useState(false);
+  const priorityDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (priorityDropdownRef.current && !priorityDropdownRef.current.contains(e.target as Node)) {
+        setPriorityDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  const togglePriority = (p: number) => {
+    setSelectedPriorities((prev) =>
+      prev.includes(p) ? prev.filter((x) => x !== p) : [...prev, p]
+    );
+  };
+
   const currentMonthStart = useMemo(() => {
     const now = new Date();
     return new Date(now.getFullYear(), now.getMonth(), 1);
   }, []);
 
-  // Rows for the current selection
+  // Rows for the current selection (year + priority)
   const rows = useMemo(() => {
+    let base: ParsedProject[];
     if (selectedYear === "all") {
-      return [...allParsed].sort(
+      base = [...allParsed].sort(
         (a, b) => a.start.getTime() - b.start.getTime() || a.end.getTime() - b.end.getTime()
       );
-    }
-    if (selectedYear === "remaining") {
-      return [...allParsed]
+    } else if (selectedYear === "remaining") {
+      base = [...allParsed]
         .filter((p) => p.end >= currentMonthStart)
         .sort((a, b) => a.start.getTime() - b.start.getTime() || a.end.getTime() - b.end.getTime());
+    } else {
+      base = allParsed
+        .filter((p) => p.start.getFullYear() === selectedYear)
+        .sort((a, b) => a.start.getTime() - b.start.getTime() || a.end.getTime() - b.end.getTime());
     }
-    const filtered = allParsed.filter((p) => p.start.getFullYear() === selectedYear);
-    return filtered.sort((a, b) => a.start.getTime() - b.start.getTime() || a.end.getTime() - b.end.getTime());
-  }, [allParsed, selectedYear, currentMonthStart]);
+
+    if (selectedPriorities.length > 0) {
+      base = base.filter((p) => p.priority != null && selectedPriorities.includes(p.priority));
+    }
+
+    return base;
+  }, [allParsed, selectedYear, currentMonthStart, selectedPriorities]);
 
   // Window (start/end of the timeline)
   const { windowStart, windowEnd, months } = useMemo(() => {
@@ -328,69 +367,140 @@ export default function ProjectRoadmapGantt({
     return groups;
   }, [selectedYear, rows]);
 
+  const priorityLabel =
+    selectedPriorities.length === 0
+      ? "All Priorities"
+      : selectedPriorities.length === 1
+      ? `P${selectedPriorities[0]}`
+      : `${selectedPriorities.length} priorities`;
+
   return (
     <div className="space-y-4">
-      {/* Year selector */}
-      <div className="flex flex-wrap items-center gap-2">
-        <span className="text-sm font-medium text-zinc-600">Year:</span>
-        <div className="flex flex-wrap rounded-lg border border-zinc-200 bg-zinc-50 p-0.5 gap-0.5">
-          {/* All button */}
-          <button
-            onClick={() => setSelectedYear("all")}
-            className={`rounded-md px-3.5 py-1.5 text-sm font-medium transition-all ${
-              selectedYear === "all"
-                ? "bg-zinc-800 text-white shadow-sm"
-                : "text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100"
-            }`}
-          >
-            All
-          </button>
-          {/* Remaining button */}
-          <button
-            onClick={() => setSelectedYear("remaining")}
-            className={`rounded-md px-3.5 py-1.5 text-sm font-medium transition-all ${
-              selectedYear === "remaining"
-                ? "bg-zinc-800 text-white shadow-sm"
-                : "text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100"
-            }`}
-          >
-            Remaining
-          </button>
-          {/* Individual year buttons, each in its palette color when selected */}
-          {availableYears.map((year) => {
-            const pal = YEAR_PALETTE[yearColorIndex[year]];
-            const isSelected = selectedYear === year;
-            return (
-              <button
-                key={year}
-                onClick={() => setSelectedYear(year)}
-                style={isSelected ? { backgroundColor: pal.accent, color: "#fff" } : undefined}
-                className={`rounded-md px-3.5 py-1.5 text-sm font-medium transition-all ${
-                  isSelected
-                    ? "shadow-sm"
-                    : "text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100"
-                }`}
-              >
-                {year}
-              </button>
-            );
-          })}
-        </div>
-        {/* Year color swatches legend when "All" or "Remaining" is active */}
-        {(selectedYear === "all" || selectedYear === "remaining") && availableYears.length > 0 && (
-          <div className="flex flex-wrap items-center gap-2 ml-1">
+      {/* Filters row */}
+      <div className="flex flex-wrap items-center gap-3">
+        {/* Year selector */}
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-sm font-medium text-zinc-600">Year:</span>
+          <div className="flex flex-wrap rounded-lg border border-zinc-200 bg-zinc-50 p-0.5 gap-0.5">
+            {/* All button */}
+            <button
+              onClick={() => setSelectedYear("all")}
+              className={`rounded-md px-3.5 py-1.5 text-sm font-medium transition-all ${
+                selectedYear === "all"
+                  ? "bg-zinc-800 text-white shadow-sm"
+                  : "text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100"
+              }`}
+            >
+              All
+            </button>
+            {/* Remaining button */}
+            <button
+              onClick={() => setSelectedYear("remaining")}
+              className={`rounded-md px-3.5 py-1.5 text-sm font-medium transition-all ${
+                selectedYear === "remaining"
+                  ? "bg-zinc-800 text-white shadow-sm"
+                  : "text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100"
+              }`}
+            >
+              Remaining
+            </button>
+            {/* Individual year buttons, each in its palette color when selected */}
             {availableYears.map((year) => {
               const pal = YEAR_PALETTE[yearColorIndex[year]];
+              const isSelected = selectedYear === year;
               return (
-                <span key={year} className="flex items-center gap-1 text-xs font-medium" style={{ color: pal.accent }}>
-                  <span className="inline-block h-2.5 w-2.5 rounded-sm" style={{ backgroundColor: pal.accent }} />
+                <button
+                  key={year}
+                  onClick={() => setSelectedYear(year)}
+                  style={isSelected ? { backgroundColor: pal.accent, color: "#fff" } : undefined}
+                  className={`rounded-md px-3.5 py-1.5 text-sm font-medium transition-all ${
+                    isSelected
+                      ? "shadow-sm"
+                      : "text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100"
+                  }`}
+                >
                   {year}
-                </span>
+                </button>
               );
             })}
           </div>
+          {/* Year color swatches legend when "All" or "Remaining" is active */}
+          {(selectedYear === "all" || selectedYear === "remaining") && availableYears.length > 0 && (
+            <div className="flex flex-wrap items-center gap-2 ml-1">
+              {availableYears.map((year) => {
+                const pal = YEAR_PALETTE[yearColorIndex[year]];
+                return (
+                  <span key={year} className="flex items-center gap-1 text-xs font-medium" style={{ color: pal.accent }}>
+                    <span className="inline-block h-2.5 w-2.5 rounded-sm" style={{ backgroundColor: pal.accent }} />
+                    {year}
+                  </span>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* Priority multi-select dropdown */}
+        {availablePriorities.length > 0 && (
+          <div className="relative" ref={priorityDropdownRef}>
+            <button
+              onClick={() => setPriorityDropdownOpen((o) => !o)}
+              className={`flex items-center gap-2 rounded-lg border px-3 py-1.5 text-sm font-medium transition-all ${
+                selectedPriorities.length > 0
+                  ? "border-zinc-900 bg-zinc-900 text-white"
+                  : "border-zinc-200 bg-white text-zinc-600 hover:border-zinc-300 hover:text-zinc-900"
+              }`}
+            >
+              <span>Priority: {priorityLabel}</span>
+              <svg
+                className={`h-3.5 w-3.5 transition-transform ${priorityDropdownOpen ? "rotate-180" : ""}`}
+                viewBox="0 0 12 12"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+              >
+                <path d="M2 4l4 4 4-4" />
+              </svg>
+            </button>
+
+            {priorityDropdownOpen && (
+              <div className="absolute left-0 top-full mt-1 z-30 w-52 rounded-xl border border-zinc-200 bg-white shadow-lg ring-1 ring-black/5">
+                <div className="p-2">
+                  {/* Clear button */}
+                  <button
+                    onClick={() => setSelectedPriorities([])}
+                    className="w-full rounded-md px-3 py-1.5 text-left text-xs font-medium text-zinc-500 hover:bg-zinc-50 hover:text-zinc-900 transition-colors"
+                  >
+                    Clear selection
+                  </button>
+                  <div className="my-1 h-px bg-zinc-100" />
+                  {availablePriorities.map((p) => {
+                    const checked = selectedPriorities.includes(p);
+                    return (
+                      <label
+                        key={p}
+                        className="flex cursor-pointer items-center gap-2.5 rounded-md px-3 py-1.5 text-sm text-zinc-700 hover:bg-zinc-50 transition-colors"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          onChange={() => togglePriority(p)}
+                          className="h-4 w-4 rounded border-zinc-300 accent-zinc-900"
+                        />
+                        <span className="font-medium">P{p}</span>
+                        <span className="text-xs text-zinc-400">
+                          {p === 1 ? "— highest" : p === availablePriorities[availablePriorities.length - 1] ? "— lowest" : ""}
+                        </span>
+                      </label>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
         )}
-        <span className="ml-1 text-xs text-zinc-400">
+
+        <span className="text-xs text-zinc-400">
           {rows.length} project{rows.length !== 1 ? "s" : ""}
         </span>
       </div>
@@ -422,9 +532,10 @@ export default function ProjectRoadmapGantt({
               : selectedYear === "remaining"
               ? "No remaining projects found"
               : `No projects starting in ${selectedYear}`}
+            {selectedPriorities.length > 0 && " matching the selected priorities"}
           </div>
           {selectedYear !== "all" && selectedYear !== "remaining" && (
-            <div className="mt-1 text-xs text-zinc-400">Select a different year to view projects</div>
+            <div className="mt-1 text-xs text-zinc-400">Select a different year or adjust the priority filter</div>
           )}
         </div>
       ) : (
@@ -534,6 +645,11 @@ export default function ProjectRoadmapGantt({
             <p className="truncate text-[11px] font-semibold text-white leading-tight">
               {tooltip.project.name}
             </p>
+            {tooltip.project.priority != null && (
+              <span className="inline-block mt-0.5 rounded bg-zinc-700 px-1.5 py-0.5 text-[10px] font-medium text-zinc-300">
+                P{tooltip.project.priority}
+              </span>
+            )}
             <div className="my-1.5 h-px bg-zinc-700" />
             {tooltip.pmBa.length > 0 && (
               <ul className="mb-1.5 space-y-0.5">
@@ -627,6 +743,11 @@ export default function ProjectRoadmapGantt({
             >
               {statusLabel(project.status)}
             </span>
+            {project.priority != null && (
+              <span className="inline-flex shrink-0 items-center rounded bg-zinc-100 px-1.5 py-0.5 text-[10px] font-semibold text-zinc-600">
+                P{project.priority}
+              </span>
+            )}
           </div>
           <div className="mt-1 text-[11px] text-zinc-400">
             {formatMonthYear(project.start)} — {formatMonthYear(project.end)}
