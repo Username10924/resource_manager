@@ -88,6 +88,9 @@ class Project:
                 'project_id': m['project_id'],
                 'name': m['name'],
                 'date': m['date'],
+                'start_date': m.get('start_date') or m['date'],
+                'end_date': m.get('end_date') or m['date'],
+                'status': m.get('status') or 'not_started',
                 'description': m.get('description'),
                 'resources': json.loads(m['resources']) if m.get('resources') else [],
             })
@@ -173,7 +176,7 @@ class Project:
 
     def get_milestones(self) -> List[Dict]:
         rows = db.fetch_all(
-            'SELECT * FROM project_milestones WHERE project_id = ? ORDER BY date ASC',
+            'SELECT * FROM project_milestones WHERE project_id = ? ORDER BY COALESCE(start_date, date) ASC',
             (self.id,)
         )
         return [{
@@ -181,17 +184,23 @@ class Project:
             'project_id': r['project_id'],
             'name': r['name'],
             'date': r['date'],
+            'start_date': r.get('start_date') or r['date'],
+            'end_date': r.get('end_date') or r['date'],
+            'status': r.get('status') or 'not_started',
             'description': r.get('description'),
             'resources': json.loads(r['resources']) if r.get('resources') else [],
         } for r in rows]
 
     def add_milestone(self, name: str, date_val: str, description: str = None,
-                      resources: List[Dict] = None) -> Dict:
+                      resources: List[Dict] = None, start_date: str = None,
+                      end_date: str = None, status: str = 'not_started') -> Dict:
         resources_json = json.dumps(resources or [])
+        sd = start_date or date_val
+        ed = end_date or date_val
         cursor = db.execute(
-            '''INSERT INTO project_milestones (project_id, name, date, description, resources)
-               VALUES (?, ?, ?, ?, ?)''',
-            (self.id, name, date_val, description, resources_json)
+            '''INSERT INTO project_milestones (project_id, name, date, start_date, end_date, status, description, resources)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?)''',
+            (self.id, name, ed, sd, ed, status, description, resources_json)
         )
         db.commit()
         row = db.fetch_one('SELECT * FROM project_milestones WHERE id = ?', (cursor.lastrowid,))
@@ -200,18 +209,31 @@ class Project:
             'project_id': row['project_id'],
             'name': row['name'],
             'date': row['date'],
+            'start_date': row.get('start_date') or row['date'],
+            'end_date': row.get('end_date') or row['date'],
+            'status': row.get('status') or 'not_started',
             'description': row.get('description'),
             'resources': json.loads(row['resources']) if row.get('resources') else [],
         }
 
     @staticmethod
     def update_milestone(milestone_id: int, name: str = None, date_val: str = None,
-                         description: str = None, resources: List[Dict] = None) -> Optional[Dict]:
+                         description: str = None, resources: List[Dict] = None,
+                         start_date: str = None, end_date: str = None,
+                         status: str = None) -> Optional[Dict]:
         updates, params = [], []
         if name is not None:
             updates.append('name = ?'); params.append(name)
-        if date_val is not None:
+        if end_date is not None:
+            updates.append('end_date = ?'); params.append(end_date)
+            updates.append('date = ?'); params.append(end_date)
+        elif date_val is not None:
             updates.append('date = ?'); params.append(date_val)
+            updates.append('end_date = ?'); params.append(date_val)
+        if start_date is not None:
+            updates.append('start_date = ?'); params.append(start_date)
+        if status is not None:
+            updates.append('status = ?'); params.append(status)
         if description is not None:
             updates.append('description = ?'); params.append(description)
         if resources is not None:
@@ -229,6 +251,9 @@ class Project:
             'project_id': row['project_id'],
             'name': row['name'],
             'date': row['date'],
+            'start_date': row.get('start_date') or row['date'],
+            'end_date': row.get('end_date') or row['date'],
+            'status': row.get('status') or 'not_started',
             'description': row.get('description'),
             'resources': json.loads(row['resources']) if row.get('resources') else [],
         }

@@ -197,12 +197,12 @@ export const projectAPI = {
       method: "POST",
       body: JSON.stringify(data),
     }),
-  createMilestone: (projectId: number, data: { name: string; date: string; description?: string; resources?: MilestoneResource[] }) =>
+  createMilestone: (projectId: number, data: { name: string; start_date: string; end_date: string; status?: string; description?: string; resources?: MilestoneResource[] }) =>
     fetchAPI(`/projects/${projectId}/milestones`, {
       method: "POST",
       body: JSON.stringify(data),
     }),
-  updateMilestone: (projectId: number, milestoneId: number, data: { name?: string; date?: string; description?: string; resources?: MilestoneResource[] }) =>
+  updateMilestone: (projectId: number, milestoneId: number, data: { name?: string; start_date?: string; end_date?: string; status?: string; description?: string; resources?: MilestoneResource[] }) =>
     fetchAPI(`/projects/${projectId}/milestones/${milestoneId}`, {
       method: "PUT",
       body: JSON.stringify(data),
@@ -320,6 +320,9 @@ export type Milestone = {
   project_id: number;
   name: string;
   date: string;
+  start_date: string;
+  end_date: string;
+  status: string;
   description?: string | null;
   resources: MilestoneResource[];
 };

@@ -92,15 +92,21 @@ class ProjectUpdate(BaseModel):
     priority: Optional[int] = PydanticField(default=None, ge=1, le=12)
     is_baselined: Optional[bool] = None
 
+MILESTONE_STATUSES = {'not_started', 'in_progress', 'completed'}
+
 class MilestoneCreate(BaseModel):
     name: str
-    date: date
+    start_date: date
+    end_date: date
+    status: Optional[str] = 'not_started'
     description: Optional[str] = None
     resources: Optional[List[Dict[str, Any]]] = []
 
 class MilestoneUpdate(BaseModel):
     name: Optional[str] = None
-    date: Optional[date] = None
+    start_date: Optional[date] = None
+    end_date: Optional[date] = None
+    status: Optional[str] = None
     description: Optional[str] = None
     resources: Optional[List[Dict[str, Any]]] = None
 
@@ -177,14 +183,20 @@ async def create_milestone(project_id: int, milestone: MilestoneCreate):
     project = Project.get_by_id(project_id)
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
-    # Validate date within project range
-    if project.start_date and str(milestone.date) < str(project.start_date):
-        raise HTTPException(status_code=400, detail="Milestone date must be within the project date range")
-    if project.end_date and str(milestone.date) > str(project.end_date):
-        raise HTTPException(status_code=400, detail="Milestone date must be within the project date range")
+    if str(milestone.end_date) < str(milestone.start_date):
+        raise HTTPException(status_code=400, detail="Milestone end date must be on or after start date")
+    if milestone.status and milestone.status not in MILESTONE_STATUSES:
+        raise HTTPException(status_code=400, detail=f"Invalid status. Must be one of: {', '.join(MILESTONE_STATUSES)}")
+    if project.start_date and str(milestone.start_date) < str(project.start_date):
+        raise HTTPException(status_code=400, detail="Milestone start date must be within the project date range")
+    if project.end_date and str(milestone.end_date) > str(project.end_date):
+        raise HTTPException(status_code=400, detail="Milestone end date must be within the project date range")
     result = project.add_milestone(
         name=milestone.name,
-        date_val=str(milestone.date),
+        date_val=str(milestone.end_date),
+        start_date=str(milestone.start_date),
+        end_date=str(milestone.end_date),
+        status=milestone.status or 'not_started',
         description=milestone.description,
         resources=milestone.resources or [],
     )
@@ -199,16 +211,22 @@ async def update_milestone(project_id: int, milestone_id: int, update: Milestone
     if not existing:
         raise HTTPException(status_code=404, detail="Milestone not found")
     project = Project.get_by_id(project_id)
-    date_val = str(update.date) if update.date else None
-    if date_val:
-        if project.start_date and date_val < str(project.start_date):
-            raise HTTPException(status_code=400, detail="Milestone date must be within the project date range")
-        if project.end_date and date_val > str(project.end_date):
-            raise HTTPException(status_code=400, detail="Milestone date must be within the project date range")
+    if update.status and update.status not in MILESTONE_STATUSES:
+        raise HTTPException(status_code=400, detail=f"Invalid status. Must be one of: {', '.join(MILESTONE_STATUSES)}")
+    sd = str(update.start_date) if update.start_date else None
+    ed = str(update.end_date) if update.end_date else None
+    if sd and ed and ed < sd:
+        raise HTTPException(status_code=400, detail="Milestone end date must be on or after start date")
+    if sd and project.start_date and sd < str(project.start_date):
+        raise HTTPException(status_code=400, detail="Milestone start date must be within the project date range")
+    if ed and project.end_date and ed > str(project.end_date):
+        raise HTTPException(status_code=400, detail="Milestone end date must be within the project date range")
     result = Project.update_milestone(
         milestone_id=milestone_id,
         name=update.name,
-        date_val=date_val,
+        start_date=sd,
+        end_date=ed,
+        status=update.status,
         description=update.description,
         resources=update.resources,
     )

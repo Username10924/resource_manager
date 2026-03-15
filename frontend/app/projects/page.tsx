@@ -1042,8 +1042,8 @@ function CreateProjectModal({
   const [isDragging, setIsDragging] = useState(false);
   const [allProjects, setAllProjects] = useState<Project[]>([]);
   const [isBaselined, setIsBaselined] = useState(false);
-  const [pendingMilestones, setPendingMilestones] = useState<{ name: string; date: string; description: string; resources: any[] }[]>([]);
-  const [newMilestone, setNewMilestone] = useState({ name: "", date: "", description: "", resources: [] as any[] });
+  const [pendingMilestones, setPendingMilestones] = useState<{ name: string; start_date: string; end_date: string; status: string; description: string; resources: any[] }[]>([]);
+  const [newMilestone, setNewMilestone] = useState({ name: "", start_date: "", end_date: "", status: "not_started", description: "", resources: [] as any[] });
   const [milestoneResourceSearch, setMilestoneResourceSearch] = useState("");
   const [formData, setFormData] = useState({
     project_code: "",
@@ -1064,7 +1064,7 @@ function CreateProjectModal({
       setEmployeeSearch("");
       setIsBaselined(false);
       setPendingMilestones([]);
-      setNewMilestone({ name: "", date: "", description: "", resources: [] });
+      setNewMilestone({ name: "", start_date: "", end_date: "", status: "not_started", description: "", resources: [] });
       setMilestoneResourceSearch("");
     }
   }, [isOpen]);
@@ -1188,7 +1188,7 @@ function CreateProjectModal({
       if (pendingMilestones.length > 0 && projectId) {
         for (const m of pendingMilestones) {
           try {
-            await projectAPI.createMilestone(projectId, { name: m.name, date: m.date, description: m.description || undefined, resources: m.resources });
+            await projectAPI.createMilestone(projectId, { name: m.name, start_date: m.start_date, end_date: m.end_date, status: m.status, description: m.description || undefined, resources: m.resources });
           } catch (err) {
             console.error("[CREATE] Error creating milestone:", err);
           }
@@ -1619,7 +1619,8 @@ function CreateProjectModal({
                     <div className="min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
                         <span className="text-sm font-medium text-zinc-900">{m.name}</span>
-                        <span className="text-xs text-zinc-500">{m.date}</span>
+                        <span className="text-xs text-zinc-500">{m.start_date} → {m.end_date}</span>
+                        <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${m.status === "completed" ? "bg-emerald-100 text-emerald-700" : m.status === "in_progress" ? "bg-orange-100 text-orange-700" : "bg-zinc-100 text-zinc-600"}`}>{m.status.replace("_", " ")}</span>
                         {m.resources.length > 0 && (
                           <span className="text-xs text-blue-600">{m.resources.length} resource{m.resources.length !== 1 ? "s" : ""}</span>
                         )}
@@ -1652,22 +1653,48 @@ function CreateProjectModal({
               value={newMilestone.name}
               onChange={(e) => setNewMilestone({ ...newMilestone, name: e.target.value })}
             />
-            <div className="grid grid-cols-2 gap-2">
-              <input
-                type="date"
-                className="rounded border border-zinc-200 bg-white px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-zinc-400"
-                value={newMilestone.date}
-                min={formData.start_date || undefined}
-                max={formData.end_date || undefined}
-                onChange={(e) => setNewMilestone({ ...newMilestone, date: e.target.value })}
-              />
-              <input
-                className="rounded border border-zinc-200 bg-white px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-zinc-400"
-                placeholder="Description (optional)"
-                value={newMilestone.description}
-                onChange={(e) => setNewMilestone({ ...newMilestone, description: e.target.value })}
-              />
+            <div className="grid grid-cols-3 gap-2">
+              <div>
+                <label className="block text-[10px] text-zinc-500 mb-0.5">Start Date *</label>
+                <input
+                  type="date"
+                  className="w-full rounded border border-zinc-200 bg-white px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-zinc-400"
+                  value={newMilestone.start_date}
+                  min={formData.start_date || undefined}
+                  max={formData.end_date || undefined}
+                  onChange={(e) => setNewMilestone({ ...newMilestone, start_date: e.target.value })}
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] text-zinc-500 mb-0.5">End Date *</label>
+                <input
+                  type="date"
+                  className="w-full rounded border border-zinc-200 bg-white px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-zinc-400"
+                  value={newMilestone.end_date}
+                  min={newMilestone.start_date || formData.start_date || undefined}
+                  max={formData.end_date || undefined}
+                  onChange={(e) => setNewMilestone({ ...newMilestone, end_date: e.target.value })}
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] text-zinc-500 mb-0.5">Status</label>
+                <select
+                  className="w-full rounded border border-zinc-200 bg-white px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-zinc-400"
+                  value={newMilestone.status}
+                  onChange={(e) => setNewMilestone({ ...newMilestone, status: e.target.value })}
+                >
+                  <option value="not_started">Not Started</option>
+                  <option value="in_progress">In Progress</option>
+                  <option value="completed">Completed</option>
+                </select>
+              </div>
             </div>
+            <input
+              className="w-full rounded border border-zinc-200 bg-white px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-zinc-400"
+              placeholder="Description (optional)"
+              value={newMilestone.description}
+              onChange={(e) => setNewMilestone({ ...newMilestone, description: e.target.value })}
+            />
             {/* Resource assignment */}
             <div>
               <p className="text-xs text-zinc-500 mb-1">Assign resources (visual only)</p>
@@ -1698,10 +1725,10 @@ function CreateProjectModal({
             </div>
             <button type="button"
               className="rounded-md bg-zinc-900 px-3 py-1.5 text-xs font-medium text-white disabled:opacity-50"
-              disabled={!newMilestone.name || !newMilestone.date}
+              disabled={!newMilestone.name || !newMilestone.start_date || !newMilestone.end_date}
               onClick={() => {
                 setPendingMilestones(prev => [...prev, { ...newMilestone }]);
-                setNewMilestone({ name: "", date: "", description: "", resources: [] });
+                setNewMilestone({ name: "", start_date: "", end_date: "", status: "not_started", description: "", resources: [] });
                 setMilestoneResourceSearch("");
               }}>
               Add Milestone
@@ -1741,7 +1768,7 @@ function EditProjectModal({
   const [isBaselined, setIsBaselined] = useState<boolean>(!!project.is_baselined);
   const [milestones, setMilestones] = useState<any[]>(project.milestones || []);
   const [milestoneError, setMilestoneError] = useState("");
-  const [newMilestone, setNewMilestone] = useState({ name: "", date: "", description: "", resources: [] as any[] });
+  const [newMilestone, setNewMilestone] = useState({ name: "", start_date: "", end_date: "", status: "not_started", description: "", resources: [] as any[] });
   const [editingMilestoneId, setEditingMilestoneId] = useState<number | null>(null);
   const [editingMilestone, setEditingMilestone] = useState<any>(null);
   const [milestoneResourceSearch, setMilestoneResourceSearch] = useState("");
@@ -1777,7 +1804,7 @@ function EditProjectModal({
       });
       setIsBaselined(!!project.is_baselined);
       setMilestones(project.milestones || []);
-      setNewMilestone({ name: "", date: "", description: "", resources: [] });
+      setNewMilestone({ name: "", start_date: "", end_date: "", status: "not_started", description: "", resources: [] });
       setEditingMilestoneId(null);
       setEditingMilestone(null);
       setMilestoneError("");
@@ -2307,22 +2334,48 @@ function EditProjectModal({
                         onChange={(e) => setEditingMilestone({ ...editingMilestone, name: e.target.value })}
                         placeholder="Milestone name"
                       />
-                      <div className="grid grid-cols-2 gap-2">
-                        <input
-                          type="date"
-                          className="rounded border border-zinc-200 px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-zinc-400"
-                          value={editingMilestone.date}
-                          min={formData.start_date || undefined}
-                          max={formData.end_date || undefined}
-                          onChange={(e) => setEditingMilestone({ ...editingMilestone, date: e.target.value })}
-                        />
-                        <input
-                          className="rounded border border-zinc-200 px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-zinc-400"
-                          value={editingMilestone.description || ""}
-                          onChange={(e) => setEditingMilestone({ ...editingMilestone, description: e.target.value })}
-                          placeholder="Description (optional)"
-                        />
+                      <div className="grid grid-cols-3 gap-2">
+                        <div>
+                          <label className="block text-[10px] text-zinc-500 mb-0.5">Start Date</label>
+                          <input
+                            type="date"
+                            className="w-full rounded border border-zinc-200 px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-zinc-400"
+                            value={editingMilestone.start_date || ""}
+                            min={formData.start_date || undefined}
+                            max={formData.end_date || undefined}
+                            onChange={(e) => setEditingMilestone({ ...editingMilestone, start_date: e.target.value })}
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] text-zinc-500 mb-0.5">End Date</label>
+                          <input
+                            type="date"
+                            className="w-full rounded border border-zinc-200 px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-zinc-400"
+                            value={editingMilestone.end_date || ""}
+                            min={editingMilestone.start_date || formData.start_date || undefined}
+                            max={formData.end_date || undefined}
+                            onChange={(e) => setEditingMilestone({ ...editingMilestone, end_date: e.target.value })}
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] text-zinc-500 mb-0.5">Status</label>
+                          <select
+                            className="w-full rounded border border-zinc-200 px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-zinc-400"
+                            value={editingMilestone.status || "not_started"}
+                            onChange={(e) => setEditingMilestone({ ...editingMilestone, status: e.target.value })}
+                          >
+                            <option value="not_started">Not Started</option>
+                            <option value="in_progress">In Progress</option>
+                            <option value="completed">Completed</option>
+                          </select>
+                        </div>
                       </div>
+                      <input
+                        className="w-full rounded border border-zinc-200 px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-zinc-400"
+                        value={editingMilestone.description || ""}
+                        onChange={(e) => setEditingMilestone({ ...editingMilestone, description: e.target.value })}
+                        placeholder="Description (optional)"
+                      />
                       {/* Resource assignment for edit */}
                       <div>
                         <p className="text-xs text-zinc-500 mb-1">Assigned resources (visual only)</p>
@@ -2355,7 +2408,7 @@ function EditProjectModal({
                         <button type="button" className="rounded-md bg-zinc-900 px-3 py-1.5 text-xs font-medium text-white"
                           onClick={async () => {
                             try {
-                              const res = await projectAPI.updateMilestone(project.id, m.id, { name: editingMilestone.name, date: editingMilestone.date, description: editingMilestone.description, resources: editingMilestone.resources });
+                              const res = await projectAPI.updateMilestone(project.id, m.id, { name: editingMilestone.name, start_date: editingMilestone.start_date, end_date: editingMilestone.end_date, status: editingMilestone.status, description: editingMilestone.description, resources: editingMilestone.resources });
                               setMilestones(prev => prev.map(x => x.id === m.id ? res.milestone : x));
                               setEditingMilestoneId(null);
                               setEditingMilestone(null);
@@ -2369,7 +2422,15 @@ function EditProjectModal({
                       <div className="min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
                           <span className="text-sm font-medium text-zinc-900">{m.name}</span>
-                          <span className="text-xs text-zinc-500">{m.date}</span>
+                          <span className="text-xs text-zinc-500">{m.start_date || m.date} → {m.end_date || m.date}</span>
+                          {(() => {
+                            const today = new Date(); today.setHours(0,0,0,0);
+                            const ed = new Date((m.end_date || m.date) + "T00:00:00");
+                            const isDelayed = m.status !== "completed" && ed < today;
+                            const displayStatus = isDelayed ? "delayed" : (m.status || "not_started");
+                            const cls = displayStatus === "completed" ? "bg-emerald-100 text-emerald-700" : displayStatus === "in_progress" ? "bg-orange-100 text-orange-700" : displayStatus === "delayed" ? "bg-red-100 text-red-700" : "bg-zinc-100 text-zinc-600";
+                            return <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${cls}`}>{displayStatus.replace("_", " ")}</span>;
+                          })()}
                           {m.resources?.length > 0 && (
                             <span className="text-xs text-blue-600">{m.resources.length} resource{m.resources.length !== 1 ? "s" : ""}</span>
                           )}
@@ -2409,22 +2470,48 @@ function EditProjectModal({
               value={newMilestone.name}
               onChange={(e) => setNewMilestone({ ...newMilestone, name: e.target.value })}
             />
-            <div className="grid grid-cols-2 gap-2">
-              <input
-                type="date"
-                className="rounded border border-zinc-200 bg-white px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-zinc-400"
-                value={newMilestone.date}
-                min={formData.start_date || undefined}
-                max={formData.end_date || undefined}
-                onChange={(e) => setNewMilestone({ ...newMilestone, date: e.target.value })}
-              />
-              <input
-                className="rounded border border-zinc-200 bg-white px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-zinc-400"
-                placeholder="Description (optional)"
-                value={newMilestone.description}
-                onChange={(e) => setNewMilestone({ ...newMilestone, description: e.target.value })}
-              />
+            <div className="grid grid-cols-3 gap-2">
+              <div>
+                <label className="block text-[10px] text-zinc-500 mb-0.5">Start Date *</label>
+                <input
+                  type="date"
+                  className="w-full rounded border border-zinc-200 bg-white px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-zinc-400"
+                  value={newMilestone.start_date}
+                  min={formData.start_date || undefined}
+                  max={formData.end_date || undefined}
+                  onChange={(e) => setNewMilestone({ ...newMilestone, start_date: e.target.value })}
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] text-zinc-500 mb-0.5">End Date *</label>
+                <input
+                  type="date"
+                  className="w-full rounded border border-zinc-200 bg-white px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-zinc-400"
+                  value={newMilestone.end_date}
+                  min={newMilestone.start_date || formData.start_date || undefined}
+                  max={formData.end_date || undefined}
+                  onChange={(e) => setNewMilestone({ ...newMilestone, end_date: e.target.value })}
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] text-zinc-500 mb-0.5">Status</label>
+                <select
+                  className="w-full rounded border border-zinc-200 bg-white px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-zinc-400"
+                  value={newMilestone.status}
+                  onChange={(e) => setNewMilestone({ ...newMilestone, status: e.target.value })}
+                >
+                  <option value="not_started">Not Started</option>
+                  <option value="in_progress">In Progress</option>
+                  <option value="completed">Completed</option>
+                </select>
+              </div>
             </div>
+            <input
+              className="w-full rounded border border-zinc-200 bg-white px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-zinc-400"
+              placeholder="Description (optional)"
+              value={newMilestone.description}
+              onChange={(e) => setNewMilestone({ ...newMilestone, description: e.target.value })}
+            />
             {/* Resource assignment */}
             <div>
               <p className="text-xs text-zinc-500 mb-1">Assign resources (visual only)</p>
@@ -2456,13 +2543,13 @@ function EditProjectModal({
             {milestoneError && <p className="text-xs text-red-500">{milestoneError}</p>}
             <button type="button"
               className="rounded-md bg-zinc-900 px-3 py-1.5 text-xs font-medium text-white disabled:opacity-50"
-              disabled={!newMilestone.name || !newMilestone.date}
+              disabled={!newMilestone.name || !newMilestone.start_date || !newMilestone.end_date}
               onClick={async () => {
                 setMilestoneError("");
                 try {
-                  const res = await projectAPI.createMilestone(project.id, { name: newMilestone.name, date: newMilestone.date, description: newMilestone.description || undefined, resources: newMilestone.resources });
+                  const res = await projectAPI.createMilestone(project.id, { name: newMilestone.name, start_date: newMilestone.start_date, end_date: newMilestone.end_date, status: newMilestone.status, description: newMilestone.description || undefined, resources: newMilestone.resources });
                   setMilestones(prev => [...prev, res.milestone]);
-                  setNewMilestone({ name: "", date: "", description: "", resources: [] });
+                  setNewMilestone({ name: "", start_date: "", end_date: "", status: "not_started", description: "", resources: [] });
                 } catch (err: any) { setMilestoneError(err.message); }
               }}>
               Add Milestone

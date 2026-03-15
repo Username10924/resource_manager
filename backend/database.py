@@ -312,6 +312,9 @@ class Database:
                 project_id INTEGER NOT NULL,
                 name TEXT NOT NULL,
                 date DATE NOT NULL,
+                start_date DATE,
+                end_date DATE,
+                status TEXT DEFAULT 'not_started',
                 description TEXT,
                 resources TEXT DEFAULT '[]',
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -320,6 +323,21 @@ class Database:
             )
         ''')
         self.conn.commit()
+
+        # Add start_date, end_date, status to project_milestones if missing (migration for existing tables)
+        cursor.execute('PRAGMA table_info(project_milestones)')
+        milestone_cols = [row[1] for row in cursor.fetchall()]
+        if 'start_date' not in milestone_cols:
+            cursor.execute('ALTER TABLE project_milestones ADD COLUMN start_date DATE')
+            cursor.execute('UPDATE project_milestones SET start_date = date WHERE start_date IS NULL')
+            self.conn.commit()
+        if 'end_date' not in milestone_cols:
+            cursor.execute('ALTER TABLE project_milestones ADD COLUMN end_date DATE')
+            cursor.execute('UPDATE project_milestones SET end_date = date WHERE end_date IS NULL')
+            self.conn.commit()
+        if 'status' not in milestone_cols:
+            cursor.execute("ALTER TABLE project_milestones ADD COLUMN status TEXT DEFAULT 'not_started'")
+            self.conn.commit()
 
         # Create employee_business_rules table if not yet created (needed before seeding below)
         cursor.execute('''
