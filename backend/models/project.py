@@ -19,9 +19,12 @@ class Project:
         self.end_date = kwargs.get('end_date')
         self.priority = kwargs.get('priority', 1)
         self.attachments = json.loads(kwargs['attachments']) if kwargs.get('attachments') else []
+        self.is_baselined = bool(kwargs.get('is_baselined', False))
+        self.baseline_start_date = kwargs.get('baseline_start_date')
+        self.baseline_end_date = kwargs.get('baseline_end_date')
         self.created_at = kwargs.get('created_at')
         self.updated_at = kwargs.get('updated_at')
-    
+
     @staticmethod
     def create(project_code: str, name: str, description: str,
                solution_architect_id: int, business_unit: str = None, start_date: date = None,
@@ -37,7 +40,7 @@ class Project:
                                    start_date, end_date, priority, attachments_json, business_analyst_id))
         db.commit()
         return Project.get_by_id(cursor.lastrowid)
-    
+
     @staticmethod
     def get_by_id(project_id: int) -> Optional['Project']:
         query = '''
@@ -48,23 +51,22 @@ class Project:
         '''
         row = db.fetch_one(query, (project_id,))
         return Project(**row) if row else None
-    
+
     @staticmethod
     def get_by_code(project_code: str) -> Optional['Project']:
         query = 'SELECT * FROM projects WHERE project_code = ?'
         row = db.fetch_one(query, (project_code,))
         return Project(**row) if row else None
-    
+
     @staticmethod
     def get_by_architect(architect_id: int) -> List['Project']:
         query = 'SELECT * FROM projects WHERE solution_architect_id = ? ORDER BY created_at DESC'
         rows = db.fetch_all(query, (architect_id,))
         projects = [Project(**row) for row in rows]
-        # Convert to dict to get parsed attachments
         return [p.to_dict() for p in projects]
-    
+
     @staticmethod
-    def get_all() -> List['Project']:
+    def get_all() -> List[Dict]:
         query = '''
             SELECT p.*, u.full_name as architect_name, e.full_name as ba_name
             FROM projects p
@@ -73,7 +75,23 @@ class Project:
             ORDER BY p.created_at DESC
         '''
         rows = db.fetch_all(query)
-        # Parse attachments JSON for each row
+
+        # Fetch all milestones once and group by project_id
+        all_milestones = db.fetch_all('SELECT * FROM project_milestones ORDER BY date ASC')
+        milestones_by_project: Dict[int, List] = {}
+        for m in all_milestones:
+            pid = m['project_id']
+            if pid not in milestones_by_project:
+                milestones_by_project[pid] = []
+            milestones_by_project[pid].append({
+                'id': m['id'],
+                'project_id': m['project_id'],
+                'name': m['name'],
+                'date': m['date'],
+                'description': m.get('description'),
+                'resources': json.loads(m['resources']) if m.get('resources') else [],
+            })
+
         for row in rows:
             if row.get('attachments'):
                 try:
@@ -82,12 +100,14 @@ class Project:
                     row['attachments'] = []
             else:
                 row['attachments'] = []
+            row['is_baselined'] = bool(row.get('is_baselined', False))
+            row['milestones'] = milestones_by_project.get(row['id'], [])
         return rows
-    
+
     def update(self, **kwargs) -> 'Project':
         updates = []
         params = []
-        
+
         if 'name' in kwargs:
             updates.append('name = ?')
             params.append(kwargs['name'])
@@ -119,55 +139,117 @@ class Project:
             updates.append('business_analyst_id = ?')
             params.append(kwargs['business_analyst_id'])
         if 'attachments' in kwargs:
-            attachments_json = json.dumps(kwargs['attachments'])
             updates.append('attachments = ?')
-            params.append(attachments_json)
-        
+            params.append(json.dumps(kwargs['attachments']))
+        if 'is_baselined' in kwargs:
+            new_val = bool(kwargs['is_baselined'])
+            updates.append('is_baselined = ?')
+            params.append(int(new_val))
+            # Auto-snapshot dates when first baselining
+            if new_val and not self.baseline_start_date:
+                updates.append('baseline_start_date = ?')
+                params.append(self.start_date)
+                updates.append('baseline_end_date = ?')
+                params.append(self.end_date)
+
         if updates:
             updates.append('updated_at = CURRENT_TIMESTAMP')
             params.append(self.id)
             query = f'UPDATE projects SET {", ".join(updates)} WHERE id = ?'
             db.execute(query, tuple(params))
             db.commit()
-        
+
         return Project.get_by_id(self.id)
-    
+
     def delete(self) -> bool:
-        """Delete the project and all its bookings"""
         try:
-            # First delete all associated bookings
-            query = 'DELETE FROM project_bookings WHERE project_id = ?'
-            db.execute(query, (self.id,))
-            
-            # Then delete the project
-            query = 'DELETE FROM projects WHERE id = ?'
-            db.execute(query, (self.id,))
+            db.execute('DELETE FROM project_milestones WHERE project_id = ?', (self.id,))
+            db.execute('DELETE FROM project_bookings WHERE project_id = ?', (self.id,))
+            db.execute('DELETE FROM projects WHERE id = ?', (self.id,))
             db.commit()
             return True
         except Exception as e:
-            db.rollback()
             raise Exception(f'Failed to delete project: {str(e)}')
-    
+
+    def get_milestones(self) -> List[Dict]:
+        rows = db.fetch_all(
+            'SELECT * FROM project_milestones WHERE project_id = ? ORDER BY date ASC',
+            (self.id,)
+        )
+        return [{
+            'id': r['id'],
+            'project_id': r['project_id'],
+            'name': r['name'],
+            'date': r['date'],
+            'description': r.get('description'),
+            'resources': json.loads(r['resources']) if r.get('resources') else [],
+        } for r in rows]
+
+    def add_milestone(self, name: str, date_val: str, description: str = None,
+                      resources: List[Dict] = None) -> Dict:
+        resources_json = json.dumps(resources or [])
+        cursor = db.execute(
+            '''INSERT INTO project_milestones (project_id, name, date, description, resources)
+               VALUES (?, ?, ?, ?, ?)''',
+            (self.id, name, date_val, description, resources_json)
+        )
+        db.commit()
+        row = db.fetch_one('SELECT * FROM project_milestones WHERE id = ?', (cursor.lastrowid,))
+        return {
+            'id': row['id'],
+            'project_id': row['project_id'],
+            'name': row['name'],
+            'date': row['date'],
+            'description': row.get('description'),
+            'resources': json.loads(row['resources']) if row.get('resources') else [],
+        }
+
+    @staticmethod
+    def update_milestone(milestone_id: int, name: str = None, date_val: str = None,
+                         description: str = None, resources: List[Dict] = None) -> Optional[Dict]:
+        updates, params = [], []
+        if name is not None:
+            updates.append('name = ?'); params.append(name)
+        if date_val is not None:
+            updates.append('date = ?'); params.append(date_val)
+        if description is not None:
+            updates.append('description = ?'); params.append(description)
+        if resources is not None:
+            updates.append('resources = ?'); params.append(json.dumps(resources))
+        if updates:
+            updates.append('updated_at = CURRENT_TIMESTAMP')
+            params.append(milestone_id)
+            db.execute(f'UPDATE project_milestones SET {", ".join(updates)} WHERE id = ?', tuple(params))
+            db.commit()
+        row = db.fetch_one('SELECT * FROM project_milestones WHERE id = ?', (milestone_id,))
+        if not row:
+            return None
+        return {
+            'id': row['id'],
+            'project_id': row['project_id'],
+            'name': row['name'],
+            'date': row['date'],
+            'description': row.get('description'),
+            'resources': json.loads(row['resources']) if row.get('resources') else [],
+        }
+
+    @staticmethod
+    def delete_milestone(milestone_id: int) -> bool:
+        db.execute('DELETE FROM project_milestones WHERE id = ?', (milestone_id,))
+        db.commit()
+        return True
+
     def add_booking(self, employee_id: int, start_date: date, end_date: date,
                    booked_hours: float, role: str = None) -> Dict[str, Any]:
-        """Book an employee for this project with date range"""
         if end_date < start_date:
             raise ValueError("End date must be after start date")
-        
-        # Check if employee exists
         from models.employee import Employee
         employee = Employee.get_by_id(employee_id)
         if not employee:
             raise ValueError("Employee not found")
-        
-        # Note: For now, we're removing the complex availability checking
-        # as it was tied to monthly schedules. You may want to implement
-        # a new availability checking system based on date ranges.
-        
-        # Check for overlapping bookings
         check_query = '''
-            SELECT id, booked_hours, start_date, end_date FROM project_bookings 
-            WHERE project_id = ? AND employee_id = ? 
+            SELECT id, booked_hours, start_date, end_date FROM project_bookings
+            WHERE project_id = ? AND employee_id = ?
                 AND status != 'cancelled'
                 AND (
                     (start_date <= ? AND end_date >= ?)
@@ -176,19 +258,16 @@ class Project:
                 )
         '''
         existing_booking = db.fetch_one(check_query, (
-            self.id, employee_id, 
-            start_date, start_date,  # Check if existing booking overlaps start_date
-            end_date, end_date,      # Check if existing booking overlaps end_date
-            start_date, end_date     # Check if new booking fully contains existing
+            self.id, employee_id,
+            start_date, start_date,
+            end_date, end_date,
+            start_date, end_date
         ))
-        
         if existing_booking:
             raise ValueError(
                 f"Overlapping booking exists from {existing_booking['start_date']} "
                 f"to {existing_booking['end_date']}. Please adjust the dates or cancel the existing booking."
             )
-        
-        # Create new booking
         query = '''
             INSERT INTO project_bookings (project_id, employee_id, start_date, end_date,
                                         booked_hours, role)
@@ -196,9 +275,8 @@ class Project:
         '''
         cursor = db.execute(query, (self.id, employee_id, start_date, end_date, booked_hours, role))
         db.commit()
-        
         return {'booking_id': cursor.lastrowid, 'message': 'Booking successful'}
-    
+
     def get_bookings(self) -> List[Dict[str, Any]]:
         query = '''
             SELECT pb.*, e.full_name, e.department
@@ -208,14 +286,13 @@ class Project:
             ORDER BY pb.start_date DESC
         '''
         return db.fetch_all(query, (self.id,))
-    
+
     def get_date_range_bookings(self, start_date: date, end_date: date) -> List[Dict[str, Any]]:
-        """Get bookings that overlap with the given date range"""
         query = '''
             SELECT pb.*, e.full_name, e.department
             FROM project_bookings pb
             JOIN employees e ON pb.employee_id = e.id
-            WHERE pb.project_id = ? 
+            WHERE pb.project_id = ?
                 AND pb.status != 'cancelled'
                 AND (
                     (pb.start_date <= ? AND pb.end_date >= ?)
@@ -225,21 +302,20 @@ class Project:
             ORDER BY pb.start_date, e.full_name
         '''
         return db.fetch_all(query, (
-            self.id, 
+            self.id,
             start_date, start_date,
             end_date, end_date,
             start_date, end_date
         ))
-    
+
     def to_dict(self) -> Dict[str, Any]:
-        # Helper to format dates - they might be strings or date objects from DB
         def format_date(d):
             if d is None:
                 return None
             if isinstance(d, str):
-                return d  # Already a string, return as-is
-            return d.isoformat()  # Date object, convert to ISO format
-        
+                return d
+            return d.isoformat()
+
         return {
             'id': self.id,
             'project_code': self.project_code,
@@ -255,6 +331,10 @@ class Project:
             'end_date': format_date(self.end_date),
             'priority': self.priority,
             'attachments': self.attachments,
+            'is_baselined': self.is_baselined,
+            'baseline_start_date': format_date(self.baseline_start_date),
+            'baseline_end_date': format_date(self.baseline_end_date),
+            'milestones': self.get_milestones(),
             'created_at': self.created_at,
-            'updated_at': self.updated_at
+            'updated_at': self.updated_at,
         }

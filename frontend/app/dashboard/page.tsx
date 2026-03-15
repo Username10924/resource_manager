@@ -16,6 +16,7 @@ import DepartmentPieChart from "@/components/charts/DepartmentPieChart";
 import ProjectStatusChart from "@/components/charts/ProjectStatusChart";
 import ProjectProgressChart from "@/components/charts/ProjectProgressChart";
 import ProjectRoadmapGantt from "@/components/charts/ProjectRoadmapGantt";
+import ProjectMilestonesChart from "@/components/charts/ProjectMilestonesChart";
 import EmployeeRoadmapGantt from "@/components/charts/EmployeeRoadmapGantt";
 import {
   FaUsers,
@@ -818,7 +819,8 @@ export default function DashboardPage() {
     const fixedHeaders = [
       "Project Code", "Project Name", "Description", "Business Unit",
       "Project Manager", "Business Analyst", "Start Date", "End Date", "Status",
-      "Completion %", "Duration", "Priority", "Total Booked Hours",
+      "Completion %", "Duration", "Priority", "Is Baselined",
+      "Baseline Start", "Baseline End", "Dates Modified", "Total Booked Hours",
     ];
     const resourceHeaders = sortedResourceNames;
     const trailingHeaders = ["Number of Resources"];
@@ -827,6 +829,10 @@ export default function DashboardPage() {
     // Build data rows
     const rows = projectRows.map((pr) => {
       const proj = pr.project;
+      const isBaselined = !!proj.is_baselined;
+      const startModified = isBaselined && proj.baseline_start_date && proj.start_date !== proj.baseline_start_date;
+      const endModified = isBaselined && proj.baseline_end_date && proj.end_date !== proj.baseline_end_date;
+      const datesModified = startModified || endModified;
       const row: any = {
         "Project Code": proj.project_code || "",
         "Project Name": proj.name || "",
@@ -840,6 +846,10 @@ export default function DashboardPage() {
         "Completion %": proj.progress || 0,
         "Duration": pr.duration,
         "Priority": proj.priority || "",
+        "Is Baselined": isBaselined ? "Yes" : "No",
+        "Baseline Start": proj.baseline_start_date || "",
+        "Baseline End": proj.baseline_end_date || "",
+        "Dates Modified": datesModified ? "Yes" : "",
         "Total Booked Hours": Math.round(pr.totalBookedHours * 10) / 10,
       };
       sortedResourceNames.forEach((name) => {
@@ -868,6 +878,10 @@ export default function DashboardPage() {
       { wch: 14 }, // Completion %
       { wch: 20 }, // Duration
       { wch: 10 }, // Priority
+      { wch: 14 }, // Is Baselined
+      { wch: 16 }, // Baseline Start
+      { wch: 16 }, // Baseline End
+      { wch: 16 }, // Dates Modified
       { wch: 20 }, // Total Booked Hours
       ...sortedResourceNames.map((n) => ({ wch: Math.max(14, n.length + 4) })),
       { wch: 20 }, // Number of Resources
@@ -988,12 +1002,79 @@ export default function DashboardPage() {
           }
         }
 
+        // Baselined column
+        if (h === "Is Baselined") {
+          cellStyle.alignment = { horizontal: "center", vertical: "center" };
+          if (row[h] === "Yes") {
+            cellStyle.fill = { fgColor: { rgb: "DCFCE7" } };
+            cellStyle.font = { bold: true, color: { rgb: "166534" } };
+          }
+        }
+
+        // Dates Modified column
+        if (h === "Dates Modified" && row[h] === "Yes") {
+          cellStyle.fill = { fgColor: { rgb: "FEF3C7" } };
+          cellStyle.font = { bold: true, color: { rgb: "92400E" } };
+          cellStyle.alignment = { horizontal: "center", vertical: "center" };
+        }
+
         ws[addr].s = cellStyle;
       });
     });
 
+    // Build Milestones sheet
+    const milestoneHeaders = ["Project Code", "Project Name", "Milestone Name", "Date", "Description", "Resources"];
+    const milestoneAoa: any[][] = [milestoneHeaders];
+    filteredProjects.forEach((proj: any) => {
+      const ms: any[] = proj.milestones || [];
+      ms.forEach((m: any) => {
+        const resourceNames = (m.resources || []).map((r: any) => r.name).join(", ");
+        milestoneAoa.push([
+          proj.project_code || "",
+          proj.name || "",
+          m.name || "",
+          m.date || "",
+          m.description || "",
+          resourceNames,
+        ]);
+      });
+    });
+    const wsM = XLSX.utils.aoa_to_sheet(milestoneAoa);
+    wsM["!cols"] = [
+      { wch: 16 }, { wch: 30 }, { wch: 30 }, { wch: 14 }, { wch: 40 }, { wch: 40 },
+    ];
+    const mBorderThin = {
+      top: { style: "thin", color: { rgb: "D4D4D8" } },
+      bottom: { style: "thin", color: { rgb: "D4D4D8" } },
+      left: { style: "thin", color: { rgb: "D4D4D8" } },
+      right: { style: "thin", color: { rgb: "D4D4D8" } },
+    };
+    milestoneHeaders.forEach((_, ci) => {
+      const addr = XLSX.utils.encode_cell({ r: 0, c: ci });
+      if (!wsM[addr]) wsM[addr] = { v: milestoneHeaders[ci], t: "s" };
+      wsM[addr].s = {
+        fill: { fgColor: { rgb: "4C1D95" } },
+        font: { bold: true, color: { rgb: "FFFFFF" }, sz: 11 },
+        alignment: { horizontal: "center", vertical: "center" },
+        border: mBorderThin,
+      };
+    });
+    for (let ri = 1; ri < milestoneAoa.length; ri++) {
+      const isStripe = ri % 2 === 0;
+      milestoneHeaders.forEach((_, ci) => {
+        const addr = XLSX.utils.encode_cell({ r: ri, c: ci });
+        if (!wsM[addr]) return;
+        wsM[addr].s = {
+          fill: isStripe ? { fgColor: { rgb: "F5F3FF" } } : undefined,
+          border: mBorderThin,
+          alignment: { vertical: "center" },
+        };
+      });
+    }
+
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Projects");
+    XLSX.utils.book_append_sheet(wb, wsM, "Milestones");
     XLSX.writeFile(wb, `projects_${projectExportStartDate}_to_${projectExportEndDate}.xlsx`);
     setIsProjectExportModalOpen(false);
   };
@@ -1285,6 +1366,18 @@ export default function DashboardPage() {
             </CardHeader>
             <CardContent>
               <ProjectRoadmapGantt projects={projectData.projects} bookings={allBookings} />
+            </CardContent>
+          </Card>
+
+          {/* Project Milestones Chart */}
+          <Card className="bg-white border border-zinc-200">
+            <CardHeader>
+              <CardTitle className="text-lg font-semibold text-zinc-900">
+                Project Milestones
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ProjectMilestonesChart projects={projectData.projects} />
             </CardContent>
           </Card>
 

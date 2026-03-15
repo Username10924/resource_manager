@@ -38,7 +38,10 @@ class ProjectController:
             attachments=project_data.get('attachments', []),
             business_analyst_id=project_data.get('business_analyst_id')
         )
-        
+
+        if project_data.get('is_baselined'):
+            project = project.update(is_baselined=True)
+
         return {'success': True, 'project': project.to_dict()}
     
     @staticmethod

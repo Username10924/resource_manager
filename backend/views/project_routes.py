@@ -77,6 +77,7 @@ class ProjectCreate(BaseModel):
     start_date: Optional[date] = None
     end_date: Optional[date] = None
     priority: Optional[int] = PydanticField(default=1, ge=1, le=12)
+    is_baselined: Optional[bool] = False
 
 class ProjectUpdate(BaseModel):
     name: Optional[str] = None
@@ -89,6 +90,19 @@ class ProjectUpdate(BaseModel):
     start_date: Optional[date] = None
     end_date: Optional[date] = None
     priority: Optional[int] = PydanticField(default=None, ge=1, le=12)
+    is_baselined: Optional[bool] = None
+
+class MilestoneCreate(BaseModel):
+    name: str
+    date: date
+    description: Optional[str] = None
+    resources: Optional[List[Dict[str, Any]]] = []
+
+class MilestoneUpdate(BaseModel):
+    name: Optional[str] = None
+    date: Optional[date] = None
+    description: Optional[str] = None
+    resources: Optional[List[Dict[str, Any]]] = None
 
 class BookingRequest(BaseModel):
     employee_id: int
@@ -142,18 +156,74 @@ async def get_project(project_id: int):
     
     result = project.to_dict()
     result['bookings'] = project.get_bookings()
+    result['milestones'] = project.get_milestones()
     return result
 
 @router.put("/{project_id}", response_model=Dict[str, Any])
 async def update_project(project_id: int, update: ProjectUpdate):
     """Update project details"""
-    # Filter out None values
     update_data = {k: v for k, v in update.dict().items() if v is not None}
-    
+    # Allow explicit False for is_baselined
+    if update.is_baselined is not None:
+        update_data['is_baselined'] = update.is_baselined
     result = ProjectController.update_project(project_id, update_data)
     if 'error' in result:
         raise HTTPException(status_code=400, detail=result['error'])
     return result
+
+@router.post("/{project_id}/milestones", response_model=Dict[str, Any])
+async def create_milestone(project_id: int, milestone: MilestoneCreate):
+    """Add a milestone to a project"""
+    project = Project.get_by_id(project_id)
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    # Validate date within project range
+    if project.start_date and str(milestone.date) < str(project.start_date):
+        raise HTTPException(status_code=400, detail="Milestone date must be within the project date range")
+    if project.end_date and str(milestone.date) > str(project.end_date):
+        raise HTTPException(status_code=400, detail="Milestone date must be within the project date range")
+    result = project.add_milestone(
+        name=milestone.name,
+        date_val=str(milestone.date),
+        description=milestone.description,
+        resources=milestone.resources or [],
+    )
+    return {'success': True, 'milestone': result}
+
+@router.put("/{project_id}/milestones/{milestone_id}", response_model=Dict[str, Any])
+async def update_milestone(project_id: int, milestone_id: int, update: MilestoneUpdate):
+    """Update a milestone"""
+    from database import db as _db
+    existing = _db.fetch_one('SELECT * FROM project_milestones WHERE id = ? AND project_id = ?',
+                             (milestone_id, project_id))
+    if not existing:
+        raise HTTPException(status_code=404, detail="Milestone not found")
+    project = Project.get_by_id(project_id)
+    date_val = str(update.date) if update.date else None
+    if date_val:
+        if project.start_date and date_val < str(project.start_date):
+            raise HTTPException(status_code=400, detail="Milestone date must be within the project date range")
+        if project.end_date and date_val > str(project.end_date):
+            raise HTTPException(status_code=400, detail="Milestone date must be within the project date range")
+    result = Project.update_milestone(
+        milestone_id=milestone_id,
+        name=update.name,
+        date_val=date_val,
+        description=update.description,
+        resources=update.resources,
+    )
+    return {'success': True, 'milestone': result}
+
+@router.delete("/{project_id}/milestones/{milestone_id}", response_model=Dict[str, Any])
+async def delete_milestone(project_id: int, milestone_id: int):
+    """Delete a milestone"""
+    from database import db as _db
+    existing = _db.fetch_one('SELECT * FROM project_milestones WHERE id = ? AND project_id = ?',
+                             (milestone_id, project_id))
+    if not existing:
+        raise HTTPException(status_code=404, detail="Milestone not found")
+    Project.delete_milestone(milestone_id)
+    return {'success': True, 'message': 'Milestone deleted'}
 
 @router.delete("/{project_id}", response_model=Dict[str, Any])
 async def delete_project(project_id: int):

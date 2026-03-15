@@ -197,6 +197,20 @@ export const projectAPI = {
       method: "POST",
       body: JSON.stringify(data),
     }),
+  createMilestone: (projectId: number, data: { name: string; date: string; description?: string; resources?: MilestoneResource[] }) =>
+    fetchAPI(`/projects/${projectId}/milestones`, {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+  updateMilestone: (projectId: number, milestoneId: number, data: { name?: string; date?: string; description?: string; resources?: MilestoneResource[] }) =>
+    fetchAPI(`/projects/${projectId}/milestones/${milestoneId}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    }),
+  deleteMilestone: (projectId: number, milestoneId: number) =>
+    fetchAPI(`/projects/${projectId}/milestones/${milestoneId}`, {
+      method: "DELETE",
+    }),
   uploadAttachment: async (projectId: number, file: File) => {
     const MAX_RETRIES = 3;
     const RETRY_DELAY = 1000;
@@ -296,6 +310,20 @@ export type Schedule = {
   updated_at?: string;
 };
 
+export type MilestoneResource = {
+  id: number;
+  name: string;
+};
+
+export type Milestone = {
+  id: number;
+  project_id: number;
+  name: string;
+  date: string;
+  description?: string | null;
+  resources: MilestoneResource[];
+};
+
 export type Project = {
   id: number;
   project_code: string;
@@ -315,6 +343,10 @@ export type Project = {
   architect_name: string | null;
   business_analyst_id: number | null;
   ba_name: string | null;
+  is_baselined: boolean;
+  baseline_start_date: string | null;
+  baseline_end_date: string | null;
+  milestones: Milestone[];
 };
 
 export type Booking = {

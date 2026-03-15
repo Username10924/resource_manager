@@ -684,6 +684,22 @@ export default function ProjectsPage() {
                         </span>
                       </>
                     )}
+                    {(project as any).is_baselined && (
+                      <>
+                        <span>·</span>
+                        <span className="inline-flex items-center gap-1 rounded bg-emerald-50 px-1.5 py-0.5 text-[11px] font-medium text-emerald-700 ring-1 ring-emerald-200">
+                          ✓ Baselined
+                        </span>
+                      </>
+                    )}
+                    {(project as any).milestones?.length > 0 && (
+                      <>
+                        <span>·</span>
+                        <span className="inline-flex items-center gap-1 rounded bg-blue-50 px-1.5 py-0.5 text-[11px] font-medium text-blue-700">
+                          ◆ {(project as any).milestones.length} milestone{(project as any).milestones.length !== 1 ? "s" : ""}
+                        </span>
+                      </>
+                    )}
                   </div>
 
                   {/* Progress Bar */}
@@ -1025,6 +1041,10 @@ function CreateProjectModal({
   const [attachments, setAttachments] = useState<File[]>([]);
   const [isDragging, setIsDragging] = useState(false);
   const [allProjects, setAllProjects] = useState<Project[]>([]);
+  const [isBaselined, setIsBaselined] = useState(false);
+  const [pendingMilestones, setPendingMilestones] = useState<{ name: string; date: string; description: string; resources: any[] }[]>([]);
+  const [newMilestone, setNewMilestone] = useState({ name: "", date: "", description: "", resources: [] as any[] });
+  const [milestoneResourceSearch, setMilestoneResourceSearch] = useState("");
   const [formData, setFormData] = useState({
     project_code: "",
     name: "",
@@ -1042,6 +1062,10 @@ function CreateProjectModal({
       loadEmployees();
       loadProjects();
       setEmployeeSearch("");
+      setIsBaselined(false);
+      setPendingMilestones([]);
+      setNewMilestone({ name: "", date: "", description: "", resources: [] });
+      setMilestoneResourceSearch("");
     }
   }, [isOpen]);
 
@@ -1141,6 +1165,7 @@ function CreateProjectModal({
         ...formData,
         start_date: formData.start_date || null,
         end_date: formData.end_date || null,
+        is_baselined: isBaselined,
       };
       console.log("[CREATE] Creating project with payload:", payload);
       const response = await projectAPI.create(payload);
@@ -1149,27 +1174,25 @@ function CreateProjectModal({
       // Upload attachments if any - response contains {success: true, project: {...}}
       const projectId = response.project?.id || response.id;
       if (attachments.length > 0 && projectId) {
-        console.log(
-          `[CREATE] Uploading ${attachments.length} attachments for project ID:`,
-          projectId
-        );
         for (const file of attachments) {
           try {
-            console.log("[CREATE] Uploading file:", file.name);
-            const uploadResult = await projectAPI.uploadAttachment(projectId, file);
-            console.log("[CREATE] Upload successful:", uploadResult);
+            await projectAPI.uploadAttachment(projectId, file);
           } catch (uploadError) {
             console.error("[CREATE] Error uploading file:", file.name, uploadError);
             alert(`Failed to upload ${file.name}: ${uploadError}`);
           }
         }
-      } else {
-        console.log(
-          "[CREATE] No attachments to upload or no project ID. Attachments:",
-          attachments.length,
-          "Project ID:",
-          projectId
-        );
+      }
+
+      // Create pending milestones
+      if (pendingMilestones.length > 0 && projectId) {
+        for (const m of pendingMilestones) {
+          try {
+            await projectAPI.createMilestone(projectId, { name: m.name, date: m.date, description: m.description || undefined, resources: m.resources });
+          } catch (err) {
+            console.error("[CREATE] Error creating milestone:", err);
+          }
+        }
       }
 
       onCreate();
@@ -1186,6 +1209,8 @@ function CreateProjectModal({
         priority: 1,
       });
       setAttachments([]);
+      setIsBaselined(false);
+      setPendingMilestones([]);
     } catch (error) {
       console.error("[CREATE] Error creating project:", error);
       const errorMessage = error instanceof Error ? error.message : "An unexpected error occurred";
@@ -1555,6 +1580,127 @@ function CreateProjectModal({
           )}
         </div>
 
+        {/* Baseline */}
+        <div className="rounded-lg border border-zinc-200 bg-zinc-50 p-4">
+          <label className="flex items-start gap-3 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={isBaselined}
+              onChange={(e) => setIsBaselined(e.target.checked)}
+              className="mt-0.5 h-4 w-4 rounded border-zinc-300 accent-zinc-900"
+            />
+            <div>
+              <span className="text-sm font-medium text-zinc-900">Baselined</span>
+              <p className="text-xs text-zinc-500 mt-0.5">
+                Marks this project as formally baselined. Start and end dates will be snapshotted as baseline dates.
+              </p>
+            </div>
+          </label>
+        </div>
+
+        {/* Milestones */}
+        <div className="space-y-3">
+          <label className="block text-sm font-medium text-zinc-900">Milestones</label>
+
+          {/* Pending milestones list */}
+          {pendingMilestones.length > 0 && (
+            <div className="space-y-2">
+              {pendingMilestones.map((m, idx) => (
+                <div key={idx} className="rounded-lg border border-zinc-200 bg-white p-3">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-sm font-medium text-zinc-900">{m.name}</span>
+                        <span className="text-xs text-zinc-500">{m.date}</span>
+                        {m.resources.length > 0 && (
+                          <span className="text-xs text-blue-600">{m.resources.length} resource{m.resources.length !== 1 ? "s" : ""}</span>
+                        )}
+                      </div>
+                      {m.description && <p className="text-xs text-zinc-500 mt-0.5">{m.description}</p>}
+                      {m.resources.length > 0 && (
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          {m.resources.map((r: any) => (
+                            <span key={r.id} className="rounded-full bg-zinc-100 px-2 py-0.5 text-[11px] text-zinc-600">{r.name}</span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                    <button type="button" className="rounded px-2 py-1 text-xs text-red-500 hover:text-red-700 hover:bg-red-50 shrink-0"
+                      onClick={() => setPendingMilestones(prev => prev.filter((_, i) => i !== idx))}>
+                      Remove
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Add new milestone */}
+          <div className="rounded-lg border border-dashed border-zinc-300 bg-zinc-50 p-3 space-y-2">
+            <p className="text-xs font-medium text-zinc-600">Add Milestone</p>
+            <input
+              className="w-full rounded border border-zinc-200 bg-white px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-zinc-400"
+              placeholder="Name *"
+              value={newMilestone.name}
+              onChange={(e) => setNewMilestone({ ...newMilestone, name: e.target.value })}
+            />
+            <div className="grid grid-cols-2 gap-2">
+              <input
+                type="date"
+                className="rounded border border-zinc-200 bg-white px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-zinc-400"
+                value={newMilestone.date}
+                min={formData.start_date || undefined}
+                max={formData.end_date || undefined}
+                onChange={(e) => setNewMilestone({ ...newMilestone, date: e.target.value })}
+              />
+              <input
+                className="rounded border border-zinc-200 bg-white px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-zinc-400"
+                placeholder="Description (optional)"
+                value={newMilestone.description}
+                onChange={(e) => setNewMilestone({ ...newMilestone, description: e.target.value })}
+              />
+            </div>
+            {/* Resource assignment */}
+            <div>
+              <p className="text-xs text-zinc-500 mb-1">Assign resources (visual only)</p>
+              <div className="flex flex-wrap gap-1 mb-1">
+                {newMilestone.resources.map((r: any) => (
+                  <span key={r.id} className="inline-flex items-center gap-1 rounded-full bg-zinc-100 px-2 py-0.5 text-xs font-medium text-zinc-700">
+                    {r.name}
+                    <button type="button" onClick={() => setNewMilestone({ ...newMilestone, resources: newMilestone.resources.filter((x: any) => x.id !== r.id) })} className="text-zinc-400 hover:text-red-500">×</button>
+                  </span>
+                ))}
+              </div>
+              <input
+                className="w-full rounded border border-zinc-200 bg-white px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-zinc-400"
+                placeholder="Search employees to assign..."
+                value={milestoneResourceSearch}
+                onChange={(e) => setMilestoneResourceSearch(e.target.value)}
+              />
+              {milestoneResourceSearch && (
+                <div className="mt-1 rounded border border-zinc-200 bg-white shadow max-h-32 overflow-y-auto">
+                  {employees.filter(e => e.full_name.toLowerCase().includes(milestoneResourceSearch.toLowerCase()) && !newMilestone.resources.some((r: any) => r.id === e.id)).slice(0, 6).map(e => (
+                    <button key={e.id} type="button" className="w-full text-left px-3 py-1.5 text-xs hover:bg-zinc-50"
+                      onClick={() => { setNewMilestone({ ...newMilestone, resources: [...newMilestone.resources, { id: e.id, name: e.full_name }] }); setMilestoneResourceSearch(""); }}>
+                      {e.full_name} <span className="text-zinc-400">— {e.department}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+            <button type="button"
+              className="rounded-md bg-zinc-900 px-3 py-1.5 text-xs font-medium text-white disabled:opacity-50"
+              disabled={!newMilestone.name || !newMilestone.date}
+              onClick={() => {
+                setPendingMilestones(prev => [...prev, { ...newMilestone }]);
+                setNewMilestone({ name: "", date: "", description: "", resources: [] });
+                setMilestoneResourceSearch("");
+              }}>
+              Add Milestone
+            </button>
+          </div>
+        </div>
+
         <div className="flex justify-end gap-3 pt-4">
           <Button type="button" variant="secondary" onClick={onClose}>
             Cancel
@@ -1584,6 +1730,14 @@ function EditProjectModal({
   const [baSearch, setBaSearch] = useState("");
   const [attachments, setAttachments] = useState<File[]>([]);
   const [isDragging, setIsDragging] = useState(false);
+  const [isBaselined, setIsBaselined] = useState<boolean>(!!project.is_baselined);
+  const [milestones, setMilestones] = useState<any[]>(project.milestones || []);
+  const [milestoneError, setMilestoneError] = useState("");
+  const [newMilestone, setNewMilestone] = useState({ name: "", date: "", description: "", resources: [] as any[] });
+  const [editingMilestoneId, setEditingMilestoneId] = useState<number | null>(null);
+  const [editingMilestone, setEditingMilestone] = useState<any>(null);
+  const [milestoneResourceSearch, setMilestoneResourceSearch] = useState("");
+  const [editMilestoneResourceSearch, setEditMilestoneResourceSearch] = useState("");
   const [formData, setFormData] = useState({
     name: project.name,
     business_unit: (project as any).business_unit || "",
@@ -1613,6 +1767,12 @@ function EditProjectModal({
         start_date: (project as any).start_date || "",
         end_date: (project as any).end_date || "",
       });
+      setIsBaselined(!!project.is_baselined);
+      setMilestones(project.milestones || []);
+      setNewMilestone({ name: "", date: "", description: "", resources: [] });
+      setEditingMilestoneId(null);
+      setEditingMilestone(null);
+      setMilestoneError("");
       setEmployeeSearch("");
       setBaSearch("");
       setAttachments([]);
@@ -1641,6 +1801,7 @@ function EditProjectModal({
         ...formData,
         start_date: formData.start_date || null,
         end_date: formData.end_date || null,
+        is_baselined: isBaselined,
       };
 
       console.log("[EDIT] Updating project with formData:", payload);
@@ -2075,6 +2236,213 @@ function EditProjectModal({
               ))}
             </div>
           )}
+        </div>
+
+        {/* Baseline */}
+        <div className="rounded-lg border border-zinc-200 bg-zinc-50 p-4">
+          <label className="flex items-start gap-3 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={isBaselined}
+              onChange={(e) => setIsBaselined(e.target.checked)}
+              className="mt-0.5 h-4 w-4 rounded border-zinc-300 accent-zinc-900"
+            />
+            <div>
+              <span className="text-sm font-medium text-zinc-900">Baselined</span>
+              <p className="text-xs text-zinc-500 mt-0.5">
+                Marks this project as formally baselined. Original dates are snapshotted on first baseline.
+                {project.baseline_start_date && (
+                  <span className="block mt-1 font-medium text-zinc-700">
+                    Baseline dates: {project.baseline_start_date} → {project.baseline_end_date || "—"}
+                    {((formData.start_date && formData.start_date !== project.baseline_start_date) ||
+                      (formData.end_date && formData.end_date !== project.baseline_end_date)) && (
+                      <span className="ml-2 text-amber-600 font-semibold">⚠ Dates modified from baseline</span>
+                    )}
+                  </span>
+                )}
+              </p>
+            </div>
+          </label>
+        </div>
+
+        {/* Milestones */}
+        <div className="space-y-3">
+          <label className="block text-sm font-medium text-zinc-900">Milestones</label>
+
+          {/* Existing milestones */}
+          {milestones.length > 0 && (
+            <div className="space-y-2">
+              {milestones.map((m: any) => (
+                <div key={m.id} className="rounded-lg border border-zinc-200 bg-white p-3">
+                  {editingMilestoneId === m.id && editingMilestone ? (
+                    <div className="space-y-2">
+                      <input
+                        className="w-full rounded border border-zinc-200 px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-zinc-400"
+                        value={editingMilestone.name}
+                        onChange={(e) => setEditingMilestone({ ...editingMilestone, name: e.target.value })}
+                        placeholder="Milestone name"
+                      />
+                      <div className="grid grid-cols-2 gap-2">
+                        <input
+                          type="date"
+                          className="rounded border border-zinc-200 px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-zinc-400"
+                          value={editingMilestone.date}
+                          min={formData.start_date || undefined}
+                          max={formData.end_date || undefined}
+                          onChange={(e) => setEditingMilestone({ ...editingMilestone, date: e.target.value })}
+                        />
+                        <input
+                          className="rounded border border-zinc-200 px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-zinc-400"
+                          value={editingMilestone.description || ""}
+                          onChange={(e) => setEditingMilestone({ ...editingMilestone, description: e.target.value })}
+                          placeholder="Description (optional)"
+                        />
+                      </div>
+                      {/* Resource assignment for edit */}
+                      <div>
+                        <p className="text-xs text-zinc-500 mb-1">Assigned resources (visual only)</p>
+                        <div className="flex flex-wrap gap-1 mb-1">
+                          {(editingMilestone.resources || []).map((r: any) => (
+                            <span key={r.id} className="inline-flex items-center gap-1 rounded-full bg-zinc-100 px-2 py-0.5 text-xs font-medium text-zinc-700">
+                              {r.name}
+                              <button type="button" onClick={() => setEditingMilestone({ ...editingMilestone, resources: editingMilestone.resources.filter((x: any) => x.id !== r.id) })} className="text-zinc-400 hover:text-red-500">×</button>
+                            </span>
+                          ))}
+                        </div>
+                        <input
+                          className="w-full rounded border border-zinc-200 px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-zinc-400"
+                          placeholder="Search employees to assign..."
+                          value={editMilestoneResourceSearch}
+                          onChange={(e) => setEditMilestoneResourceSearch(e.target.value)}
+                        />
+                        {editMilestoneResourceSearch && (
+                          <div className="mt-1 rounded border border-zinc-200 bg-white shadow max-h-32 overflow-y-auto">
+                            {employees.filter(e => e.full_name.toLowerCase().includes(editMilestoneResourceSearch.toLowerCase()) && !(editingMilestone.resources || []).some((r: any) => r.id === e.id)).slice(0, 6).map(e => (
+                              <button key={e.id} type="button" className="w-full text-left px-3 py-1.5 text-xs hover:bg-zinc-50"
+                                onClick={() => { setEditingMilestone({ ...editingMilestone, resources: [...(editingMilestone.resources || []), { id: e.id, name: e.full_name }] }); setEditMilestoneResourceSearch(""); }}>
+                                {e.full_name} <span className="text-zinc-400">— {e.department}</span>
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex gap-2">
+                        <button type="button" className="rounded-md bg-zinc-900 px-3 py-1.5 text-xs font-medium text-white"
+                          onClick={async () => {
+                            try {
+                              const res = await projectAPI.updateMilestone(project.id, m.id, { name: editingMilestone.name, date: editingMilestone.date, description: editingMilestone.description, resources: editingMilestone.resources });
+                              setMilestones(prev => prev.map(x => x.id === m.id ? res.milestone : x));
+                              setEditingMilestoneId(null);
+                              setEditingMilestone(null);
+                            } catch (err: any) { setMilestoneError(err.message); }
+                          }}>Save</button>
+                        <button type="button" className="rounded-md border border-zinc-200 px-3 py-1.5 text-xs font-medium text-zinc-600" onClick={() => { setEditingMilestoneId(null); setEditingMilestone(null); }}>Cancel</button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-sm font-medium text-zinc-900">{m.name}</span>
+                          <span className="text-xs text-zinc-500">{m.date}</span>
+                          {m.resources?.length > 0 && (
+                            <span className="text-xs text-blue-600">{m.resources.length} resource{m.resources.length !== 1 ? "s" : ""}</span>
+                          )}
+                        </div>
+                        {m.description && <p className="text-xs text-zinc-500 mt-0.5">{m.description}</p>}
+                        {m.resources?.length > 0 && (
+                          <div className="flex flex-wrap gap-1 mt-1">
+                            {m.resources.map((r: any) => (
+                              <span key={r.id} className="rounded-full bg-zinc-100 px-2 py-0.5 text-[11px] text-zinc-600">{r.name}</span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex gap-1 shrink-0">
+                        <button type="button" className="rounded px-2 py-1 text-xs text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100"
+                          onClick={() => { setEditingMilestoneId(m.id); setEditingMilestone({ ...m }); setEditMilestoneResourceSearch(""); }}>Edit</button>
+                        <button type="button" className="rounded px-2 py-1 text-xs text-red-500 hover:text-red-700 hover:bg-red-50"
+                          onClick={async () => {
+                            if (!confirm("Delete this milestone?")) return;
+                            try { await projectAPI.deleteMilestone(project.id, m.id); setMilestones(prev => prev.filter(x => x.id !== m.id)); }
+                            catch (err: any) { setMilestoneError(err.message); }
+                          }}>Delete</button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Add new milestone */}
+          <div className="rounded-lg border border-dashed border-zinc-300 bg-zinc-50 p-3 space-y-2">
+            <p className="text-xs font-medium text-zinc-600">Add Milestone</p>
+            <input
+              className="w-full rounded border border-zinc-200 bg-white px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-zinc-400"
+              placeholder="Name *"
+              value={newMilestone.name}
+              onChange={(e) => setNewMilestone({ ...newMilestone, name: e.target.value })}
+            />
+            <div className="grid grid-cols-2 gap-2">
+              <input
+                type="date"
+                className="rounded border border-zinc-200 bg-white px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-zinc-400"
+                value={newMilestone.date}
+                min={formData.start_date || undefined}
+                max={formData.end_date || undefined}
+                onChange={(e) => setNewMilestone({ ...newMilestone, date: e.target.value })}
+              />
+              <input
+                className="rounded border border-zinc-200 bg-white px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-zinc-400"
+                placeholder="Description (optional)"
+                value={newMilestone.description}
+                onChange={(e) => setNewMilestone({ ...newMilestone, description: e.target.value })}
+              />
+            </div>
+            {/* Resource assignment */}
+            <div>
+              <p className="text-xs text-zinc-500 mb-1">Assign resources (visual only)</p>
+              <div className="flex flex-wrap gap-1 mb-1">
+                {newMilestone.resources.map((r: any) => (
+                  <span key={r.id} className="inline-flex items-center gap-1 rounded-full bg-zinc-100 px-2 py-0.5 text-xs font-medium text-zinc-700">
+                    {r.name}
+                    <button type="button" onClick={() => setNewMilestone({ ...newMilestone, resources: newMilestone.resources.filter((x: any) => x.id !== r.id) })} className="text-zinc-400 hover:text-red-500">×</button>
+                  </span>
+                ))}
+              </div>
+              <input
+                className="w-full rounded border border-zinc-200 bg-white px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-zinc-400"
+                placeholder="Search employees to assign..."
+                value={milestoneResourceSearch}
+                onChange={(e) => setMilestoneResourceSearch(e.target.value)}
+              />
+              {milestoneResourceSearch && (
+                <div className="mt-1 rounded border border-zinc-200 bg-white shadow max-h-32 overflow-y-auto">
+                  {employees.filter(e => e.full_name.toLowerCase().includes(milestoneResourceSearch.toLowerCase()) && !newMilestone.resources.some((r: any) => r.id === e.id)).slice(0, 6).map(e => (
+                    <button key={e.id} type="button" className="w-full text-left px-3 py-1.5 text-xs hover:bg-zinc-50"
+                      onClick={() => { setNewMilestone({ ...newMilestone, resources: [...newMilestone.resources, { id: e.id, name: e.full_name }] }); setMilestoneResourceSearch(""); }}>
+                      {e.full_name} <span className="text-zinc-400">— {e.department}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+            {milestoneError && <p className="text-xs text-red-500">{milestoneError}</p>}
+            <button type="button"
+              className="rounded-md bg-zinc-900 px-3 py-1.5 text-xs font-medium text-white disabled:opacity-50"
+              disabled={!newMilestone.name || !newMilestone.date}
+              onClick={async () => {
+                setMilestoneError("");
+                try {
+                  const res = await projectAPI.createMilestone(project.id, { name: newMilestone.name, date: newMilestone.date, description: newMilestone.description || undefined, resources: newMilestone.resources });
+                  setMilestones(prev => [...prev, res.milestone]);
+                  setNewMilestone({ name: "", date: "", description: "", resources: [] });
+                } catch (err: any) { setMilestoneError(err.message); }
+              }}>
+              Add Milestone
+            </button>
+          </div>
         </div>
 
         <div className="flex justify-end gap-3 pt-4">

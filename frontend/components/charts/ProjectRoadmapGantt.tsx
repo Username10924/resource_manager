@@ -13,6 +13,9 @@ type RoadmapProject = {
   architect_name?: string | null;
   ba_name?: string | null;
   priority?: number | null;
+  is_baselined?: boolean;
+  baseline_start_date?: string | null;
+  baseline_end_date?: string | null;
 };
 
 type BookingForGantt = {
@@ -37,6 +40,9 @@ type ParsedProject = {
   priority: number | null;
   start: Date;
   end: Date;
+  isBaselined: boolean;
+  baselineStart: Date | null;
+  baselineEnd: Date | null;
 };
 
 type TooltipState = {
@@ -208,6 +214,9 @@ export default function ProjectRoadmapGantt({
           priority: project.priority ?? null,
           start,
           end,
+          isBaselined: !!project.is_baselined,
+          baselineStart: toMonthStart(project.baseline_start_date ?? null),
+          baselineEnd: toMonthStart(project.baseline_end_date ?? null),
         } as ParsedProject;
       })
       .filter(Boolean) as ParsedProject[];
@@ -262,6 +271,8 @@ export default function ProjectRoadmapGantt({
     );
   };
 
+  const [baselinedOnly, setBaselinedOnly] = useState(false);
+
   const currentMonthStart = useMemo(() => {
     const now = new Date();
     return new Date(now.getFullYear(), now.getMonth(), 1);
@@ -288,8 +299,12 @@ export default function ProjectRoadmapGantt({
       base = base.filter((p) => p.priority != null && selectedPriorities.includes(p.priority));
     }
 
+    if (baselinedOnly) {
+      base = base.filter((p) => p.isBaselined);
+    }
+
     return base;
-  }, [allParsed, selectedYear, currentMonthStart, selectedPriorities]);
+  }, [allParsed, selectedYear, currentMonthStart, selectedPriorities, baselinedOnly]);
 
   // Window (start/end of the timeline)
   const { windowStart, windowEnd, months } = useMemo(() => {
@@ -500,6 +515,18 @@ export default function ProjectRoadmapGantt({
           </div>
         )}
 
+        {/* Baselined only toggle */}
+        <button
+          onClick={() => setBaselinedOnly((v) => !v)}
+          className={`flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-sm font-medium transition-all ${
+            baselinedOnly
+              ? "border-emerald-600 bg-emerald-600 text-white"
+              : "border-zinc-200 bg-white text-zinc-600 hover:border-zinc-300 hover:text-zinc-900"
+          }`}
+        >
+          <span>{baselinedOnly ? "✓" : ""} Baselined</span>
+        </button>
+
         <span className="text-xs text-zinc-400">
           {rows.length} project{rows.length !== 1 ? "s" : ""}
         </span>
@@ -645,10 +672,29 @@ export default function ProjectRoadmapGantt({
             <p className="truncate text-[11px] font-semibold text-white leading-tight">
               {tooltip.project.name}
             </p>
-            {tooltip.project.priority != null && (
-              <span className="inline-block mt-0.5 rounded bg-zinc-700 px-1.5 py-0.5 text-[10px] font-medium text-zinc-300">
-                P{tooltip.project.priority}
-              </span>
+            <div className="flex flex-wrap gap-1 mt-0.5">
+              {tooltip.project.priority != null && (
+                <span className="rounded bg-zinc-700 px-1.5 py-0.5 text-[10px] font-medium text-zinc-300">
+                  P{tooltip.project.priority}
+                </span>
+              )}
+              {tooltip.project.isBaselined && (
+                <span className="rounded bg-emerald-800 px-1.5 py-0.5 text-[10px] font-medium text-emerald-200">
+                  ✓ Baselined
+                </span>
+              )}
+            </div>
+            {tooltip.project.isBaselined && tooltip.project.baselineStart && tooltip.project.baselineEnd && (
+              (() => {
+                const startChanged = tooltip.project.baselineStart!.getTime() !== tooltip.project.start.getTime();
+                const endChanged = tooltip.project.baselineEnd!.getTime() !== tooltip.project.end.getTime();
+                if (!startChanged && !endChanged) return null;
+                return (
+                  <p className="mt-0.5 text-[10px] text-amber-400">
+                    ⚠ Baseline: {formatMonthYear(tooltip.project.baselineStart!)} — {formatMonthYear(tooltip.project.baselineEnd!)}
+                  </p>
+                );
+              })()
             )}
             <div className="my-1.5 h-px bg-zinc-700" />
             {tooltip.pmBa.length > 0 && (
@@ -736,7 +782,7 @@ export default function ProjectRoadmapGantt({
           className="border-r border-zinc-200 px-4 py-3"
           style={accentColor ? { borderLeft: `3px solid ${accentColor}` } : undefined}
         >
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-1.5">
             <span className="truncate text-sm font-medium text-zinc-900">{project.name}</span>
             <span
               className={`inline-flex shrink-0 items-center rounded-full px-2 py-0.5 text-[10px] font-medium capitalize ${statusBadgeClass(project.status)}`}
@@ -748,10 +794,28 @@ export default function ProjectRoadmapGantt({
                 P{project.priority}
               </span>
             )}
+            {project.isBaselined && (
+              <span className="inline-flex shrink-0 items-center gap-0.5 rounded bg-emerald-50 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-700 ring-1 ring-emerald-200">
+                ✓ Baselined
+              </span>
+            )}
           </div>
           <div className="mt-1 text-[11px] text-zinc-400">
             {formatMonthYear(project.start)} — {formatMonthYear(project.end)}
           </div>
+          {/* Dates modified warning */}
+          {project.isBaselined && project.baselineStart && project.baselineEnd && (
+            (() => {
+              const startChanged = project.baselineStart.getTime() !== project.start.getTime();
+              const endChanged = project.baselineEnd.getTime() !== project.end.getTime();
+              if (!startChanged && !endChanged) return null;
+              return (
+                <div className="mt-0.5 text-[10px] text-amber-600 font-medium">
+                  ⚠ Dates modified — Baseline: {formatMonthYear(project.baselineStart)} — {formatMonthYear(project.baselineEnd)}
+                </div>
+              );
+            })()
+          )}
         </div>
 
         {/* Timeline bar cell */}

@@ -292,6 +292,35 @@ class Database:
             self.conn.commit()
             print("Solution Architect department rename completed!")
 
+        # Add is_baselined, baseline_start_date, baseline_end_date to projects if missing
+        cursor.execute('PRAGMA table_info(projects)')
+        project_columns = [row[1] for row in cursor.fetchall()]
+        if 'is_baselined' not in project_columns:
+            cursor.execute('ALTER TABLE projects ADD COLUMN is_baselined INTEGER DEFAULT 0')
+            self.conn.commit()
+        if 'baseline_start_date' not in project_columns:
+            cursor.execute('ALTER TABLE projects ADD COLUMN baseline_start_date DATE')
+            self.conn.commit()
+        if 'baseline_end_date' not in project_columns:
+            cursor.execute('ALTER TABLE projects ADD COLUMN baseline_end_date DATE')
+            self.conn.commit()
+
+        # Create project_milestones table if not exists
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS project_milestones (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                project_id INTEGER NOT NULL,
+                name TEXT NOT NULL,
+                date DATE NOT NULL,
+                description TEXT,
+                resources TEXT DEFAULT '[]',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (project_id) REFERENCES projects (id)
+            )
+        ''')
+        self.conn.commit()
+
         # Create employee_business_rules table if not yet created (needed before seeding below)
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS employee_business_rules (
