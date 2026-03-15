@@ -16,10 +16,11 @@ class ProjectController:
             if field not in project_data:
                 return {'error': f'Missing required field: {field}'}
         
-        # Check if selected project manager (employee) exists
-        manager = Employee.get_by_id(project_data['solution_architect_id'])
-        if not manager:
-            return {'error': 'Invalid project manager'}
+        # Check if selected project manager (employee) exists (0 = "Other", skip validation)
+        if project_data['solution_architect_id'] != 0:
+            manager = Employee.get_by_id(project_data['solution_architect_id'])
+            if not manager:
+                return {'error': 'Invalid project manager'}
         
         # Check if project code already exists
         existing = Project.get_by_code(project_data['project_code'])

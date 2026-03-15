@@ -1299,8 +1299,10 @@ function CreateProjectModal({
               className="w-full px-3 py-2 text-left text-sm bg-white border border-zinc-200 rounded-md hover:border-zinc-400 focus:outline-none focus:border-zinc-400 focus:ring-1 focus:ring-zinc-400 transition-all duration-200 flex items-center justify-between group"
             >
               <span className="text-zinc-900">
-                {employees.find((e) => e.id === formData.solution_architect_id)?.full_name ||
-                  "Select a project manager"}
+                {formData.solution_architect_id === 0
+                  ? "Other"
+                  : employees.find((e) => e.id === formData.solution_architect_id)?.full_name ||
+                    "Select a project manager"}
               </span>
               <svg
                 className={`w-5 h-5 text-zinc-400 transition-transform duration-200 flex-shrink-0 ${
@@ -1330,6 +1332,21 @@ function CreateProjectModal({
                     className="w-full px-3 py-2 text-sm bg-white border border-zinc-200 rounded-md hover:border-zinc-400 focus:outline-none focus:border-zinc-400 focus:ring-1 focus:ring-zinc-400 transition-all duration-200"
                   />
                 </div>
+                {"other".includes(employeeSearch.toLowerCase()) || employeeSearch === "" ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setFormData((prev) => ({ ...prev, solution_architect_id: 0 }));
+                      setIsEmployeeOpen(false);
+                      setEmployeeSearch("");
+                    }}
+                    className={`w-full px-4 py-3 text-left text-sm hover:bg-zinc-50 transition-colors duration-150 border-b border-zinc-100 ${
+                      formData.solution_architect_id === 0 ? "bg-zinc-50 text-zinc-700 font-medium" : "text-zinc-500 italic"
+                    }`}
+                  >
+                    Other
+                  </button>
+                ) : null}
                 {employees
                   .slice()
                   .sort((a, b) => a.full_name.localeCompare(b.full_name))
@@ -1361,15 +1378,6 @@ function CreateProjectModal({
               </div>
             )}
           </div>
-          {!formData.solution_architect_id && (
-            <input
-              type="text"
-              required
-              className="absolute opacity-0 pointer-events-none"
-              value={formData.solution_architect_id}
-              onChange={() => {}}
-            />
-          )}
         </div>
 
         {/* Business Analyst (optional) */}
@@ -1961,8 +1969,10 @@ function EditProjectModal({
               className="w-full px-3 py-2 text-left text-sm bg-white border border-zinc-200 rounded-md hover:border-zinc-400 focus:outline-none focus:border-zinc-400 focus:ring-1 focus:ring-zinc-400 transition-all duration-200 flex items-center justify-between group"
             >
               <span className="text-zinc-900">
-                {employees.find((e) => e.id === formData.solution_architect_id)?.full_name ||
-                  "Select a project manager"}
+                {formData.solution_architect_id === 0
+                  ? "Other"
+                  : employees.find((e) => e.id === formData.solution_architect_id)?.full_name ||
+                    "Select a project manager"}
               </span>
               <svg
                 className={`w-5 h-5 text-zinc-400 transition-transform duration-200 flex-shrink-0 ${
@@ -1992,6 +2002,21 @@ function EditProjectModal({
                     className="w-full px-3 py-2 text-sm bg-white border border-zinc-200 rounded-md hover:border-zinc-400 focus:outline-none focus:border-zinc-400 focus:ring-1 focus:ring-zinc-400 transition-all duration-200"
                   />
                 </div>
+                {"other".includes(employeeSearch.toLowerCase()) || employeeSearch === "" ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setFormData({ ...formData, solution_architect_id: 0 });
+                      setIsEmployeeOpen(false);
+                      setEmployeeSearch("");
+                    }}
+                    className={`w-full px-4 py-3 text-left text-sm hover:bg-zinc-50 transition-colors duration-150 border-b border-zinc-100 ${
+                      formData.solution_architect_id === 0 ? "bg-zinc-50 text-zinc-700 font-medium" : "text-zinc-500 italic"
+                    }`}
+                  >
+                    Other
+                  </button>
+                ) : null}
                 {employees
                   .slice()
                   .sort((a, b) => a.full_name.localeCompare(b.full_name))
@@ -3290,7 +3315,7 @@ function ProjectDetailsModal({
         <div className="grid grid-cols-2 gap-4">
           <div>
             <h3 className="text-sm font-semibold text-zinc-500 mb-1">Project Manager</h3>
-            <p className="text-sm text-zinc-900">{project.architect_name || "—"}</p>
+            <p className="text-sm text-zinc-900">{project.architect_name || ((project as any).solution_architect_id === 0 ? "Other" : "—")}</p>
           </div>
           <div>
             <h3 className="text-sm font-semibold text-zinc-500 mb-1">Business Analyst</h3>
@@ -3423,10 +3448,12 @@ type BulkRow = {
   start_date: string;
   end_date: string;
   progress: number;
-  completed: boolean;
+  status: string;
+  priority: number | null;
   // resolved after matching
   solution_architect_id: number | null;
   project_code: string;
+  pmNotFound: boolean;
   error: string | null;
 };
 
@@ -3559,20 +3586,45 @@ function BulkImportModal({
         const startDate = parseExcelDate(normalizedRow["est. start date"] || normalizedRow["est start date"] || normalizedRow["start date"] || "");
         const endDate = parseExcelDate(normalizedRow["est. delivery date"] || normalizedRow["est delivery date"] || normalizedRow["delivery date"] || normalizedRow["end date"] || "");
         const progressRaw = normalizedRow["completion %"] || normalizedRow["completion"] || 0;
-        const progress = Math.min(100, Math.max(0, Math.round(Number(String(progressRaw).replace("%", "")) || 0)));
-        const completedRaw = (normalizedRow["completed"] || "").toString().trim().toLowerCase();
-        const completed = completedRaw === "yes" || completedRaw === "true" || completedRaw === "1" || completedRaw === "completed";
+        const progressValue = Number(String(progressRaw).replace("%", "")) || 0;
+        // Sample file stores completion as decimal (0.95 = 95%), values > 1 are already percentages
+        const progress = Math.min(100, Math.max(0, Math.round(progressValue <= 1 ? progressValue * 100 : progressValue)));
+        const statusRaw = (normalizedRow["completed"] || "").toString().trim().toLowerCase();
+        const status = statusRaw === "completed" ? "completed"
+          : statusRaw === "canceled" || statusRaw === "cancelled" ? "cancelled"
+          : statusRaw === "in progress" ? "active"
+          : statusRaw === "on hold" ? "on_hold"
+          : progress > 0 ? "active"
+          : "planned";
+        const priorityRaw = normalizedRow["urgency/priority"] || normalizedRow["urgency priority"] || normalizedRow["priority"] || null;
+        const priority = priorityRaw !== null && priorityRaw !== "" ? Math.min(12, Math.max(1, parseInt(String(priorityRaw), 10) || 1)) : null;
 
         const matchedEmployee = findEmployee(pm);
+        const pmNotFound = !matchedEmployee && !!pm;
         let projectCode = "";
         if (matchedEmployee) {
           projectCode = generateProjectCode(matchedEmployee.id, generatedCodes);
           generatedCodes.push(projectCode);
+        } else {
+          // Generate a generic code for unmatched PMs
+          const otherPrefix = "OTH";
+          const otherPattern = new RegExp(`^${otherPrefix}-(\\d+)$`);
+          let maxOth = 0;
+          [...allProjects.map((p) => (p as any).project_code || ""), ...generatedCodes].forEach((code) => {
+            const m = code.match(otherPattern);
+            if (m) maxOth = Math.max(maxOth, parseInt(m[1], 10));
+          });
+          projectCode = `${otherPrefix}-${String(maxOth + 1).padStart(3, "0")}`;
+          generatedCodes.push(projectCode);
         }
+
+        const isDuplicate = allProjects.some(
+          (p) => p.name.trim().toLowerCase() === name.toLowerCase()
+        );
 
         let error: string | null = null;
         if (!name) error = "Missing project name";
-        else if (!matchedEmployee) error = `Project manager "${pm}" not found`;
+        else if (isDuplicate) error = "Already exists";
 
         return {
           name,
@@ -3581,9 +3633,11 @@ function BulkImportModal({
           start_date: startDate,
           end_date: endDate,
           progress,
-          completed,
-          solution_architect_id: matchedEmployee?.id || null,
+          status,
+          priority,
+          solution_architect_id: matchedEmployee?.id ?? 0,
           project_code: projectCode,
+          pmNotFound,
           error,
         };
       });
@@ -3611,18 +3665,19 @@ function BulkImportModal({
           name: row.name,
           business_unit: row.business_unit || null,
           description: row.name, // use name as description since sheet doesn't have one
-          solution_architect_id: row.solution_architect_id!,
+          solution_architect_id: row.solution_architect_id ?? 0,
           start_date: row.start_date || null,
           end_date: row.end_date || null,
+          priority: row.priority ?? 1,
         };
         const response = await projectAPI.create(payload);
         const projectId = response.project?.id || response.id;
 
-        // If completed or has progress, update the project
-        if (projectId && (row.completed || row.progress > 0)) {
+        // Update status and progress after creation
+        if (projectId && (row.status !== "planned" || row.progress > 0)) {
           await projectAPI.update(projectId, {
-            progress: row.completed ? 100 : row.progress,
-            status: row.completed ? "completed" : row.progress > 0 ? "active" : "planned",
+            progress: row.status === "completed" ? 100 : row.progress,
+            status: row.status,
           });
         }
         success++;
@@ -3638,7 +3693,8 @@ function BulkImportModal({
   };
 
   const validCount = rows.filter((r) => !r.error).length;
-  const errorCount = rows.filter((r) => r.error).length;
+  const duplicateCount = rows.filter((r) => r.error === "Already exists").length;
+  const errorCount = rows.filter((r) => r.error && r.error !== "Already exists").length;
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Bulk Import Projects" size="5xl">
@@ -3663,7 +3719,7 @@ function BulkImportModal({
             </label>
             <div className="mt-3 p-3 bg-zinc-50 rounded-lg border border-zinc-200">
               <p className="text-xs font-medium text-zinc-700 mb-1">Expected columns:</p>
-              <p className="text-xs text-zinc-500">BU/Division, Project Name, Project Manager, Est. Start Date, Est. Delivery Date, Completion %, Completed</p>
+              <p className="text-xs text-zinc-500">BU/Division, Planned, Urgency/Priority, Project Name, Project Manager, Est. Start Date, Actual Start Date, Est. Delivery Date, Revised Delivery Date, Actual Delivery Date, Completion %, Completed</p>
             </div>
           </div>
         )}
@@ -3677,7 +3733,8 @@ function BulkImportModal({
                   <span className="font-medium">{fileName}</span> &mdash; {rows.length} row{rows.length !== 1 ? "s" : ""} found
                 </p>
                 <p className="text-xs text-zinc-500 mt-0.5">
-                  <span className="text-emerald-600 font-medium">{validCount} valid</span>
+                  <span className="text-emerald-600 font-medium">{validCount} to import</span>
+                  {duplicateCount > 0 && <span className="text-amber-600 font-medium ml-2">{duplicateCount} skipped (already exist)</span>}
                   {errorCount > 0 && <span className="text-red-600 font-medium ml-2">{errorCount} with errors</span>}
                 </p>
               </div>
@@ -3694,6 +3751,7 @@ function BulkImportModal({
                     <th className="px-3 py-2 text-left text-xs font-medium text-zinc-600">Project Code</th>
                     <th className="px-3 py-2 text-left text-xs font-medium text-zinc-600">Project Name</th>
                     <th className="px-3 py-2 text-left text-xs font-medium text-zinc-600">BU/Division</th>
+                    <th className="px-3 py-2 text-left text-xs font-medium text-zinc-600">Priority</th>
                     <th className="px-3 py-2 text-left text-xs font-medium text-zinc-600">Project Manager</th>
                     <th className="px-3 py-2 text-left text-xs font-medium text-zinc-600">Start Date</th>
                     <th className="px-3 py-2 text-left text-xs font-medium text-zinc-600">End Date</th>
@@ -3703,16 +3761,24 @@ function BulkImportModal({
                 </thead>
                 <tbody className="divide-y divide-zinc-100">
                   {rows.map((row, idx) => (
-                    <tr key={idx} className={row.error ? "bg-red-50" : "hover:bg-zinc-50"}>
+                    <tr key={idx} className={row.error === "Already exists" ? "bg-amber-50" : row.error ? "bg-red-50" : "hover:bg-zinc-50"}>
                       <td className="px-3 py-2 text-zinc-400">{idx + 1}</td>
                       <td className="px-3 py-2 font-mono text-xs">{row.project_code || "—"}</td>
-                      <td className="px-3 py-2 font-medium text-zinc-900">{row.name}</td>
+                      <td className="px-3 py-2 font-medium text-zinc-900">
+                        {row.name}
+                        {row.error === "Already exists" && (
+                          <span className="ml-2 text-xs text-amber-600 font-normal">(skipped — already exists)</span>
+                        )}
+                      </td>
                       <td className="px-3 py-2 text-zinc-600">{row.business_unit || "—"}</td>
+                      <td className="px-3 py-2 text-zinc-600">{row.priority != null ? `P${row.priority}` : "—"}</td>
                       <td className="px-3 py-2">
-                        {row.error ? (
+                        {row.error && row.error !== "Already exists" ? (
                           <span className="text-red-600 text-xs">{row.error}</span>
+                        ) : row.pmNotFound ? (
+                          <span className="text-zinc-700">{row.project_manager} <span className="text-amber-600 text-xs">(→ Other)</span></span>
                         ) : (
-                          <span className="text-zinc-700">{row.project_manager}</span>
+                          <span className="text-zinc-700">{row.project_manager || "Other"}</span>
                         )}
                       </td>
                       <td className="px-3 py-2 text-zinc-600">{row.start_date || "—"}</td>
@@ -3720,13 +3786,17 @@ function BulkImportModal({
                       <td className="px-3 py-2 text-zinc-600">{row.progress}%</td>
                       <td className="px-3 py-2">
                         <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
-                          row.completed
+                          row.status === "completed"
                             ? "bg-zinc-100 text-zinc-700 border border-zinc-200"
-                            : row.progress > 0
+                            : row.status === "cancelled"
+                            ? "bg-red-50 text-red-600 border border-red-200"
+                            : row.status === "active"
                             ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                            : row.status === "on_hold"
+                            ? "bg-amber-50 text-amber-700 border border-amber-200"
                             : "bg-zinc-100 text-zinc-600 border border-zinc-200"
                         }`}>
-                          {row.completed ? "completed" : row.progress > 0 ? "active" : "planning"}
+                          {row.status === "planned" ? "planning" : row.status.replace("_", " ")}
                         </span>
                       </td>
                     </tr>
