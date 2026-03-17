@@ -240,9 +240,8 @@ export default function ProjectMilestonesChart({ projects }: { projects: ChartPr
             {rows.map(({ project, milestones: pMilestones }) => (
               <div key={project.id} className="grid border-b border-zinc-100 hover:bg-zinc-50 transition-colors"
                 style={{ gridTemplateColumns: `${NAME_COL}px ${timelineWidth}px`, minHeight: ROW_HEIGHT }}>
-                <div className="border-r border-zinc-200 px-4 py-3 flex flex-col justify-center">
+                <div className="border-r border-zinc-200 px-4 py-3 flex items-center">
                   <span className="text-sm font-medium text-zinc-900 truncate">{project.name}</span>
-                  {project.project_code && <span className="text-[11px] text-zinc-400">{project.project_code}</span>}
                 </div>
 
                 <div className="relative" style={{ minHeight: ROW_HEIGHT }}>

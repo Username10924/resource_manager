@@ -11,7 +11,8 @@ import {
   FaSignOutAlt,
   FaBars,
   FaTimes,
-  FaCog
+  FaCog,
+  FaTasks
 } from 'react-icons/fa';
 import { useState } from 'react';
 
@@ -46,13 +47,17 @@ export default function Navigation({ isMobileOpen = false, onMobileClose }: Navi
     if (user.role === 'line_manager') {
       baseLinks.push({ href: '/resources', label: 'Resources', icon: FaUsers, section: 'ANALYTICS' });
     } else if (user.role === 'solution_architect' || user.role === 'dtmo') {
-      baseLinks.push({ href: '/projects', label: 'Projects', icon: FaProjectDiagram, section: 'ANALYTICS' });
+      baseLinks.push(
+        { href: '/projects', label: 'Projects', icon: FaProjectDiagram, section: 'ANALYTICS' },
+        { href: '/milestones', label: 'Milestones', icon: FaTasks, section: 'ANALYTICS' }
+      );
     }
 
     if (user.role === 'admin') {
       baseLinks.push(
         { href: '/resources', label: 'Resources', icon: FaUsers, section: 'ANALYTICS' },
-        { href: '/projects', label: 'Projects', icon: FaProjectDiagram, section: 'ANALYTICS' }
+        { href: '/projects', label: 'Projects', icon: FaProjectDiagram, section: 'ANALYTICS' },
+        { href: '/milestones', label: 'Milestones', icon: FaTasks, section: 'ANALYTICS' }
       );
     }
 
@@ -101,7 +106,7 @@ export default function Navigation({ isMobileOpen = false, onMobileClose }: Navi
             </div>
           )}
           {links.filter(link => link.section === 'ANALYTICS').map((link) => {
-            const isActive = pathname === link.href;
+            const isActive = pathname === link.href || (link.href !== '/dashboard' && pathname.startsWith(link.href));
             const Icon = link.icon;
             return (
               <Link
@@ -132,7 +137,7 @@ export default function Navigation({ isMobileOpen = false, onMobileClose }: Navi
           )}
           {isCollapsed && <div className="mt-4" />}
           {links.filter(link => link.section === 'CONFIGURATION').map((link) => {
-            const isActive = pathname === link.href;
+            const isActive = pathname === link.href || (link.href !== '/dashboard' && pathname.startsWith(link.href));
             const Icon = link.icon;
             return (
               <Link

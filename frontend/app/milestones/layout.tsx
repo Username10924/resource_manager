@@ -1,0 +1,28 @@
+'use client';
+
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@/contexts/AuthContext';
+
+export default function MilestonesLayout({ children }: { children: React.ReactNode }) {
+  const { user, isAuthenticated } = useAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      router.push('/');
+    } else if (user?.role === 'line_manager') {
+      router.push('/resources');
+    }
+  }, [isAuthenticated, user, router]);
+
+  if (!isAuthenticated || user?.role === 'line_manager') {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-zinc-200 border-t-zinc-900" />
+      </div>
+    );
+  }
+
+  return <>{children}</>;
+}
