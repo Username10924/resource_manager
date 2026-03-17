@@ -68,7 +68,7 @@ export default function ProjectsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [businessUnitFilter, setBusinessUnitFilter] = useState<string>("all");
-  const [yearFilter, setYearFilter] = useState<string>("all");
+  const [yearFilter, setYearFilter] = useState<string[]>([]);
   const [sortBy, setSortBy] = useState<"name" | "status" | "progress" | "recent">("recent");
 
   useEffect(() => {
@@ -270,9 +270,9 @@ export default function ProjectsPage() {
       // Business unit filter
       if (businessUnitFilter !== "all" && ((project as any).business_unit || "") !== businessUnitFilter) return false;
       // Year filter (based on start_date)
-      if (yearFilter !== "all") {
+      if (yearFilter.length > 0) {
         const startYear = project.start_date ? new Date(project.start_date + "T00:00:00").getFullYear().toString() : "";
-        if (startYear !== yearFilter) return false;
+        if (!yearFilter.includes(startYear)) return false;
       }
       return true;
     })
@@ -296,10 +296,18 @@ export default function ProjectsPage() {
   ).sort();
 
   // Active filter count
+  const availableYears = Array.from(
+    new Set(
+      projects
+        .map((p) => p.start_date ? new Date(p.start_date + "T00:00:00").getFullYear().toString() : null)
+        .filter(Boolean) as string[]
+    )
+  ).sort();
+
   const activeFilterCount =
     (statusFilter !== "all" ? 1 : 0) +
     (businessUnitFilter !== "all" ? 1 : 0) +
-    (yearFilter !== "all" ? 1 : 0) +
+    (yearFilter.length > 0 ? 1 : 0) +
     (searchQuery ? 1 : 0);
 
   // Unified booking + reservation rows
@@ -581,15 +589,27 @@ export default function ProjectsPage() {
                 ))}
               </select>
 
-              <select
-                value={yearFilter}
-                onChange={(e) => setYearFilter(e.target.value)}
-                className="rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-700 focus:border-zinc-400 focus:outline-none focus:ring-1 focus:ring-zinc-400"
-              >
-                <option value="all">All Years</option>
-                <option value="2025">2025</option>
-                <option value="2026">2026</option>
-              </select>
+              <div className="flex items-center gap-1 rounded-lg border border-zinc-200 bg-white p-1">
+                <button
+                  onClick={() => setYearFilter([])}
+                  className={`rounded px-2.5 py-1 text-sm font-medium transition-colors ${yearFilter.length === 0 ? "bg-zinc-900 text-white" : "text-zinc-600 hover:bg-zinc-100"}`}
+                >
+                  All
+                </button>
+                {availableYears.map((year) => (
+                  <button
+                    key={year}
+                    onClick={() =>
+                      setYearFilter((prev) =>
+                        prev.includes(year) ? prev.filter((y) => y !== year) : [...prev, year]
+                      )
+                    }
+                    className={`rounded px-2.5 py-1 text-sm font-medium transition-colors ${yearFilter.includes(year) ? "bg-zinc-900 text-white" : "text-zinc-600 hover:bg-zinc-100"}`}
+                  >
+                    {year}
+                  </button>
+                ))}
+              </div>
 
               <select
                 value={sortBy}
@@ -608,7 +628,7 @@ export default function ProjectsPage() {
                     setSearchQuery("");
                     setStatusFilter("all");
                     setBusinessUnitFilter("all");
-                    setYearFilter("all");
+                    setYearFilter([]);
                     setSortBy("recent");
                   }}
                   className="flex items-center gap-1 rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2 text-xs font-medium text-zinc-600 hover:bg-zinc-100 transition-colors"

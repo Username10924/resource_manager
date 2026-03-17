@@ -4,7 +4,10 @@
       "Bash(npm install)",
       "Bash(npm start)",
       "WebSearch",
-      "Bash(python3 -c \"\nimport openpyxl\nwb = openpyxl.load_workbook\\('sample_bulk_upload.xlsx'\\)\nfor sheet_name in wb.sheetnames:\n    ws = wb[sheet_name]\n    print\\(f'Sheet: {sheet_name}'\\)\n    for i, row in enumerate\\(ws.iter_rows\\(values_only=True\\)\\):\n        print\\(f'  Row {i+1}: {row}'\\)\n        if i >= 5:\n            print\\('  ...'\\)\n            break\n    print\\(\\)\n\" 2>/dev/null || pip install openpyxl -q && python3 -c \"\nimport openpyxl\nwb = openpyxl.load_workbook\\('sample_bulk_upload.xlsx'\\)\nfor sheet_name in wb.sheetnames:\n    ws = wb[sheet_name]\n    print\\(f'Sheet: {sheet_name}'\\)\n    for i, row in enumerate\\(ws.iter_rows\\(values_only=True\\)\\):\n        print\\(f'  Row {i+1}: {row}'\\)\n        if i >= 10:\n            print\\('  ...'\\)\n            break\n    print\\(\\)\n\")"
+      "Bash(python3 -c \"\nimport openpyxl\nwb = openpyxl.load_workbook\\('sample_bulk_upload.xlsx'\\)\nfor sheet_name in wb.sheetnames:\n    ws = wb[sheet_name]\n    print\\(f'Sheet: {sheet_name}'\\)\n    for i, row in enumerate\\(ws.iter_rows\\(values_only=True\\)\\):\n        print\\(f'  Row {i+1}: {row}'\\)\n        if i >= 5:\n            print\\('  ...'\\)\n            break\n    print\\(\\)\n\" 2>/dev/null || pip install openpyxl -q && python3 -c \"\nimport openpyxl\nwb = openpyxl.load_workbook\\('sample_bulk_upload.xlsx'\\)\nfor sheet_name in wb.sheetnames:\n    ws = wb[sheet_name]\n    print\\(f'Sheet: {sheet_name}'\\)\n    for i, row in enumerate\\(ws.iter_rows\\(values_only=True\\)\\):\n        print\\(f'  Row {i+1}: {row}'\\)\n        if i >= 10:\n            print\\('  ...'\\)\n            break\n    print\\(\\)\n\")",
+      "Bash(grep -r \"year\" /home/x/projects/resource_manager/frontend/app/dashboard/ --include=\"*.tsx\" --include=\"*.ts\" 2>/dev/null | head -20)",
+      "Bash(grep -r \"filter\" /home/x/projects/resource_manager/frontend/app/projects/ --include=\"*.tsx\" --include=\"*.ts\" 2>/dev/null | head -30)",
+      "Bash(grep -r \"filter\" /home/x/projects/resource_manager/frontend/app/dashboard/ --include=\"*.tsx\" --include=\"*.ts\" 2>/dev/null | head -30)"
     ]
   }
 }
