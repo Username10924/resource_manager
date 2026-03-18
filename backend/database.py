@@ -284,6 +284,14 @@ class Database:
             self.conn.commit()
             print("business_unit Liner/Logistics merge completed!")
 
+        # Rename business_unit: Legal -> Legal & Board Secretary
+        cursor.execute("SELECT COUNT(*) FROM projects WHERE business_unit = 'Legal'")
+        if cursor.fetchone()[0] > 0:
+            print("Migrating business_unit 'Legal' -> 'Legal & Board Secretary'...")
+            cursor.execute("UPDATE projects SET business_unit = 'Legal & Board Secretary', updated_at = CURRENT_TIMESTAMP WHERE business_unit = 'Legal'")
+            self.conn.commit()
+            print("business_unit Legal rename completed!")
+
         # Rename department: Solution Architect -> Solution Architecture
         cursor.execute("SELECT COUNT(*) FROM employees WHERE department = 'Solution Architect'")
         if cursor.fetchone()[0] > 0:

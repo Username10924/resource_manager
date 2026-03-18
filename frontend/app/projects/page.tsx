@@ -32,7 +32,7 @@ const BUSINESS_UNIT_OPTIONS = [
   "Finance",
   "Fleet Planning",
   "Integrated Logistics",
-  "Legal",
+  "Legal & Board Secretary",
   "Oil",
   "Support Services",
   "Ship Management",
@@ -1130,7 +1130,7 @@ function CreateProjectModal({
       Operations: "OPS",
       Product: "PRD",
       Design: "DES",
-      Legal: "LEG",
+      "Legal & Board Secretary": "LEG",
       "Customer Support": "SUP",
       Research: "RES",
     };
@@ -3603,7 +3603,7 @@ function BulkImportModal({
     const departmentMap: Record<string, string> = {
       Finance: "FIN", Engineering: "ENG", IT: "IT", Marketing: "MKT",
       Sales: "SAL", HR: "HR", "Human Resources": "HR", Operations: "OPS",
-      Product: "PRD", Design: "DES", Legal: "LEG", "Customer Support": "SUP", Research: "RES",
+      Product: "PRD", Design: "DES", "Legal & Board Secretary": "LEG", "Customer Support": "SUP", Research: "RES",
     };
     if (departmentMap[department]) return departmentMap[department];
     return department.substring(0, 3).toUpperCase();
