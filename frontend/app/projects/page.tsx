@@ -66,7 +66,7 @@ export default function ProjectsPage() {
 
   // Search & filter state
   const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [statusFilter, setStatusFilter] = useState<string[]>([]);
   const [businessUnitFilter, setBusinessUnitFilter] = useState<string>("all");
   const [yearFilter, setYearFilter] = useState<string[]>([]);
   const [sortBy, setSortBy] = useState<"name" | "status" | "progress" | "recent">("recent");
@@ -266,7 +266,7 @@ export default function ProjectsPage() {
         if (!matchesSearch) return false;
       }
       // Status filter
-      if (statusFilter !== "all" && project.status.toLowerCase() !== statusFilter) return false;
+      if (statusFilter.length > 0 && !statusFilter.includes(project.status.toLowerCase())) return false;
       // Business unit filter
       if (businessUnitFilter !== "all" && ((project as any).business_unit || "") !== businessUnitFilter) return false;
       // Year filter (based on start_date)
@@ -305,7 +305,7 @@ export default function ProjectsPage() {
   ).sort();
 
   const activeFilterCount =
-    (statusFilter !== "all" ? 1 : 0) +
+    (statusFilter.length > 0 ? 1 : 0) +
     (businessUnitFilter !== "all" ? 1 : 0) +
     (yearFilter.length > 0 ? 1 : 0) +
     (searchQuery ? 1 : 0);
@@ -578,12 +578,21 @@ export default function ProjectsPage() {
 
             {/* Row 2: Filter pills */}
             <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-              {/* Status segmented control */}
+              {/* Status multi-select — all highlighted when no filter applied */}
               <div className="flex items-center gap-1.5">
                 <span className="text-[11px] font-semibold uppercase tracking-wider text-zinc-400 shrink-0">Status</span>
                 <div className="flex items-center gap-0.5 rounded-lg bg-zinc-100 p-0.5">
+                  <button
+                    onClick={() => setStatusFilter([])}
+                    className={`rounded-md px-2.5 py-1 text-xs font-medium transition-all ${
+                      statusFilter.length === 0
+                        ? "bg-white text-zinc-900 shadow-sm"
+                        : "text-zinc-500 hover:text-zinc-700"
+                    }`}
+                  >
+                    All
+                  </button>
                   {[
-                    { value: "all", label: "All" },
                     { value: "active", label: "Active" },
                     { value: "planning", label: "Planning" },
                     { value: "on-hold", label: "On Hold" },
@@ -591,9 +600,13 @@ export default function ProjectsPage() {
                   ].map(({ value, label }) => (
                     <button
                       key={value}
-                      onClick={() => setStatusFilter(value)}
+                      onClick={() =>
+                        setStatusFilter((prev) =>
+                          prev.includes(value) ? prev.filter((s) => s !== value) : [...prev, value]
+                        )
+                      }
                       className={`rounded-md px-2.5 py-1 text-xs font-medium transition-all ${
-                        statusFilter === value
+                        statusFilter.length === 0 || statusFilter.includes(value)
                           ? "bg-white text-zinc-900 shadow-sm"
                           : "text-zinc-500 hover:text-zinc-700"
                       }`}
@@ -661,7 +674,7 @@ export default function ProjectsPage() {
                 <button
                   onClick={() => {
                     setSearchQuery("");
-                    setStatusFilter("all");
+                    setStatusFilter([]);
                     setBusinessUnitFilter("all");
                     setYearFilter([]);
                     setSortBy("recent");
