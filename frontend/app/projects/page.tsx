@@ -705,7 +705,7 @@ export default function ProjectsPage() {
               <button
                 onClick={() => {
                   setSearchQuery("");
-                  setStatusFilter("all");
+                  setStatusFilter([]);
                   setBusinessUnitFilter("all");
                 }}
                 className="mt-2 text-sm font-medium text-zinc-700 hover:text-zinc-900 underline underline-offset-2"
