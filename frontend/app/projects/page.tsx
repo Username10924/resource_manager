@@ -538,50 +538,117 @@ export default function ProjectsPage() {
       {/* Tab Content */}
       {activeTab === "projects" && (
         <div className="space-y-4">
-          {/* Search & Filters Bar */}
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            {/* Search */}
-            <div className="relative flex-1 max-w-md">
-              <svg className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
-              <input
-                type="text"
-                placeholder="Search projects by name, code, or description..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full rounded-lg border border-zinc-200 bg-white py-2 pl-10 pr-4 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-400 focus:outline-none focus:ring-1 focus:ring-zinc-400 transition-all"
-              />
-              {searchQuery && (
-                <button
-                  onClick={() => setSearchQuery("")}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600"
-                >
-                  <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              )}
-            </div>
-
-            {/* Filters */}
-            <div className="flex flex-wrap items-center gap-2">
+          {/* Search & Filters */}
+          <div className="space-y-2.5">
+            {/* Row 1: Search + Sort */}
+            <div className="flex gap-3">
+              <div className="relative flex-1 max-w-md">
+                <svg className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+                <input
+                  type="text"
+                  placeholder="Search projects by name, code, or description..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full rounded-lg border border-zinc-200 bg-white py-2 pl-10 pr-4 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-400 focus:outline-none focus:ring-1 focus:ring-zinc-400 transition-all"
+                />
+                {searchQuery && (
+                  <button
+                    onClick={() => setSearchQuery("")}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600"
+                  >
+                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                )}
+              </div>
               <select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value as any)}
                 className="rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-700 focus:border-zinc-400 focus:outline-none focus:ring-1 focus:ring-zinc-400"
               >
-                <option value="all">All Statuses</option>
-                <option value="active">Active</option>
-                <option value="planning">Planning</option>
-                <option value="on-hold">On Hold</option>
-                <option value="completed">Completed</option>
+                <option value="recent">Most Recent</option>
+                <option value="name">Name A–Z</option>
+                <option value="status">Status</option>
+                <option value="progress">Progress</option>
               </select>
+            </div>
 
+            {/* Row 2: Filter pills */}
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+              {/* Status segmented control */}
+              <div className="flex items-center gap-1.5">
+                <span className="text-[11px] font-semibold uppercase tracking-wider text-zinc-400 shrink-0">Status</span>
+                <div className="flex items-center gap-0.5 rounded-lg bg-zinc-100 p-0.5">
+                  {[
+                    { value: "all", label: "All" },
+                    { value: "active", label: "Active" },
+                    { value: "planning", label: "Planning" },
+                    { value: "on-hold", label: "On Hold" },
+                    { value: "completed", label: "Completed" },
+                  ].map(({ value, label }) => (
+                    <button
+                      key={value}
+                      onClick={() => setStatusFilter(value)}
+                      className={`rounded-md px-2.5 py-1 text-xs font-medium transition-all ${
+                        statusFilter === value
+                          ? "bg-white text-zinc-900 shadow-sm"
+                          : "text-zinc-500 hover:text-zinc-700"
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="h-5 w-px bg-zinc-200 shrink-0" />
+
+              {/* Year multi-select — all highlighted when no filter applied */}
+              {availableYears.length > 0 && (
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[11px] font-semibold uppercase tracking-wider text-zinc-400 shrink-0">Year</span>
+                  <div className="flex items-center gap-0.5 rounded-lg bg-zinc-100 p-0.5">
+                    <button
+                      onClick={() => setYearFilter([])}
+                      className={`rounded-md px-2.5 py-1 text-xs font-medium transition-all ${
+                        yearFilter.length === 0
+                          ? "bg-white text-zinc-900 shadow-sm"
+                          : "text-zinc-500 hover:text-zinc-700"
+                      }`}
+                    >
+                      All
+                    </button>
+                    {availableYears.map((year) => (
+                      <button
+                        key={year}
+                        onClick={() =>
+                          setYearFilter((prev) =>
+                            prev.includes(year) ? prev.filter((y) => y !== year) : [...prev, year]
+                          )
+                        }
+                        className={`rounded-md px-2.5 py-1 text-xs font-medium transition-all ${
+                          yearFilter.length === 0 || yearFilter.includes(year)
+                            ? "bg-white text-zinc-900 shadow-sm"
+                            : "text-zinc-500 hover:text-zinc-700"
+                        }`}
+                      >
+                        {year}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {availableYears.length > 0 && <div className="h-5 w-px bg-zinc-200 shrink-0" />}
+
+              {/* Business unit dropdown */}
               <select
                 value={businessUnitFilter}
                 onChange={(e) => setBusinessUnitFilter(e.target.value)}
-                className="rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-700 focus:border-zinc-400 focus:outline-none focus:ring-1 focus:ring-zinc-400"
+                className="rounded-lg border border-zinc-200 bg-white px-3 py-1.5 text-xs text-zinc-700 focus:border-zinc-400 focus:outline-none focus:ring-1 focus:ring-zinc-400"
               >
                 <option value="all">All Business Units</option>
                 {activeBusinessUnits.map((unit) => (
@@ -589,39 +656,7 @@ export default function ProjectsPage() {
                 ))}
               </select>
 
-              <div className="flex items-center gap-1 rounded-lg border border-zinc-200 bg-white p-1">
-                <button
-                  onClick={() => setYearFilter([])}
-                  className={`rounded px-2.5 py-1 text-sm font-medium transition-colors ${yearFilter.length === 0 ? "bg-zinc-900 text-white" : "text-zinc-600 hover:bg-zinc-100"}`}
-                >
-                  All
-                </button>
-                {availableYears.map((year) => (
-                  <button
-                    key={year}
-                    onClick={() =>
-                      setYearFilter((prev) =>
-                        prev.includes(year) ? prev.filter((y) => y !== year) : [...prev, year]
-                      )
-                    }
-                    className={`rounded px-2.5 py-1 text-sm font-medium transition-colors ${yearFilter.includes(year) ? "bg-zinc-900 text-white" : "text-zinc-600 hover:bg-zinc-100"}`}
-                  >
-                    {year}
-                  </button>
-                ))}
-              </div>
-
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value as any)}
-                className="rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-700 focus:border-zinc-400 focus:outline-none focus:ring-1 focus:ring-zinc-400"
-              >
-                <option value="recent">Most Recent</option>
-                <option value="name">Name A-Z</option>
-                <option value="status">Status</option>
-                <option value="progress">Progress</option>
-              </select>
-
+              {/* Clear filters */}
               {activeFilterCount > 0 && (
                 <button
                   onClick={() => {
@@ -631,12 +666,12 @@ export default function ProjectsPage() {
                     setYearFilter([]);
                     setSortBy("recent");
                   }}
-                  className="flex items-center gap-1 rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2 text-xs font-medium text-zinc-600 hover:bg-zinc-100 transition-colors"
+                  className="flex items-center gap-1.5 rounded-lg border border-zinc-200 bg-white px-2.5 py-1.5 text-xs font-medium text-zinc-500 hover:bg-zinc-50 hover:text-zinc-700 transition-colors"
                 >
-                  <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                   </svg>
-                  Clear filters ({activeFilterCount})
+                  Clear ({activeFilterCount})
                 </button>
               )}
             </div>
