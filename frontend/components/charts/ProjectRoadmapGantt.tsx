@@ -273,6 +273,33 @@ export default function ProjectRoadmapGantt({
 
   const [baselinedOnly, setBaselinedOnly] = useState(false);
 
+  // Status filter state
+  const availableStatuses = useMemo(() => {
+    const set = new Set<string>();
+    allParsed.forEach((p) => { set.add(p.status); });
+    return Array.from(set).sort();
+  }, [allParsed]);
+
+  const [selectedStatuses, setSelectedStatuses] = useState<string[]>([]);
+  const [statusDropdownOpen, setStatusDropdownOpen] = useState(false);
+  const statusDropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (statusDropdownRef.current && !statusDropdownRef.current.contains(e.target as Node)) {
+        setStatusDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  const toggleStatus = (s: string) => {
+    setSelectedStatuses((prev) =>
+      prev.includes(s) ? prev.filter((x) => x !== s) : [...prev, s]
+    );
+  };
+
   const currentMonthStart = useMemo(() => {
     const now = new Date();
     return new Date(now.getFullYear(), now.getMonth(), 1);
@@ -299,12 +326,16 @@ export default function ProjectRoadmapGantt({
       base = base.filter((p) => p.priority != null && selectedPriorities.includes(p.priority));
     }
 
+    if (selectedStatuses.length > 0) {
+      base = base.filter((p) => selectedStatuses.includes(p.status));
+    }
+
     if (baselinedOnly) {
       base = base.filter((p) => p.isBaselined);
     }
 
     return base;
-  }, [allParsed, selectedYear, currentMonthStart, selectedPriorities, baselinedOnly]);
+  }, [allParsed, selectedYear, currentMonthStart, selectedPriorities, selectedStatuses, baselinedOnly]);
 
   // Window (start/end of the timeline)
   const { windowStart, windowEnd, months } = useMemo(() => {
@@ -388,6 +419,13 @@ export default function ProjectRoadmapGantt({
       : selectedPriorities.length === 1
       ? `P${selectedPriorities[0]}`
       : `${selectedPriorities.length} priorities`;
+
+  const statusFilterLabel =
+    selectedStatuses.length === 0
+      ? "All Statuses"
+      : selectedStatuses.length === 1
+      ? statusLabel(selectedStatuses[0])
+      : `${selectedStatuses.length} statuses`;
 
   return (
     <div className="space-y-4">
@@ -506,6 +544,66 @@ export default function ProjectRoadmapGantt({
                         <span className="text-xs text-zinc-400">
                           {p === 1 ? "— highest" : p === availablePriorities[availablePriorities.length - 1] ? "— lowest" : ""}
                         </span>
+                      </label>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Status multi-select dropdown */}
+        {availableStatuses.length > 0 && (
+          <div className="relative" ref={statusDropdownRef}>
+            <button
+              onClick={() => setStatusDropdownOpen((o) => !o)}
+              className={`flex items-center gap-2 rounded-lg border px-3 py-1.5 text-sm font-medium transition-all ${
+                selectedStatuses.length > 0
+                  ? "border-zinc-900 bg-zinc-900 text-white"
+                  : "border-zinc-200 bg-white text-zinc-600 hover:border-zinc-300 hover:text-zinc-900"
+              }`}
+            >
+              <span>Status: {statusFilterLabel}</span>
+              <svg
+                className={`h-3.5 w-3.5 transition-transform ${statusDropdownOpen ? "rotate-180" : ""}`}
+                viewBox="0 0 12 12"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+              >
+                <path d="M2 4l4 4 4-4" />
+              </svg>
+            </button>
+
+            {statusDropdownOpen && (
+              <div className="absolute left-0 top-full mt-1 z-30 w-52 rounded-xl border border-zinc-200 bg-white shadow-lg ring-1 ring-black/5">
+                <div className="p-2">
+                  <button
+                    onClick={() => setSelectedStatuses([])}
+                    className="w-full rounded-md px-3 py-1.5 text-left text-xs font-medium text-zinc-500 hover:bg-zinc-50 hover:text-zinc-900 transition-colors"
+                  >
+                    Clear selection
+                  </button>
+                  <div className="my-1 h-px bg-zinc-100" />
+                  {availableStatuses.map((s) => {
+                    const checked = selectedStatuses.includes(s);
+                    return (
+                      <label
+                        key={s}
+                        className="flex cursor-pointer items-center gap-2.5 rounded-md px-3 py-1.5 text-sm text-zinc-700 hover:bg-zinc-50 transition-colors"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          onChange={() => toggleStatus(s)}
+                          className="h-4 w-4 rounded border-zinc-300 accent-zinc-900"
+                        />
+                        <span
+                          className="inline-block h-2 w-2 rounded-full flex-shrink-0"
+                          style={{ backgroundColor: statusBarBg(s) }}
+                        />
+                        <span className="font-medium capitalize">{statusLabel(s)}</span>
                       </label>
                     );
                   })}

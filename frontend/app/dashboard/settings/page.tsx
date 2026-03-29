@@ -16,6 +16,7 @@ import {
   FaPlus,
   FaTrash,
   FaUserCog,
+  FaKey,
 } from "react-icons/fa";
 
 interface UserData {
@@ -299,6 +300,35 @@ export default function SettingsPage() {
         department: "",
       });
       fetchUsers();
+      setTimeout(() => setUserSuccess(null), 3000);
+    } catch (err) {
+      setUserError(err instanceof Error ? err.message : "An error occurred");
+    }
+  };
+
+  const handleResetPassword = async (userId: number, username: string) => {
+    const accessToken = localStorage.getItem("access_token");
+    if (!accessToken) return;
+
+    if (!confirm(`Reset password for "${username}" to "Welcome@123"?`)) return;
+
+    try {
+      setUserError(null);
+      setUserSuccess(null);
+      const response = await fetch(`https://dplanner.alkhathlan.dev/api/users/${userId}/reset-password`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({ detail: "Failed to reset password" }));
+        throw new Error(err.detail || "Failed to reset password");
+      }
+
+      setUserSuccess(`Password reset to "Welcome@123" for ${username}`);
       setTimeout(() => setUserSuccess(null), 3000);
     } catch (err) {
       setUserError(err instanceof Error ? err.message : "An error occurred");
@@ -856,14 +886,24 @@ export default function SettingsPage() {
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-zinc-600">
                               {userData.id !== user?.id && (
-                                <Button
-                                  onClick={() => handleDeleteUser(userData.id)}
-                                  variant="secondary"
-                                  className="flex items-center gap-2 text-red-600 hover:text-red-700"
-                                >
-                                  <FaTrash />
-                                  Delete
-                                </Button>
+                                <div className="flex items-center gap-2">
+                                  <Button
+                                    onClick={() => handleResetPassword(userData.id, userData.username)}
+                                    variant="secondary"
+                                    className="flex items-center gap-2 text-amber-600 hover:text-amber-700"
+                                  >
+                                    <FaKey />
+                                    Reset Password
+                                  </Button>
+                                  <Button
+                                    onClick={() => handleDeleteUser(userData.id)}
+                                    variant="secondary"
+                                    className="flex items-center gap-2 text-red-600 hover:text-red-700"
+                                  >
+                                    <FaTrash />
+                                    Delete
+                                  </Button>
+                                </div>
                               )}
                             </td>
                           </tr>

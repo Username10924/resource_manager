@@ -88,6 +88,40 @@ async def create_user(request: Request, current_user: User = Depends(get_current
             detail=f"Failed to create user: {str(e)}"
         )
 
+@router.post("/{user_id}/reset-password")
+async def reset_user_password(user_id: int, current_user: User = Depends(get_current_user)):
+    """Reset user password to Welcome@123 - admin only"""
+    if current_user.role != 'admin':
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only administrators can reset passwords"
+        )
+
+    user = User.get_by_id(user_id)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found"
+        )
+
+    if user.id == current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Cannot reset your own password"
+        )
+
+    try:
+        new_hash = User.hash_password("Welcome@123")
+        from database import db
+        db.execute('UPDATE users SET password_hash = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?', (new_hash, user_id))
+        db.commit()
+        return {"success": True, "message": "Password reset successfully"}
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to reset password: {str(e)}"
+        )
+
 @router.delete("/{user_id}")
 async def delete_user(user_id: int, current_user: User = Depends(get_current_user)):
     """Delete a user - admin only"""
