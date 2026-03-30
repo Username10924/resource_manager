@@ -52,7 +52,7 @@ export function isJwtExpired(token: string, skewSeconds: number = 30): boolean {
 }
 
 export const authService = {
-  login: async (username: string, password: string): Promise<User> => {
+  login: async (username: string, password: string, rememberMe: boolean = false): Promise<User> => {
     // Call the backend login endpoint
     const response = await fetch("https://dplanner.alkhathlan.dev/login", {
       method: "POST",
@@ -79,19 +79,26 @@ export const authService = {
     // Save user and access token to localStorage
     localStorage.setItem("user", JSON.stringify(user));
     localStorage.setItem("access_token", data.access_token);
+    if (rememberMe) {
+      localStorage.setItem("remember_me", "true");
+    } else {
+      localStorage.removeItem("remember_me");
+    }
     return user;
   },
 
   logout: () => {
     localStorage.removeItem("user");
     localStorage.removeItem("access_token");
+    localStorage.removeItem("remember_me");
   },
 
   getCurrentUser: (): User | null => {
     if (typeof window === "undefined") return null;
 
     const token = localStorage.getItem('access_token');
-    if (!token || isJwtExpired(token)) {
+    const rememberMe = localStorage.getItem('remember_me') === 'true';
+    if (!token || (!rememberMe && isJwtExpired(token))) {
       authService.logout();
       return null;
     }
@@ -109,7 +116,8 @@ export const authService = {
     if (typeof window === "undefined") return null;
     const token = localStorage.getItem('access_token');
     if (!token) return null;
-    if (isJwtExpired(token)) {
+    const rememberMe = localStorage.getItem('remember_me') === 'true';
+    if (!rememberMe && isJwtExpired(token)) {
       authService.logout();
       return null;
     }

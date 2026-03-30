@@ -11,6 +11,7 @@ import Loading from '@/components/Loading';
 export default function Home() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [rememberMe, setRememberMe] = useState(false);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
@@ -57,7 +58,7 @@ export default function Home() {
         setIsLoading(false);
         return;
       }
-      await login(username, password);
+      await login(username, password, rememberMe);
     } catch (err: any) {
       setError(err.message || 'Login failed. Please check your credentials.');
       setIsLoading(false);
@@ -100,6 +101,20 @@ export default function Home() {
                 onChange={(e) => setPassword(e.target.value)}
                 required
               />
+
+              {/* Remember Me */}
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="rememberMe"
+                  checked={rememberMe}
+                  onChange={(e) => setRememberMe(e.target.checked)}
+                  className="h-4 w-4 rounded border-zinc-300 accent-zinc-900 cursor-pointer"
+                />
+                <label htmlFor="rememberMe" className="text-sm text-zinc-600 cursor-pointer select-none">
+                  Remember me
+                </label>
+              </div>
 
               {/* Error Message */}
               {error && (

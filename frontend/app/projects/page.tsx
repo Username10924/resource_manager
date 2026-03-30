@@ -943,10 +943,10 @@ export default function ProjectsPage() {
                         </td>
                         <td className="whitespace-nowrap px-6 py-4">
                           <div className="text-sm text-zinc-900">
-                            {new Date(row.start_date + "T00:00:00").toLocaleDateString()}
+                            {new Date(row.start_date + "T00:00:00").toLocaleDateString("en-GB")}
                           </div>
                           <div className="text-xs text-zinc-500">
-                            to {new Date(row.end_date + "T00:00:00").toLocaleDateString()}
+                            to {new Date(row.end_date + "T00:00:00").toLocaleDateString("en-GB")}
                           </div>
                         </td>
                         <td className="whitespace-nowrap px-6 py-4 text-sm text-zinc-900">
@@ -1113,6 +1113,7 @@ function CreateProjectModal({
   const [pendingMilestones, setPendingMilestones] = useState<{ name: string; start_date: string; end_date: string; status: string; description: string; resources: any[] }[]>([]);
   const [newMilestone, setNewMilestone] = useState({ name: "", start_date: "", end_date: "", status: "not_started", description: "", resources: [] as any[] });
   const [milestoneResourceSearch, setMilestoneResourceSearch] = useState("");
+  const [dateError, setDateError] = useState("");
   const [formData, setFormData] = useState({
     project_code: "",
     name: "",
@@ -1132,6 +1133,7 @@ function CreateProjectModal({
       setEmployeeSearch("");
       setIsBaselined(false);
       setPendingMilestones([]);
+      setDateError("");
       setNewMilestone({ name: "", start_date: "", end_date: "", status: "not_started", description: "", resources: [] });
       setMilestoneResourceSearch("");
     }
@@ -1227,6 +1229,10 @@ function CreateProjectModal({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (formData.start_date && formData.end_date && formData.end_date < formData.start_date) {
+      setDateError("End date must be on or after the start date.");
+      return;
+    }
     try {
       // Convert date strings to proper format or null
       const payload = {
@@ -1538,17 +1544,36 @@ function CreateProjectModal({
             label="Start Date"
             type="date"
             value={formData.start_date}
-            onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
+            onChange={(e) => {
+              const val = e.target.value;
+              setFormData({ ...formData, start_date: val });
+              if (formData.end_date && val && formData.end_date < val) {
+                setDateError("End date must be on or after the start date.");
+              } else {
+                setDateError("");
+              }
+            }}
           />
 
           <Input
             label="End Date"
             type="date"
             value={formData.end_date}
-            onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
+            onChange={(e) => {
+              const val = e.target.value;
+              setFormData({ ...formData, end_date: val });
+              if (formData.start_date && val && val < formData.start_date) {
+                setDateError("End date must be on or after the start date.");
+              } else {
+                setDateError("");
+              }
+            }}
           />
         </div>
-        {formData.start_date && formData.end_date && (
+        {dateError && (
+          <p className="-mt-2 text-xs text-red-600">{dateError}</p>
+        )}
+        {!dateError && formData.start_date && formData.end_date && (
           <div className="-mt-2 text-xs text-zinc-500">
             Duration:{" "}
             <span className="font-medium text-zinc-600">
@@ -1841,6 +1866,7 @@ function EditProjectModal({
   const [editingMilestone, setEditingMilestone] = useState<any>(null);
   const [milestoneResourceSearch, setMilestoneResourceSearch] = useState("");
   const [editMilestoneResourceSearch, setEditMilestoneResourceSearch] = useState("");
+  const [dateError, setDateError] = useState("");
   const [formData, setFormData] = useState({
     name: project.name,
     business_unit: (project as any).business_unit || "",
@@ -1895,7 +1921,7 @@ function EditProjectModal({
     e.preventDefault();
 
     if (formData.start_date && formData.end_date && formData.end_date < formData.start_date) {
-      alert("Project end date must be after or equal to start date");
+      setDateError("End date must be on or after the start date.");
       return;
     }
 
@@ -2031,17 +2057,36 @@ function EditProjectModal({
             label="Start Date"
             type="date"
             value={formData.start_date}
-            onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
+            onChange={(e) => {
+              const val = e.target.value;
+              setFormData({ ...formData, start_date: val });
+              if (formData.end_date && val && formData.end_date < val) {
+                setDateError("End date must be on or after the start date.");
+              } else {
+                setDateError("");
+              }
+            }}
           />
 
           <Input
             label="End Date"
             type="date"
             value={formData.end_date}
-            onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
+            onChange={(e) => {
+              const val = e.target.value;
+              setFormData({ ...formData, end_date: val });
+              if (formData.start_date && val && val < formData.start_date) {
+                setDateError("End date must be on or after the start date.");
+              } else {
+                setDateError("");
+              }
+            }}
           />
         </div>
-        {formData.start_date && formData.end_date && (
+        {dateError && (
+          <p className="-mt-2 text-xs text-red-600">{dateError}</p>
+        )}
+        {!dateError && formData.start_date && formData.end_date && (
           <div className="-mt-2 text-xs text-zinc-500">
             Duration:{" "}
             <span className="font-medium text-zinc-600">
@@ -3063,11 +3108,11 @@ function BookingModal({
                                     <div className="mt-1">
                                       {new Date(
                                         booking.start_date + "T00:00:00"
-                                      ).toLocaleDateString()}{" "}
+                                      ).toLocaleDateString("en-GB")}{" "}
                                       -{" "}
                                       {new Date(
                                         booking.end_date + "T00:00:00"
-                                      ).toLocaleDateString()}
+                                      ).toLocaleDateString("en-GB")}
                                     </div>
                                     <div className="mt-1">{booking.booked_hours} hours total</div>
                                   </div>
@@ -3110,11 +3155,11 @@ function BookingModal({
                                     <div className="mt-1">
                                       {new Date(
                                         reservation.start_date + "T00:00:00"
-                                      ).toLocaleDateString()}{" "}
+                                      ).toLocaleDateString("en-GB")}{" "}
                                       -{" "}
                                       {new Date(
                                         reservation.end_date + "T00:00:00"
-                                      ).toLocaleDateString()}
+                                      ).toLocaleDateString("en-GB")}
                                     </div>
                                     <div className="mt-1">
                                       {reservation.reserved_hours_per_day} hrs/day reserved
@@ -3165,8 +3210,8 @@ function BookingModal({
                     >
                       <div className="text-sm text-zinc-900">
                         {workingDays} working days (
-                        {new Date(bookingData.startDate).toLocaleDateString()} -{" "}
-                        {new Date(bookingData.endDate).toLocaleDateString()})
+                        {new Date(bookingData.startDate).toLocaleDateString("en-GB")} -{" "}
+                        {new Date(bookingData.endDate).toLocaleDateString("en-GB")})
                       </div>
                       <div className="text-xs text-zinc-700 mt-1">
                         Maximum capacity: {totalMaxHours} hours ({settings.work_hours_per_day} hrs/day)
@@ -3335,7 +3380,7 @@ function ProjectDetailsModal({
 
   const formatProjectDate = (value: string | null | undefined) => {
     if (!value) return "Not set";
-    return new Date(value + "T00:00:00").toLocaleDateString();
+    return new Date(value + "T00:00:00").toLocaleDateString("en-GB");
   };
 
   return (
@@ -3448,7 +3493,7 @@ function ProjectDetailsModal({
                     <div>
                       <p className="text-sm font-medium text-zinc-900">{attachment.filename}</p>
                       <p className="text-xs text-zinc-500">
-                        {new Date(attachment.uploaded_at).toLocaleDateString()}
+                        {new Date(attachment.uploaded_at).toLocaleDateString("en-GB")}
                       </p>
                     </div>
                   </div>
@@ -3520,8 +3565,8 @@ function ProjectDetailsModal({
                               className="flex items-center justify-between text-sm bg-zinc-50 rounded px-3 py-2"
                             >
                               <span className="text-zinc-600">
-                                {new Date(booking.start_date).toLocaleDateString()} -{" "}
-                                {new Date(booking.end_date).toLocaleDateString()}
+                                {new Date(booking.start_date).toLocaleDateString("en-GB")} -{" "}
+                                {new Date(booking.end_date).toLocaleDateString("en-GB")}
                               </span>
                               <span className="font-medium text-zinc-900">
                                 {booking.booked_hours} hours total

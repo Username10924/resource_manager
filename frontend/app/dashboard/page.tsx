@@ -76,6 +76,8 @@ export default function DashboardPage() {
   const [isProjectModalOpen, setIsProjectModalOpen] = useState(false);
   const [settings, setSettings] = useState<Settings>({ work_hours_per_day: 7, work_days_per_month: 18.333333333, months_in_year: 12 });
   const [projectListYear, setProjectListYear] = useState<string>("all");
+  const [projectStatusYear, setProjectStatusYear] = useState<string>(String(new Date().getFullYear()));
+  const [projectProgressYear, setProjectProgressYear] = useState<string>(String(new Date().getFullYear()));
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [exportStartDate, setExportStartDate] = useState("");
   const [exportEndDate, setExportEndDate] = useState("");
@@ -394,17 +396,28 @@ export default function DashboardPage() {
   };
 
   // Prepare chart data for projects
-  const getProjectStatusData = () => {
+  const getProjectStatusData = (year?: string) => {
     if (!projectData) return [];
-    return Object.entries(projectData.status_distribution).map(([status, count]) => ({
+    const filtered = year && year !== "all"
+      ? projectData.projects.filter((p: any) => p.start_date && new Date(p.start_date + "T00:00:00").getFullYear().toString() === year)
+      : projectData.projects;
+    const distribution: Record<string, number> = {};
+    filtered.forEach((p: any) => {
+      const s = p.status || "unknown";
+      distribution[s] = (distribution[s] || 0) + 1;
+    });
+    return Object.entries(distribution).map(([status, count]) => ({
       name: (status === "planned" ? "planning" : status).replace("_", " ").replace(/\b\w/g, (l) => l.toUpperCase()),
       value: count,
     }));
   };
 
-  const getProjectProgressData = () => {
+  const getProjectProgressData = (year?: string) => {
     if (!projectData) return [];
-    return projectData.projects
+    const filtered = year && year !== "all"
+      ? projectData.projects.filter((p: any) => p.start_date && new Date(p.start_date + "T00:00:00").getFullYear().toString() === year)
+      : projectData.projects;
+    return filtered
       .slice(0, 8) // Show top 8 projects
       .map((project: any) => ({
         name: project.name.length > 20 ? project.name.substring(0, 20) + "..." : project.name,
@@ -1336,23 +1349,71 @@ export default function DashboardPage() {
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
             <Card className="bg-white border border-zinc-200">
               <CardHeader>
-                <CardTitle className="text-lg font-semibold text-zinc-900">
-                  Project Status Distribution
-                </CardTitle>
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                  <CardTitle className="text-lg font-semibold text-zinc-900">
+                    Project Status Distribution
+                  </CardTitle>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-sm font-medium text-zinc-600">Year:</span>
+                    <div className="flex rounded-lg border border-zinc-200 bg-zinc-50 p-0.5 gap-0.5">
+                      {["all", ...Array.from(new Set(
+                        projectData.projects
+                          .map((p: any) => p.start_date ? new Date(p.start_date + "T00:00:00").getFullYear() : null)
+                          .filter(Boolean)
+                      )).sort((a: any, b: any) => a - b)].map((year) => (
+                        <button
+                          key={String(year)}
+                          onClick={() => setProjectStatusYear(String(year))}
+                          className={`rounded-md px-3 py-1.5 text-sm font-medium transition-all ${
+                            projectStatusYear === String(year)
+                              ? "bg-blue-600 text-white shadow-sm"
+                              : "text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100"
+                          }`}
+                        >
+                          {year === "all" ? "All" : year}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
               </CardHeader>
               <CardContent>
-                <ProjectStatusChart data={getProjectStatusData()} />
+                <ProjectStatusChart data={getProjectStatusData(projectStatusYear)} />
               </CardContent>
             </Card>
 
             <Card className="bg-white border border-zinc-200">
               <CardHeader>
-                <CardTitle className="text-lg font-semibold text-zinc-900">
-                  Project Progress Overview
-                </CardTitle>
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                  <CardTitle className="text-lg font-semibold text-zinc-900">
+                    Project Progress Overview
+                  </CardTitle>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-sm font-medium text-zinc-600">Year:</span>
+                    <div className="flex rounded-lg border border-zinc-200 bg-zinc-50 p-0.5 gap-0.5">
+                      {["all", ...Array.from(new Set(
+                        projectData.projects
+                          .map((p: any) => p.start_date ? new Date(p.start_date + "T00:00:00").getFullYear() : null)
+                          .filter(Boolean)
+                      )).sort((a: any, b: any) => a - b)].map((year) => (
+                        <button
+                          key={String(year)}
+                          onClick={() => setProjectProgressYear(String(year))}
+                          className={`rounded-md px-3 py-1.5 text-sm font-medium transition-all ${
+                            projectProgressYear === String(year)
+                              ? "bg-blue-600 text-white shadow-sm"
+                              : "text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100"
+                          }`}
+                        >
+                          {year === "all" ? "All" : year}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
               </CardHeader>
               <CardContent>
-                <ProjectProgressChart data={getProjectProgressData()} />
+                <ProjectProgressChart data={getProjectProgressData(projectProgressYear)} />
               </CardContent>
             </Card>
           </div>
