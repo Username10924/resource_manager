@@ -66,7 +66,8 @@ async def login(request: Request):
     data = await request.json()
     username = data.get('username')
     password = data.get('password')
-    
+    remember_me = data.get('remember_me', False)
+
     if not username:
         raise HTTPException(status_code=400, detail="Username is required")
     
@@ -88,7 +89,7 @@ async def login(request: Request):
         )
     
     # Create access token
-    access_token = create_access_token(data={"sub": user.username})
+    access_token = create_access_token(data={"sub": user.username}, remember_me=remember_me)
     
     return {
         "success": True,
